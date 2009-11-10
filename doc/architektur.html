@@ -7,7 +7,7 @@
 	<META NAME="AUTHOR" CONTENT="christoph ">
 	<META NAME="CREATED" CONTENT="20091109;18512500">
 	<META NAME="CHANGEDBY" CONTENT="christoph ">
-	<META NAME="CHANGED" CONTENT="20091109;20551100">
+	<META NAME="CHANGED" CONTENT="20091110;18412900">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
@@ -70,41 +70,42 @@ wie möglich ausfallen.</P>
 <P>So liefert der Client nur dann neue Daten, wenn auch neue
 Instruktionen benötigt werden. Die Rückmeldung des Clients ist eine
 Liste abgearbeiteter Aktivitäten im Schema <SPAN LANG="en-US">Key</SPAN>=<SPAN LANG="en-US">Value.</SPAN></P>
-<P CLASS="code-western"><SPAN LANG="en-US">&lt;what-have-i-done&gt;</SPAN></P>
-<P LANG="zxx" CLASS="code-western">	&lt;drive value=”250”/&gt;</P>
-<P CLASS="code-western"><SPAN LANG="en-US">	&lt;</SPAN><SPAN LANG="zxx">turn</SPAN><SPAN LANG="en-US">
-value=”90”/&gt;</SPAN></P>
-<P LANG="zxx" CLASS="code-western">	&lt;drive value=”45”/&gt;</P>
-<P CLASS="code-western"><SPAN LANG="en-US">	&lt;</SPAN><SPAN LANG="zxx">turn</SPAN><SPAN LANG="en-US">
-value=”90”/&gt;</SPAN></P>
-<P CLASS="code-western"><SPAN LANG="en-US">	&lt;</SPAN><SPAN LANG="zxx">drive</SPAN><SPAN LANG="en-US">
-value=”250”/&gt;</SPAN></P>
-<P CLASS="code-western"><SPAN LANG="en-US">&lt;/what-have-i-done&gt;</SPAN></P>
+<P LANG="en-US" CLASS="code-western">&lt;what-have-i-done&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;drive value=”250”
+touch=&quot;front&quot;/&gt;</P>
+<P CLASS="code-western"><SPAN LANG="en-US">&lt;</SPAN><SPAN LANG="zxx">turn</SPAN>
+<SPAN LANG="en-US">value=”90” touch=”right”/&gt;</SPAN></P>
+<P LANG="zxx" CLASS="code-western">&lt;drive value=”45”
+touch=&quot;<SPAN LANG="en-US">right</SPAN>&quot;/&gt;</P>
+<P CLASS="code-western"><SPAN LANG="en-US">&lt;</SPAN><SPAN LANG="zxx">turn</SPAN>
+<SPAN LANG="en-US">value=”90” /&gt;</SPAN></P>
+<P CLASS="code-western"><SPAN LANG="en-US">&lt;</SPAN><SPAN LANG="zxx">drive</SPAN>
+<SPAN LANG="en-US">value=”250” touch=”front”/&gt;</SPAN></P>
+<P LANG="en-US" CLASS="code-western">&lt;/what-have-i-done&gt;</P>
 <P>Die Instruktionsmöglichkeiten des Servers fallen etwas komplexer
 aus. Aufgaben sind immer mit Eventbehandlungen verknüpft, sollte man
 z.B. auf Hindernisse stoßen.</P>
 <P LANG="zxx" CLASS="code-western">&lt;what-to-do&gt;</P>
-<P LANG="zxx" CLASS="code-western">	&lt;actionset id=0&gt;</P>
-<P LANG="zxx" CLASS="code-western">		&lt;drive value=&quot;260&quot;&gt;
+<P LANG="zxx" CLASS="code-western">&lt;actionset id=0&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;drive value=&quot;260&quot;&gt;
 &lt;!-- Wir erwarten bei 250 ein Hindernis. +-10 für mechanische
 Ungenauigkeit. --&gt;</P>
-<P LANG="zxx" CLASS="code-western">			&lt;event
-source=&quot;sensor-front&quot;&gt;</P>
-<P LANG="zxx" CLASS="code-western">				&lt;if value=&quot;&lt;240&quot;&gt;
+<P LANG="zxx" CLASS="code-western">&lt;event source=&quot;sensor-front&quot;&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;if value=&quot;&lt;240&quot;&gt;
 &lt;!-- Hier wurde noch nicht mit einem Hindernis gerechnet. --&gt;</P>
-<P LANG="zxx" CLASS="code-western">					&lt;halt/&gt;</P>
-<P LANG="zxx" CLASS="code-western">				&lt;/if&gt;</P>
-<P LANG="zxx" CLASS="code-western">			&lt;/event&gt;</P>
-<P LANG="zxx" CLASS="code-western">			&lt;event source=&quot;job-done&quot;&gt;</P>
-<P LANG="zxx" CLASS="code-western">				&lt;/halt&gt; &lt;!-- Bei 250
+<P LANG="zxx" CLASS="code-western">&lt;halt/&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;/if&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;/event&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;event source=&quot;job-done&quot;&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;/halt&gt; &lt;!-- Bei 250
 wurde ein Hindernis erwartet. Hier muss was erkundet werden. --&gt;</P>
-<P LANG="zxx" CLASS="code-western">			&lt;/event&gt;</P>
-<P LANG="zxx" CLASS="code-western">		&lt;/drive&gt;</P>
-<P LANG="zxx" CLASS="code-western">		&lt;!-- Da kein Event zum halt
+<P LANG="zxx" CLASS="code-western">&lt;/event&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;/drive&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;!-- Da kein Event zum halt
 führt, kann weiter gemacht werden. --&gt;</P>
-<P LANG="zxx" CLASS="code-western">		&lt;turn value=90&gt;</P>
-<P LANG="zxx" CLASS="code-western">		...</P>
-<P LANG="zxx" CLASS="code-western">	&lt;/actionset&gt;</P>
+<P LANG="zxx" CLASS="code-western">&lt;turn value=90&gt;</P>
+<P LANG="zxx" CLASS="code-western">...</P>
+<P LANG="zxx" CLASS="code-western">&lt;/actionset&gt;</P>
 <P LANG="zxx" CLASS="code-western">&lt;/what-to-do&gt;</P>
 </BODY>
 </HTML>
