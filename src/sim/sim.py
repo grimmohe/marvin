@@ -86,8 +86,39 @@ class cleaner:
 Datenhalter für Rauminformationen
 """
 class room:
-    height        = 400
-    width         = 400
+    waypoints = []
+    index     = 0
+
+    """
+    Lädt eine Datei wp_file im Format x;y \n x;y
+    Die Strecken von einem Punkt zum nächsten bilden die Wände des Raumen, in
+    dem wir uns befinden.
+    """
+    def __init__(self, wp_file):
+        self.waypoints = []
+        file = open(wp_file, "r")
+        for line in file.readlines():
+            split = string.split(line, ";")
+            self.waypoints.append({ "x": string.atoi(split[0])
+                                  , "y": string.atoi(split[1]) })
+            print self.waypoints
+        file.close()
+
+    """
+    Liefert eine Strecke ({"x": int, "y": int}, {"x": int, "y": int}).
+    Jeder weitere Aufruf leifert die nächste Strecke. Wurden alle Strecken
+    ausgegeben, wird None zurückgegeben.
+    Mit first = True wird der interne Zähler zurückgesetzt.
+    """
+    def get_line(self, first):
+        if first:
+            self.index = 0
+        if self.index >= len(self.waypoints):
+            return None
+        index += 1
+        return (self.waypoints[(index - 1) % len(self.waypoints)],
+                self.waypoints[(index) % len(self.waypoints)])
+
 
 """
 Physiksimulator für den Client
@@ -98,15 +129,16 @@ class simulator:
     sensor_front  = None
     engine        = None
     runit         = False
-
-    client        = cleaner()    # Unser Staubsaugerrepresentant
-    room          = room()       # Die Spielwiese
+    client        = None
+    room          = None
 
     def __init__(self):
         self.sensor_right  = device('/tmp/dev_right',  self.cb_sensor_right)
         self.sensor_left   = device('/tmp/dev_left',   self.cb_sensor_left)
         self.sensor_front  = device('/tmp/dev_front',  self.cb_sensor_front)
         self.engine        = device('/tmp/dev_engine', self.cb_engine)
+        self.client        = cleaner()
+        self.room          = room("../data/room.xy")
 
     def cb_sensor_right(self, data):
         pass
