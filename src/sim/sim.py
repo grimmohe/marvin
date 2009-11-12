@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+#coding=utf8
+
 import os, time, string
 
 class device:
-    self.file = None
-    self.cb_readevent = None
+    file = None
+    cb_readevent = None
 
     def __init__(self, filename, cb_event):
         self.file = os.open(filename, os.O_RDWR | os.O_SYNC)
@@ -18,27 +21,27 @@ class device:
         os.lseek(self.file, 0, os.SEEK_END)
 
 class cleaner:
-    self.pos_x         = 20
-    self.pos_y         = 20
-    self.orientation   = 0
-    self.radius        = 20
-    self.speed         = 10 # 1/s
+    pos_x         = 20
+    pos_y         = 20
+    orientation   = 0
+    radius        = 20
+    speed         = 10 # 1/s
 
 class room:
-    self.height        = 400
-    self.width         = 400
+    height        = 400
+    width         = 400
 
 class simulator:
-    self.sensor_right  = None
-    self.sensor_left   = None
-    self.sensor_front  = None
-    self.engine        = None
-    self.client        = cleaner()    # Unser Staubsaugerrepresentant
-    self.room          = room()       # Die Spielwiese
+    sensor_right  = None
+    sensor_left   = None
+    sensor_front  = None
+    engine        = None
+    client        = cleaner()    # Unser Staubsaugerrepresentant
+    room          = room()       # Die Spielwiese
 
-    self.starttime     = None
-    self.stoptime      = None         # Wann ist ads Hindernis erreicht?
-    self.runit         = False
+    starttime     = None
+    stoptime      = None         # Wann ist ads Hindernis erreicht?
+    runit         = False
 
     def __init__(self):
         self.sensor_right  = device('/tmp/dev_right', self.cb_sensor_right)
@@ -47,30 +50,30 @@ class simulator:
         self.engine        = device('/tmp/dev_engine', self.cb_engine)
 
     def cb_sensor_right(self, data):
-        time.sleep(0)
+        pass
 
     def cb_sensor_left(self, data):
-        time.sleep(0)
+        pass
 
     def cb_sensor_front(self, data):
-        time.sleep(0)
+        pass
 
     def cb_engine(self, data):
+        print data
         data = string.split(data, "=")
-
         if data[0] == "drive":
             if data[1] == "1": # berechne, wann das nächste Hinderniss erreicht ist
                 self.starttime = time.clock()
             else:
-                time.sleep(0) # welche Position haben wir bis jetzt erreicht?
+                pass # welche Position haben wir bis jetzt erreicht?
         elif data[0] == "turn":
             self.client.orientation += string.atoi(data[1])
-        elif data[0] == "shutdown":
+        elif data[0] == "shutdown\n":
             self.runit = False
 
     # Prüfen, ob Sensordaten zu senden sind
     def check(self):
-        time.sleep(0)
+        pass
 
     # Main loop
     def run(self):
@@ -78,9 +81,13 @@ class simulator:
         while self.runit:
             self.engine.read()
             self.check()
-            time.sleep(0.001)
+            time.sleep(0.01)
 
+# Und lauf!
+mysim = simulator()
+mysim.run()
 
+print "It's done!"
 
 
 
