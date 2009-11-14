@@ -127,7 +127,7 @@ class room:
     ausgegeben, wird None zurückgegeben.
     Mit first = True wird der interne Zähler zurückgesetzt.
     """
-    def get_line(self, first):
+    def get_line(self, first=False):
         if first:
             self.index = 0
         if self.index >= len(self.waypoints):
@@ -168,8 +168,42 @@ class simulator:
             self.runit = False
 
     # Prüfen, ob Sensordaten zu senden sind
-    def check(self):
-        pass
+    def check(self, now):
+        line       = self.room.get_line(True)
+        client_pos = self.client.get_cur_position(now)
+        while line:
+            # TODO: mal sehen, was wir davon brauchen werden
+            # Distanzen zwischen Cleaner-M und Eckpunkten der Wand
+            a = math.sqrt(math.pow(line[0]["x"] - line[1]["x"], 2)
+                          + math.pow(line[0]["y"] - line[1]["y"], 2))
+            b = math.sqrt(math.pow(line[0]["x"] - client_pos["x"], 2)
+                          + math.pow(line[0]["y"] - client_pos["y"] , 2))
+            c = math.sqrt(math.pow(line[1]["x"] - client_pos["x"], 2)
+                          + math.pow(line[1]["y"] - client_pos["y"] , 2))
+            # Die passenden Winkel
+            # TODO: Nur einer muss so berechnet werden. Die anderen per Sinus.
+            alpha = math.degrees( math.acos( ( math.pow(b, 2)
+                                               + math.pow(c, 2)
+                                               - math.pow(a, 2)
+                                             ) / (2 * b * c)
+                                           )
+                                )
+            beta  = math.degrees( math.acos( ( math.pow(a, 2)
+                                               + math.pow(c, 2)
+                                               - math.pow(b, 2)
+                                             ) / (2 * a * c)
+                                           )
+                                )
+            gamma = math.degrees( math.acos( ( math.pow(a, 2)
+                                               + math.pow(b, 2)
+                                               - math.pow(c, 2)
+                                             ) / (2 * a * b)
+                                           )
+                                )
+
+        alpha = math.radians(self.orientation % 90)
+        a = math.sin(alpha) * distance
+        b = math.cos(alpha) * distance
 
     # Main loop
     def run(self):
@@ -179,7 +213,7 @@ class simulator:
             # Komunikationsdateien checken
             self.engine.read()
             # Kollisionskontrolle
-            self.check()
+            self.check(timestamp)
             # warten, aber bitte alle 0.01 aufwachen
             time.sleep(max(0, 0.01 - (time.time() - timestamp)))
 
