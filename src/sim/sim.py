@@ -12,6 +12,8 @@ cb_readevent ausgelöst.
 class device:
     file = None
     cb_readevent = None
+    last_write = None
+    last_read = None
 
     def __init__(self, filename, cb_event):
         self.file = os.open(filename, os.O_RDWR | os.O_SYNC)
@@ -21,10 +23,12 @@ class device:
         data = os.read(self.file, 80)
         if len(data) > 0:
             self.cb_readevent(data)
+            self.last_read = data
 
     def write(self, data):
         os.write(self.file, data)
         os.lseek(self.file, 0, os.SEEK_END)
+        self.last_write = data
 
 """
 Representant für den Staubsauger
@@ -32,10 +36,23 @@ Representant für den Staubsauger
 class cleaner:
     RADIUS        = 20.0
     SPEED         = 10.0 # 1/s
+    SENSOR_RANGE  = 1.0
+    head_form     = ( {"x": -10.0, "y":  0.0, "sensor": None, "id": "left",  "dev": "/tmp/dev_left"}
+                    , {"x": -10.0, "y": 10.0, "sensor": None, "id": "front", "dev": "/tmp/dev_front"}
+                    , {"x":  10.0, "y": 10.0, "sensor": None, "id": "right", "dev": "/tmp/dev_right"}
+                    , {"x":  10.0, "y":  0.0, "sensor": None, "id": "",      "dev": ""} )
+    head_down     = False
 
     startposition = {"x": 20.0, "y": 20.0}
     starttime     = None
     orientation   = 0.0
+
+    def __init__(self):
+        def cb_sensor_dummy(): # auf diesen Devices wird nur gesendet
+            pass
+        for point in self.head_form:
+            if len(point["dev"]) > 0:
+                point["sensor"] = device(point["dev"], cb_sensor_dummy)
 
     """
     Setzt die eigene Position aus der Ursprungsposition, Ausrichtung und
@@ -124,30 +141,15 @@ class room:
 Physiksimulator für den Client
 """
 class simulator:
-    sensor_right  = None
-    sensor_left   = None
-    sensor_front  = None
     engine        = None
     runit         = False
     client        = None
     room          = None
 
     def __init__(self):
-        self.sensor_right  = device('/tmp/dev_right',  self.cb_sensor_right)
-        self.sensor_left   = device('/tmp/dev_left',   self.cb_sensor_left)
-        self.sensor_front  = device('/tmp/dev_front',  self.cb_sensor_front)
         self.engine        = device('/tmp/dev_engine', self.cb_engine)
         self.client        = cleaner()
         self.room          = room("../data/room.xy")
-
-    def cb_sensor_right(self, data):
-        pass
-
-    def cb_sensor_left(self, data):
-        pass
-
-    def cb_sensor_front(self, data):
-        pass
 
     """
     Der einzige CallBack, von dem Daten erwartet werden
@@ -176,9 +178,6 @@ class simulator:
             timestamp = time.time()
             # Komunikationsdateien checken
             self.engine.read()
-            self.sensor_front.read()
-            self.sensor_left.read()
-            self.sensor_right.read()
             # Kollisionskontrolle
             self.check()
             # warten, aber bitte alle 0.01 aufwachen
