@@ -37,11 +37,16 @@ class cleaner:
     RADIUS        = 20.0
     SPEED         = 10.0 # 1/s
     SENSOR_RANGE  = 1.0
-    head_form     = ( {"x": -10.0, "y":  0.0, "sensor": None, "id": "left",  "dev": "/tmp/dev_left"}
-                    , {"x": -10.0, "y": 10.0, "sensor": None, "id": "front", "dev": "/tmp/dev_front"}
-                    , {"x":  10.0, "y": 10.0, "sensor": None, "id": "right", "dev": "/tmp/dev_right"}
-                    , {"x":  10.0, "y":  0.0, "sensor": None, "id": "",      "dev": ""} )
+    head_form     = ( {"x": -10.0, "y":  0.0, "sensor": None, "id": "left",
+                       "dev": "/tmp/dev_left",  "status": 1.0}
+                    , {"x": -10.0, "y": 10.0, "sensor": None, "id": "front",
+                       "dev": "/tmp/dev_front", "status": 1.0}
+                    , {"x":  10.0, "y": 10.0, "sensor": None, "id": "right",
+                       "dev": "/tmp/dev_right", "status": 1.0}
+                    , {"x":  10.0, "y":  0.0, "sensor": None, "id": "",
+                       "dev": "",               "status": 1.0} )
     head_down     = False
+    index         = 0
 
     startposition = {"x": 20.0, "y": 20.0}
     starttime     = None
@@ -98,6 +103,23 @@ class cleaner:
             new_pos["y"] = self.startposition["y"] + a
 
         return new_pos
+
+    def get_head_site(self, first=False):
+        if first:
+            self.index = 0
+        if self.index + 1 >= len(self.waypoints):
+            return None
+        index += 1
+        line = (self.waypoints[(index - 1) % len(self.waypoints)],
+                self.waypoints[(index) % len(self.waypoints)])
+        line[1]["sensor"] = line[0]["sensor"]
+        line[1]["id"]     = line[0]["id"]
+        line[1]["dev"]    = line[0]["dev"]
+        return line
+
+    def reset_head_status(self):
+        for sensor in self.head_form:
+            sensor["status"] = 1.0
 
 """
 Datenhalter für Rauminformationen
@@ -169,48 +191,28 @@ class simulator:
 
     # Prüfen, ob Sensordaten zu senden sind
     def check(self, now):
-        line       = self.room.get_line(True)
         client_pos = self.client.get_cur_position(now)
+        self.client.reset_head_status()
+        line       = self.room.get_line(True)
         while line:
-            # TODO: mal sehen, was wir davon brauchen werden
-            # Distanzen zwischen Cleaner-M und Eckpunkten der Wand
-            m = math.sqrt(math.pow(line[0]["x"] - line[1]["x"], 2)
-                          + math.pow(line[0]["y"] - line[1]["y"], 2))
-            b = math.sqrt(math.pow(line[0]["x"] - client_pos["x"], 2)
-                          + math.pow(line[0]["y"] - client_pos["y"] , 2))
-            c = math.sqrt(math.pow(line[1]["x"] - client_pos["x"], 2)
-                          + math.pow(line[1]["y"] - client_pos["y"] , 2))
-            # Die passenden Winkel
-            # TODO: Nur einer muss so berechnet werden. Die anderen per Sinus.
-            my    = math.degrees( math.acos( ( math.pow(b, 2)
-                                               + math.pow(c, 2)
-                                               - math.pow(m, 2)
-                                             ) / (2 * b * c)
-                                           )
-                                )
-            beta  = math.degrees( math.acos( ( math.pow(m, 2)
-                                               + math.pow(c, 2)
-                                               - math.pow(b, 2)
-                                             ) / (2 * m * c)
-                                           )
-                                )
-            gamma = math.degrees( math.acos( ( math.pow(m, 2)
-                                               + math.pow(b, 2)
-                                               - math.pow(c, 2)
-                                             ) / (2 * m * b)
-                                           )
-                                )
-            # die Höhe h vom Punkt M zur Strecke m
-            h = c * math.sin(math.radians(betha))
+            # Steigungsfaktor von line
+            a_line  = ( (line[0]["y"] - line[1]["y"])
+                      / (line[0]["x"] - line[1]["x"]) )
+            a0_line = line[0]["y"] - a_line * line[0]["x"]
 
-            # wenn beta oder gamma > 90° liegt das objekt außerhalb
-            if gamma > 90:
-                tmp = gamma; gamma = beta; beta = tmp
-                tmp = b; b = c; c = tmp
-            if ( (beta > 90 & c < self.client.RADIUS)
-               | (beta <= 90 & h < self.client.RADIUS) ):
-                pass # TODO: How dare, we crashed
+            sensor = self.client.get_head_site(True)
+            while sensor:
+                # Steigungsfaktor von sensor
+                a_sensor  = ( (sensor[0]["y"] - sensor[1]["y"])
+                            / (sensor[0]["x"] - sensor[1]["x"]) )
+                a0_sensor = sensor[0]["y"] - a_sensor * sensor[0]["x"]
+                # Schnittpunkt
+                # y = f(x) = a * x
+                y_s = ( (a_line * line[0]["x"] + a0_line)
+                      - (a_sensor * sensor[0]["x"] + a0_sensor) )
 
+                sensor = self.client.get_head_site()
+            line = self.room.get_line()
 
     # Main loop
     def run(self):
