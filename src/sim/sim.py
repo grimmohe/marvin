@@ -174,7 +174,7 @@ class simulator:
         while line:
             # TODO: mal sehen, was wir davon brauchen werden
             # Distanzen zwischen Cleaner-M und Eckpunkten der Wand
-            a = math.sqrt(math.pow(line[0]["x"] - line[1]["x"], 2)
+            m = math.sqrt(math.pow(line[0]["x"] - line[1]["x"], 2)
                           + math.pow(line[0]["y"] - line[1]["y"], 2))
             b = math.sqrt(math.pow(line[0]["x"] - client_pos["x"], 2)
                           + math.pow(line[0]["y"] - client_pos["y"] , 2))
@@ -182,28 +182,35 @@ class simulator:
                           + math.pow(line[1]["y"] - client_pos["y"] , 2))
             # Die passenden Winkel
             # TODO: Nur einer muss so berechnet werden. Die anderen per Sinus.
-            alpha = math.degrees( math.acos( ( math.pow(b, 2)
+            my    = math.degrees( math.acos( ( math.pow(b, 2)
                                                + math.pow(c, 2)
-                                               - math.pow(a, 2)
+                                               - math.pow(m, 2)
                                              ) / (2 * b * c)
                                            )
                                 )
-            beta  = math.degrees( math.acos( ( math.pow(a, 2)
+            beta  = math.degrees( math.acos( ( math.pow(m, 2)
                                                + math.pow(c, 2)
                                                - math.pow(b, 2)
-                                             ) / (2 * a * c)
+                                             ) / (2 * m * c)
                                            )
                                 )
-            gamma = math.degrees( math.acos( ( math.pow(a, 2)
+            gamma = math.degrees( math.acos( ( math.pow(m, 2)
                                                + math.pow(b, 2)
                                                - math.pow(c, 2)
-                                             ) / (2 * a * b)
+                                             ) / (2 * m * b)
                                            )
                                 )
+            # die Höhe h vom Punkt M zur Strecke m
+            h = c * math.sin(math.radians(betha))
 
-        alpha = math.radians(self.orientation % 90)
-        a = math.sin(alpha) * distance
-        b = math.cos(alpha) * distance
+            # wenn beta oder gamma > 90° liegt das objekt außerhalb
+            if gamma > 90:
+                tmp = gamma; gamma = beta; beta = tmp
+                tmp = b; b = c; c = tmp
+            if ( (beta > 90 & c < self.client.RADIUS)
+               | (beta <= 90 & h < self.client.RADIUS) ):
+                pass # TODO: How dare, we crashed
+
 
     # Main loop
     def run(self):
