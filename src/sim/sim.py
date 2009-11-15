@@ -119,7 +119,7 @@ class cleaner:
 
     def reset_head_status(self):
         for sensor in self.head_form:
-            sensor["status"] = 1.0
+            sensor["status"] = self.SENSOR_RANGE
 
 """
 Datenhalter für Rauminformationen
@@ -140,7 +140,6 @@ class room:
             split = string.split(line, ";")
             self.waypoints.append({ "x": string.atoi(split[0])
                                   , "y": string.atoi(split[1]) })
-            print self.waypoints
         file.close()
 
     """
@@ -195,21 +194,42 @@ class simulator:
         self.client.reset_head_status()
         line       = self.room.get_line(True)
         while line:
-            # Steigungsfaktor von line
-            a_line  = ( (line[0]["y"] - line[1]["y"])
-                      / (line[0]["x"] - line[1]["x"]) )
-            a0_line = line[0]["y"] - a_line * line[0]["x"]
+            # Steigungsfaktor von line (m) und Schnittpunkt auf y (n)
+            m_line = ( (line[0]["y"] - line[1]["y"])
+                     / (line[0]["x"] - line[1]["x"]) )
+            n_line = line[0]["y"] - m_line * line[0]["x"]
 
             sensor = self.client.get_head_site(True)
             while sensor:
                 # Steigungsfaktor von sensor
-                a_sensor  = ( (sensor[0]["y"] - sensor[1]["y"])
-                            / (sensor[0]["x"] - sensor[1]["x"]) )
-                a0_sensor = sensor[0]["y"] - a_sensor * sensor[0]["x"]
-                # Schnittpunkt
+                m_sensor = ( (sensor[0]["y"] - sensor[1]["y"])
+                           / (sensor[0]["x"] - sensor[1]["x"]) )
+                n_sensor = sensor[0]["y"] - m_sensor * sensor[0]["x"]
+                # Schnittpunkt 1 = line; 2 = sensor
                 # y = f(x) = a * x
-                y_s = ( (a_line * line[0]["x"] + a0_line)
-                      - (a_sensor * sensor[0]["x"] + a0_sensor) )
+                # x = n1 - n2 / m2 - m1
+                x_s = (n_line - n_sensor) / (m_sensor - m_line)
+                # y = ((m2 * n1) - (m1 * n2)) / (m2 - m1)
+                y_s = ( (m_sensor * n_line - m_sensor * n_sensor)
+                      / (m_sensor - m_line) )
+                # Schneiden sie sich bereits? Das sollte nicht passieren
+                if ( ( min(sensor[0]["y"], sensor[1]["y"])
+                       < y_s
+                       < max(sensor[0]["y"], sensor[1]["y"]) )
+                   & ( min(sensor[0]["x"], sensor[1]["x"])
+                       < y_s
+                       < max(sensor[0]["x"], sensor[1]["x"]) )
+                   & ( min(line[0]["y"], line[1]["y"])
+                       < y_s
+                       < max(line[0]["y"], line[1]["y"]) )
+                   & ( min(line[0]["x"], line[1]["x"])
+                       < y_s
+                       < max(line[0]["x"], line[1]["x"]) ) ):
+                    sensor[0]["status"] = 0
+                else:
+                    # jetzt der kürzeste Weg der Eckpunkte zur anderen Gerade
+                    pass
+
 
                 sensor = self.client.get_head_site()
             line = self.room.get_line()
