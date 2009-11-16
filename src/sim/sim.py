@@ -121,6 +121,11 @@ class cleaner:
         for sensor in self.head_form:
             sensor["status"] = self.SENSOR_RANGE
 
+    def send_sensor_data(self):
+        for sensor in self.head_form:
+            if sensor["status"] < self.SENSOR_RANGE:
+                sensor["sensor"].write("distance=%f" % float)
+
 """
 Datenhalter für Rauminformationen
 """
@@ -224,15 +229,64 @@ class simulator:
                        < max(line[0]["y"], line[1]["y"]) )
                    & ( min(line[0]["x"], line[1]["x"])
                        < y_s
-                       < max(line[0]["x"], line[1]["x"]) ) ):
+                       < max(line[0]["x"], line[1]["x"]) )
+                   ):
                     sensor[0]["status"] = 0
                 else:
                     # jetzt der kürzeste Weg der Eckpunkte zur anderen Gerade
-                    pass
+                    # Schnittwinkel alpha
+                    alpha_line   = math.degrees(math.atan(m_line))
+                    alpha_sensor = math.degrees(math.atan(m_sensor))
+                    alpha        = abs(alpha_line - alpha_sensor)
+                    # s = Schnittpunkt bis Punkt
+                    def get_s(point):
+                        return math.sqrt( math.pow(x_s - point["x"], 2)
+                                          + math.pow(y_s - point["y"], 2) )
+                    # h = die Höhe auf dem Sensor
+                    def get_hs(ss, angle):
+                        return math.tan(math.radians(angle)) * ss
+                    # h = die Höhe auf dem Sensor
+                    def get_hl(sl, angle):
+                        return math.sin(math.radians(angle)) * sl
+                    # lss = Schnittpunkt von h auf linie # cos alpha = b / c
+                    def get_lss(b, angle):
+                        return b / math.cos(math.radians(angle))
+                    # lsl = wie lss, nur von s von lien ausgehend
+                    def get_lsl(c, angle):
+                        return math.cos(math.radians(angle)) * c
 
+                    sensor[0]["s"] = get_s(sensor[0])
+                    sensor[1]["s"] = get_s(sensor[1])
+                    line[0]["s"] = get_s(line[0])
+                    line[1]["s"] = get_s(line[1])
+
+                    if ( min(line[0][s], line[1][s])
+                         < get_lss(sensor[0]["s"], alpha)
+                         < max(line[0][s], line[1][s]) ):
+                        sensor[0]["status"] = min(sensor[0]["status"],
+                                                  get_hs(sensor[0]["s"], alpha))
+                    if ( line[0][s]
+                         < get_lss(sensor[1]["s"], alpha)
+                         < line[1]["s"] ):
+                        sensor[0]["status"] = min(sensor[0]["status"],
+                                                  get_hs(sensor[1]["s"], alpha))
+                    # Und was, wenn der Punkt von line innerhalb der
+                    # Sensorstrecke ist?
+                    if ( min(sensor[0]["s"], sensor[1]["s"])
+                         < get_lsl(line[0]["s"], alpha)
+                         < max(sensor[0]["s"], sensor[1]["s"]) ):
+                        sensor[0]["status"] = min(sensor[0]["status"],
+                                                  get_hl(line[0]["s"], alpha))
+                    if ( min(sensor[0]["s"], sensor[1]["s"])
+                         < get_lsl(line[1]["s"], alpha)
+                         < max(sensor[0]["s"], sensor[1]["s"]) ):
+                        sensor[0]["status"] = min(sensor[0]["status"],
+                                                  get_hl(line[1]["s"], alpha))
 
                 sensor = self.client.get_head_site()
             line = self.room.get_line()
+        # end while line:
+        self.client.send_sensor_data()
 
     # Main loop
     def run(self):
