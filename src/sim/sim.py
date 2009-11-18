@@ -3,6 +3,47 @@
 
 import os, time, string, math
 
+# Steigungsfaktor
+def get_m(point1, point2={"x": 0, "y": 0}):
+    return ( (point1[0]["y"] - point2[1]["y"])
+             / (point1[0]["x"] - point2[1]["x"]) )
+
+# Schnittpunkt mit Y
+def get_n(point, m):
+    return (point["y"] - m * point["x"])
+
+# s = Schnittpunkt bis Punkt
+def get_s(point, x=0, y=0):
+    return math.sqrt( math.pow(x - point["x"], 2)
+                      + math.pow(y - point["y"], 2) )
+
+# h = die Höhe auf dem Sensor
+def get_hs(ss, angle):
+    return math.tan(math.radians(angle)) * ss
+
+# h = die Höhe auf dem Sensor
+def get_hl(sl, angle):
+    return math.sin(math.radians(angle)) * sl
+
+# lss = Schnittpunkt von h auf linie
+def get_lss(b, angle):
+    return b / math.cos(math.radians(angle))
+
+# lsl = wie lss, nur von s von lien ausgehend
+def get_lsl(c, angle):
+    return math.cos(math.radians(angle)) * c
+
+# Vergleicht, ob b zwischen a1/a2 liegt
+def in_comp(a1, a2, b):
+    return min(a1, a2) < b < max(a1, a2)
+
+# Dreht einen Punkt auf der Systemachse
+def turn_point(point, degrees):
+    s = get_s(point)
+    alpha = math.atan(get_m(point)) + math.radians(degrees)
+    return { "x": s * math.sin(alpha),
+             "y": s * math.cos(alpha) }
+
 """
 Beobachtet eine Datei, indem regelmäßig read() aufgerufen wird.
 Schreibt in selbige Datei mit write(data).
@@ -247,48 +288,6 @@ class simulator:
                                               get_hl(line[1]["s"], alpha))
         self.client.send_sensor_data()
         return 1
-
-    # Steigungsfaktor
-    def get_m(point1, point2):
-        return ( (point1[0]["y"] - point2[1]["y"])
-                 / (point1[0]["x"] - point2[1]["x"]) )
-
-    # Schnittpunkt mit Y
-    def get_n(point, m):
-        return (point["y"] - m * point["x"])
-
-    # s = Schnittpunkt bis Punkt
-    def get_s(point, x=0, y=0):
-        return math.sqrt( math.pow(x - point["x"], 2)
-                          + math.pow(y - point["y"], 2) )
-
-    # h = die Höhe auf dem Sensor
-    def get_hs(ss, angle):
-        return math.tan(math.radians(angle)) * ss
-
-    # h = die Höhe auf dem Sensor
-    def get_hl(sl, angle):
-        return math.sin(math.radians(angle)) * sl
-
-    # lss = Schnittpunkt von h auf linie
-    def get_lss(b, angle):
-        return b / math.cos(math.radians(angle))
-
-    # lsl = wie lss, nur von s von lien ausgehend
-    def get_lsl(c, angle):
-        return math.cos(math.radians(angle)) * c
-
-    # Vergleicht, ob b zwischen a1/a2 liegt
-    def in_comp(a1, a2, b):
-        return min(a1, a2) < b < max(a1, a2)
-
-    # Dreht einen Punkt auf der Systemachse
-    def turn_point(point, degrees):
-        s = get_s(point)
-        alpha = math.atan(point["y"] / point["x"]) + math.radians(degrees)
-        point["y"] = s * math.sin(alpha)
-        point["x"] = s * math.cos(alpha)
-        return point
 
     # Main loop
     def run(self):
