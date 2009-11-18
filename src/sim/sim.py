@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 #coding=utf8
 
-import os, time, string, math
+import os
+import time
+import string
+import math
+import pygame
 
 # Steigungsfaktor
 def get_m(point1, point2={"x": 0, "y": 0}):
-    return ( (point1[0]["y"] - point2[1]["y"])
-             / (point1[0]["x"] - point2[1]["x"]) )
+    return ( (point1["y"] - point2["y"])
+             / (point1["x"] - point2["x"] + 0.000001) )
 
 # Schnittpunkt mit Y
 def get_n(point, m):
@@ -57,7 +61,7 @@ class device:
     last_read = None
 
     def __init__(self, filename, cb_event):
-        self.file = os.open(filename, os.O_RDWR | os.O_SYNC)
+        self.file = os.open(filename, os.O_CREAT | os.O_RDWR | os.O_SYNC)
         self.cb_readevent = cb_event
 
     def read(self):
@@ -148,18 +152,18 @@ class cleaner:
     (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
     """
     def get_head_lines(self):
-        lines = ()
+        lines = []
         if not self.head_down:
             return lines
-        max   = len(self.head_form) - 1
+        max   = len(self.head_form)
         for i in range(len(self.head_form)):
             if self.head_form[i]["id"] <> "":
-                sensor = ( simulator.turn_point(self.head_form[i % max],
-                                                self.orientation),
-                           simulator.turn_point(self.head_form[(i+1) % max],
-                                                self.orientation) )
-                sensor[0]["m"] = simulator.get_m(sensor[0], sensor[1])
-                sensor[0]["n"] = simulator.get_n(sensor[0], sensor[0]["m"])
+                sensor = ( turn_point(self.head_form[i % max],
+                                      self.orientation),
+                           turn_point(self.head_form[(i+1) % max],
+                                      self.orientation) )
+                sensor[0]["m"] = get_m(sensor[0], sensor[1])
+                sensor[0]["n"] = get_n(sensor[0], sensor[0]["m"])
                 lines.append(sensor)
         return lines
 
@@ -197,23 +201,31 @@ class room:
     (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
     """
     def get_lines(self):
-        lines = ()
-        max   = len(self.waypoints) - 1
+        lines = []
+        max   = len(self.waypoints)
         for i in range(len(self.waypoints)):
             line = (self.waypoints[i % max], self.waypoints[(i+1) % max])
-            line[0]["m"] = simulator.get_m(line[0], line[1])
-            line[0]["n"] = simulator.get_n(line[0], line[0]["m"])
-            lines.append( line )
+            line[0]["m"] = get_m(line[0], line[1])
+            line[0]["n"] = get_n(line[0], line[0]["m"])
+            lines.append(line)
         return lines
 
 """
 Physiksimulator für den Client
 """
 class simulator:
-    engine        = None
-    runit         = False
-    client        = None
-    room          = None
+    engine         = None
+    runit          = False
+    client         = None
+    room           = None
+
+    gui_height     = 1
+    gui_y_offset   = 0
+    gui_width      = 1
+    gui_x_offset   = 0
+    gui_factor     = 1
+    GUI_MAX_SIZE   = 600
+    gui_window     = None
 
     def __init__(self):
         self.engine        = device('/tmp/dev_engine', self.cb_engine)
@@ -230,8 +242,9 @@ class simulator:
             if data[1] == "1":
                 self.starttime = time.time()
             else:
-                pass # welche Position haben wir bis jetzt erreicht?
+                self.client.set_position(time.time())
         elif data[0] == "turn":
+            self.client.set_position(time.time())
             self.client.orientation += string.atoi(data[1])
         elif data[0] == "shutdown\n":
             self.runit = False
@@ -289,8 +302,65 @@ class simulator:
         self.client.send_sensor_data()
         return 1
 
+    """
+    Ermittelt das Ausmaß des Raumes, erstellt das Fenster und malt die Wände
+    """
+    def init_gui(self):
+        for line in self.room.get_lines():
+            for point in line:
+                if point["y"] > 0:
+                    self.gui_height = max(self.gui_height,
+                                          point["y"] + self.gui_y_offset)
+                if point["y"] < 0:
+                    diff = max(0, abs(point["y"]) - self.gui_y_offset)
+                    self.gui_y_offset += diff
+                    self.gui_height   += diff
+
+                if point["x"] > 0:
+                    self.gui_width = max(self.gui_width,
+                                         point["x"] + self.gui_x_offset)
+                if point["x"] < 0:
+                    diff = max(0, abs(point["x"]) - self.gui_x_offset)
+                    self.gui_x_offset += diff
+                    self.gui_width    += diff
+
+        self.gui_factor = max(self.GUI_MAX_SIZE / self.gui_height,
+                              self.GUI_MAX_SIZE / self.gui_width)
+        # PyGame init stuff
+        pygame.init()
+        self.gui_window = pygame.display.set_mode( (self.gui_width * self.gui_factor,
+                                                    self.gui_height * self.gui_factor) )
+        self.gui_window.fill((0, 0, 0))
+        # die Wände malen
+        for line in self.room.get_lines():
+            print line
+            pygame.draw.line( self.gui_window,
+                              (0, 0, 255),
+                              ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
+                               (line[0]["y"] + self.gui_y_offset) * self.gui_factor),
+                              ((line[1]["x"] + self.gui_x_offset) * self.gui_factor,
+                               (line[1]["y"] + self.gui_y_offset) * self.gui_factor),
+                              1 )
+        pygame.display.update()
+
+    def update_gui(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.runit = False
+        for line in self.client.get_head_lines():
+            pygame.draw.line( self.gui_window,
+                              (0, 255, 0),
+                              ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
+                               (line[0]["y"] + self.gui_y_offset) * self.gui_factor),
+                              ((line[1]["x"] + self.gui_x_offset) * self.gui_factor,
+                               (line[1]["y"] + self.gui_y_offset) * self.gui_factor),
+                              1 )
+        pygame.display.update()
+
+
     # Main loop
     def run(self):
+        self.init_gui()
         self.runit = True
         while self.runit:
             timestamp = time.time()
@@ -298,14 +368,16 @@ class simulator:
             self.engine.read()
             # Kollisionskontrolle
             self.check(timestamp)
+            # GUI
+            self.update_gui()
             # warten, aber bitte alle 0.01 aufwachen
             time.sleep(max(0, 0.01 - (time.time() - timestamp)))
 
 # Und lauf!
-mysim = simulator()
-mysim.run()
-
-print "It's done!"
+if __name__ == '__main__':
+    mysim = simulator()
+    mysim.run()
+    print "It's done!"
 
 
 
