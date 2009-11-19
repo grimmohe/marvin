@@ -79,9 +79,14 @@ class device:
 Representant für den Staubsauger
 """
 class cleaner:
-    RADIUS        = 20.0
-    SPEED         = 10.0 # 1/s
-    SENSOR_RANGE  = 1.0
+    RADIUS         = 20.0
+    SPEED          = 10.0 # 1/s
+    SENSOR_RANGE   = 1.0
+
+    ACTION_DRIVE      = 1
+    ACTION_TURN_LEFT  = 2
+    ACTION_TURN_RIGHT = 4
+
     head_form     = ( {"x": -10.0, "y":  0.0, "sensor": None, "id": "left",
                        "dev": "/tmp/dev_left",  "status": 1.0}
                     , {"x": -10.0, "y": 10.0, "sensor": None, "id": "front",
@@ -92,8 +97,9 @@ class cleaner:
                        "dev": "",               "status": 1.0} )
     head_down     = False
 
-    startposition = {"x": 20.0, "y": 20.0}
+    position      = {"x": 20.0, "y": 20.0}
     starttime     = None
+    action        = 0
     orientation   = 0.0
 
     def __init__(self):
@@ -108,9 +114,23 @@ class cleaner:
     Bewegung als neue Ausgangslage.
     """
     def set_position(self, current_time):
-        self.startposition = self.get_cur_position(current_time)
-        self.starttime     = current_time
+        self.position    = self.get_cur_position(current_time)
+        self.orientation = self.get_cur_orientation(current_time)
+        self.starttime   = current_time
         return 1
+
+    """
+    Liefert die aktuelle Ausrichtung
+    """
+    def get_cur_orientation(self, current_time):
+        diff = 0
+
+        if self.action & (self.ACTION_TURN_LEFT | self.ACTION_TURN_RIGHT):
+            diff = self.SPEED * (current_time - self.starttime)
+            if self.action & self.ACTION_TURN_LEFT:
+                diff = 360 - diff
+
+        return (self.orientation + diff) % 360
 
     """
     Berechnet die aktuelle Position aus Ursprungsposition, Ausrichtung und
@@ -118,53 +138,60 @@ class cleaner:
     returns {"x": int, "y": int}
     """
     def get_cur_position(self, current_time):
-        if self.starttime == None:
-            return self.startposition
+        new_pos = {"x": self.position["x"],
+                   "y": self.position["y"]}
 
-        new_pos = {"x": None, "y": None}
-        distance = self.SPEED * (current_time - self.starttime)
+        if self.action & self.ACTION_DRIVE:
+            distance = self.SPEED * (current_time - self.starttime)
 
-        # c = distance
-        # Alpha = orientation MOD 90°
-        # also Sin Alpha = a/c -> a = Sin Alpha * c
-        # und  Cos Altha = b/c -> b = Cos Alpha * c
-        alpha = math.radians(self.orientation % 90)
-        a = math.sin(alpha) * distance
-        b = math.cos(alpha) * distance
+            # c = distance
+            # Alpha = orientation MOD 90°
+            # also Sin Alpha = a/c -> a = Sin Alpha * c
+            # und  Cos Altha = b/c -> b = Cos Alpha * c
+            orientation = self.get_cur_orientation(current_time)
+            alpha = math.radians(orientation % 90)
+            a = math.sin(alpha) * distance
+            b = math.cos(alpha) * distance
 
-        part = round(self.orientation / 90)
-        if part == 0:
-            new_pos["x"] = self.startposition["x"] + a
-            new_pos["y"] = self.startposition["y"] + b
-        elif part == 1:
-            new_pos["x"] = self.startposition["x"] + b
-            new_pos["y"] = self.startposition["y"] - a
-        elif part == 2:
-            new_pos["x"] = self.startposition["x"] - a
-            new_pos["y"] = self.startposition["y"] - b
-        elif part == 3:
-            new_pos["x"] = self.startposition["x"] - b
-            new_pos["y"] = self.startposition["y"] + a
+            part = round(orientation / 90)
+            if part == 0:
+                new_pos["x"] += a
+                new_pos["y"] += b
+            elif part == 1:
+                new_pos["x"] += b
+                new_pos["y"] += a
+            elif part == 2:
+                new_pos["x"] += a
+                new_pos["y"] += b
+            elif part == 3:
+                new_pos["x"] += b
+                new_pos["y"] += a
 
         return new_pos
+
     """
     Liefert eine Liste von Strecken:
     (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
     """
-    def get_head_lines(self):
+    def get_head_lines(self, current_time):
         lines = []
-        if not self.head_down:
-            return lines
-        max   = len(self.head_form)
-        for i in range(len(self.head_form)):
-            if self.head_form[i]["id"] <> "":
-                sensor = ( turn_point(self.head_form[i % max],
-                                      self.orientation),
-                           turn_point(self.head_form[(i+1) % max],
-                                      self.orientation) )
-                sensor[0]["m"] = get_m(sensor[0], sensor[1])
-                sensor[0]["n"] = get_n(sensor[0], sensor[0]["m"])
-                lines.append(sensor)
+        if self.head_down:
+            orientation = self.get_cur_orientation(current_time)
+            cur_pos     = self.get_cur_position(current_time)
+            max   = len(self.head_form)
+            for i in range(len(self.head_form)):
+                if self.head_form[i]["id"] <> "":
+                    sensor = ( turn_point(self.head_form[i % max],
+                                          orientation),
+                               turn_point(self.head_form[(i+1) % max],
+                                          orientation) )
+                    sensor[0]["x"] += cur_pos["x"]
+                    sensor[0]["y"] += cur_pos["y"]
+                    sensor[1]["x"] += cur_pos["x"]
+                    sensor[1]["y"] += cur_pos["y"]
+                    sensor[0]["m"] = get_m(sensor[0], sensor[1])
+                    sensor[0]["n"] = get_n(sensor[0], sensor[0]["m"])
+                    lines.append(sensor)
         return lines
 
     def reset_head_status(self):
@@ -236,16 +263,32 @@ class simulator:
     Der einzige CallBack, von dem Daten erwartet werden
     """
     def cb_engine(self, data):
-        print data
         data = string.split(data, "=")
+        current_time = time.time()
         if data[0] == "drive":
             if data[1] == "1":
-                self.starttime = time.time()
+                self.client.starttime = current_time
+                self.client.action    = (self.client.action
+                                         | self.client.ACTION_DRIVE)
             else:
-                self.client.set_position(time.time())
+                self.client.set_position(current_time)
+                self.client.action = (self.client.action
+                                      ^ self.client.ACTION_DRIVE)
         elif data[0] == "turn":
-            self.client.set_position(time.time())
-            self.client.orientation += string.atoi(data[1])
+            self.client.set_position(current_time)
+            if data[1] == "left":
+                self.client.action = ((self.client.action
+                                       | self.client.ACTION_TURN_LEFT)
+                                      ^ self.client.ACTION_TURN_RIGHT)
+            elif data[1] == "right":
+                self.client.action = ((self.client.action
+                                       | self.client.ACTION_TURN_RIGHT)
+                                      ^ self.client.ACTION_TURN_LEFT)
+            else:
+                self.client.action = ((self.client.action
+                                       ^ self.client.ACTION_TURN_RIGHT)
+                                      ^ self.client.ACTION_TURN_LEFT)
+
         elif data[0] == "shutdown\n":
             self.runit = False
 
@@ -261,7 +304,7 @@ class simulator:
             line[0]["m"] = get_m(line[0], line[1])
             line[0]["n"] = get_n(line[0], line[0]["m"])
 
-            for sensor in self.client.get_head_lines():
+            for sensor in self.client.get_head_lines(now):
                 # Schnittpunkt
                 # x = n1 - n2 / m2 - m1
                 x_s = ( (line[0]["n"] - sensor[0]["n"])
@@ -328,12 +371,11 @@ class simulator:
                               self.GUI_MAX_SIZE / self.gui_width)
         # PyGame init stuff
         pygame.init()
-        self.gui_window = pygame.display.set_mode( (self.gui_width * self.gui_factor,
-                                                    self.gui_height * self.gui_factor) )
+        self.gui_window = pygame.display.set_mode( ((self.gui_width * self.gui_factor) + 1,
+                                                    (self.gui_height * self.gui_factor) + 1) )
         self.gui_window.fill((0, 0, 0))
         # die Wände malen
         for line in self.room.get_lines():
-            print line
             pygame.draw.line( self.gui_window,
                               (0, 0, 255),
                               ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
@@ -343,11 +385,11 @@ class simulator:
                               1 )
         pygame.display.update()
 
-    def update_gui(self):
+    def update_gui(self, current_time):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.runit = False
-        for line in self.client.get_head_lines():
+        for line in self.client.get_head_lines(current_time):
             pygame.draw.line( self.gui_window,
                               (0, 255, 0),
                               ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
@@ -369,7 +411,7 @@ class simulator:
             # Kollisionskontrolle
             self.check(timestamp)
             # GUI
-            self.update_gui()
+            self.update_gui(timestamp)
             # warten, aber bitte alle 0.01 aufwachen
             time.sleep(max(0, 0.01 - (time.time() - timestamp)))
 
