@@ -201,7 +201,7 @@ class cleaner:
     def send_sensor_data(self):
         for sensor in self.head_form:
             if sensor["status"] < self.SENSOR_RANGE:
-                sensor["sensor"].write("distance=%f" % float)
+                sensor["sensor"].write("distance=%f" % sensor["status"])
 
 """
 Datenhalter für Rauminformationen
