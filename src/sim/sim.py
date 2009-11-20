@@ -54,7 +54,7 @@ Schreibt in selbige Datei mit write(data).
 Sollten mit read() neue Informationen gelesen werden, wird
 cb_readevent ausgelöst.
 """
-class device:
+class Device:
     file = None
     cb_readevent = None
     last_write = None
@@ -81,7 +81,7 @@ class device:
 """
 Representant für den Staubsauger
 """
-class cleaner:
+class Cleaner:
     RADIUS         = 20.0
     SPEED          = 10.0 # 1/s
     SENSOR_RANGE   = 1.0
@@ -112,8 +112,8 @@ class cleaner:
             pass
         for point in self.head_form:
             if len(point["dev"]) > 0:
-                point["sensor"] = device(point["dev"], cb_sensor_dummy)
-        self.engine = device('/tmp/dev_engine', self.cb_engine)
+                point["sensor"] = Device(point["dev"], cb_sensor_dummy)
+        self.engine = Device('/tmp/dev_engine', self.cb_engine)
 
     """
     Der einzige CallBack, von dem Daten erwartet werden
@@ -244,7 +244,7 @@ class cleaner:
 """
 Datenhalter für Rauminformationen
 """
-class room:
+class Room:
     waypoints = []
 
     """
@@ -278,7 +278,7 @@ class room:
 """
 Physiksimulator für den Client
 """
-class simulator:
+class Simulator:
     runit          = False
     client         = None
     room           = None
@@ -292,8 +292,8 @@ class simulator:
     gui_window     = None
 
     def __init__(self):
-        self.client        = cleaner()
-        self.room          = room("../data/room.xy")
+        self.client        = Cleaner()
+        self.room          = Room("../data/room.xy")
 
     """
     Die eigentliche Kollisionsprüfung. Löst das Senden von Sensordaten aus.
@@ -419,7 +419,7 @@ class simulator:
 
 # Und lauf!
 if __name__ == '__main__':
-    mysim = simulator()
+    mysim = Simulator()
     mysim.run()
     print "It's done!"
 
