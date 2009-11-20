@@ -7,54 +7,54 @@ import string
 import math
 import pygame
 
-# Steigungsfaktor
 def get_m(point1, point2={"x": 0, "y": 0}):
+    """ Steigungsfaktor """
     return ( (point1["y"] - point2["y"])
              / (point1["x"] - point2["x"] + 0.000001) )
 
-# Schnittpunkt mit Y
 def get_n(point, m):
+    """ Schnittpunkt (n) mit Y """
     return (point["y"] - m * point["x"])
 
-# s = Schnittpunkt bis Punkt
 def get_s(point, x=0, y=0):
+    """ Distanz von 2 Punkten """
     return math.sqrt( math.pow(x - point["x"], 2)
                       + math.pow(y - point["y"], 2) )
 
-# h = die Höhe auf dem Sensor
 def get_hs(ss, angle):
+    """ die Höhe auf dem Sensor """
     return math.tan(math.radians(angle)) * ss
 
-# h = die Höhe auf dem Sensor
 def get_hl(sl, angle):
+    """ die Höhe auf der Linie """
     return math.sin(math.radians(angle)) * sl
 
-# lss = Schnittpunkt von h auf linie
 def get_lss(b, angle):
+    """ Schnittpunkt von h auf linie """
     return b / math.cos(math.radians(angle))
 
-# lsl = wie lss, nur von s von lien ausgehend
 def get_lsl(c, angle):
+    """ wie lss, nur von s von lien ausgehend """
     return math.cos(math.radians(angle)) * c
 
-# Vergleicht, ob b zwischen a1/a2 liegt
 def in_comp(a1, a2, b):
+    """ Vergleicht, ob b zwischen a1/a2 liegt """
     return min(a1, a2) < b < max(a1, a2)
 
-# Dreht einen Punkt auf der Systemachse
 def turn_point(point, degrees):
+    """ Dreht einen Punkt auf der Systemachse """
     s = get_s(point)
     alpha = math.atan(get_m(point)) + math.radians(degrees)
     return { "x": s * math.sin(alpha),
              "y": s * math.cos(alpha) }
 
-"""
-Beobachtet eine Datei, indem regelmäßig read() aufgerufen wird.
-Schreibt in selbige Datei mit write(data).
-Sollten mit read() neue Informationen gelesen werden, wird
-cb_readevent ausgelöst.
-"""
 class Device:
+    """
+    Beobachtet eine Datei, indem regelmäßig read() aufgerufen wird.
+    Schreibt in selbige Datei mit write(data).
+    Sollten mit read() neue Informationen gelesen werden, wird
+    cb_readevent ausgelöst.
+    """
     file = None
     cb_readevent = None
     last_write = None
@@ -78,10 +78,10 @@ class Device:
             self.last_write = data
         return 1
 
-"""
-Representant für den Staubsauger
-"""
 class Cleaner:
+    """
+    Representant für den Staubsauger
+    """
     RADIUS         = 20.0
     SPEED          = 10.0 # 1/s
     SENSOR_RANGE   = 1.0
@@ -115,10 +115,8 @@ class Cleaner:
                 point["sensor"] = Device(point["dev"], cb_sensor_dummy)
         self.engine = Device('/tmp/dev_engine', self.cb_engine)
 
-    """
-    Der einzige CallBack, von dem Daten erwartet werden
-    """
     def cb_engine(self, data):
+        """ Der einzige CallBack, von dem Daten erwartet werden """
         data = string.split(data, "=")
         self.set_position(time.time())
         if data[0] == "drive":
@@ -137,20 +135,18 @@ class Cleaner:
                 self.action = ((self.action ^ self.ACTION_TURN_RIGHT)
                                ^ self.ACTION_TURN_LEFT)
 
-    """
-    Setzt die eigene Position aus der Ursprungsposition, Ausrichtung und
-    Bewegung als neue Ausgangslage.
-    """
     def set_position(self, current_time):
+        """
+        Setzt die eigene Position aus der Ursprungsposition, Ausrichtung und
+        Bewegung als neue Ausgangslage.
+        """
         self.position    = self.get_cur_position(current_time)
         self.orientation = self.get_cur_orientation(current_time)
         self.starttime   = current_time
         return 1
 
-    """
-    Liefert die aktuelle Ausrichtung
-    """
     def get_cur_orientation(self, current_time):
+        """ Liefert die aktuelle Ausrichtung """
         diff = 0
 
         if self.action & (self.ACTION_TURN_LEFT | self.ACTION_TURN_RIGHT):
@@ -160,12 +156,12 @@ class Cleaner:
 
         return (self.orientation + diff) % 360
 
-    """
-    Berechnet die aktuelle Position aus Ursprungsposition, Ausrichtung und
-    Bewegung.
-    returns {"x": int, "y": int}
-    """
     def get_cur_position(self, current_time):
+        """
+        Berechnet die aktuelle Position aus Ursprungsposition, Ausrichtung und
+        Bewegung.
+        returns {"x": int, "y": int}
+        """
         new_pos = {"x": self.position["x"],
                    "y": self.position["y"]}
 
@@ -198,11 +194,11 @@ class Cleaner:
 
         return new_pos
 
-    """
-    Liefert eine Liste von Strecken:
-    (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
-    """
     def get_head_lines(self, current_time):
+        """
+        Liefert eine Liste von Strecken:
+        (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
+        """
         lines = []
         if self.head_down:
             orientation = self.get_cur_orientation(current_time)
@@ -224,10 +220,12 @@ class Cleaner:
         return lines
 
     def reset_head_status(self):
+        """ Setzt ded Sensorstatus auf das Maximum zurück """
         for sensor in self.head_form:
             sensor["status"] = self.SENSOR_RANGE
 
     def send_data(self, current_time):
+        """ Schreibt die Sensordaten und Bewegungscounter """
         for sensor in self.head_form:
             if sensor["status"] < self.SENSOR_RANGE:
                 sensor["sensor"].write("distance=%f" % sensor["status"])
@@ -241,18 +239,18 @@ class Cleaner:
             self.engine.write("turn=%f" % self.SPEED * (current_time
                                                         - self.starttime) * -1)
 
-"""
-Datenhalter für Rauminformationen
-"""
 class Room:
+    """
+    Datenhalter für Rauminformationen
+    """
     waypoints = []
 
-    """
-    Lädt eine Datei wp_file im Format x;y \n x;y
-    Die Strecken von einem Punkt zum nächsten bilden die Wände des Raumen, in
-    dem wir uns befinden.
-    """
     def __init__(self, wp_file):
+        """
+        Lädt eine Datei wp_file im Format x;y \n x;y
+        Die Strecken von einem Punkt zum nächsten bilden die Wände des Raumen,
+        in dem wir uns befinden.
+        """
         self.waypoints = []
         file = open(wp_file, "r")
         for line in file.readlines():
@@ -261,11 +259,11 @@ class Room:
                                   , "y": string.atoi(split[1]) })
         file.close()
 
-    """
-    Liefert eine Liste von Strecken:
-    (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
-    """
     def get_lines(self):
+        """
+        Liefert eine Liste von Strecken:
+        (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
+        """
         lines = []
         max   = len(self.waypoints)
         for i in range(len(self.waypoints)):
@@ -275,10 +273,8 @@ class Room:
             lines.append(line)
         return lines
 
-"""
-Physiksimulator für den Client
-"""
 class Simulator:
+    """ Physiksimulator für den Client """
     runit          = False
     client         = None
     room           = None
@@ -295,10 +291,10 @@ class Simulator:
         self.client        = Cleaner()
         self.room          = Room("../data/room.xy")
 
-    """
-    Die eigentliche Kollisionsprüfung. Löst das Senden von Sensordaten aus.
-    """
     def check(self, now):
+        """
+        Die eigentliche Kollisionsprüfung. Löst das Senden von Sensordaten aus.
+        """
         client_pos = self.client.get_cur_position(now)
         self.client.reset_head_status()
 
@@ -347,10 +343,10 @@ class Simulator:
         self.client.send_data(now)
         return 1
 
-    """
-    Ermittelt das Ausmaß des Raumes, erstellt das Fenster und malt die Wände
-    """
     def init_gui(self):
+        """
+        Ermittelt das Ausmaß des Raumes, erstellt das Fenster und malt die Wände
+        """
         for line in self.room.get_lines():
             for point in line:
                 if point["y"] > 0:
@@ -388,6 +384,7 @@ class Simulator:
         pygame.display.update()
 
     def update_gui(self, current_time):
+        """ Zeichnet die grafische Ausgabe erneut """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.runit = False
@@ -401,9 +398,8 @@ class Simulator:
                               1 )
         pygame.display.update()
 
-
-    # Main loop
     def run(self):
+        """ Main loop """
         self.init_gui()
         self.runit = True
         while self.runit:
