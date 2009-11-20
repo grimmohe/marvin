@@ -100,6 +100,7 @@ class Cleaner:
                     , {"x":  10.0, "y":  0.0, "sensor": None, "id": "",
                        "dev": "",               "status": 1.0} )
     head_down     = False
+    head          = None
     engine        = None
 
     position      = {"x": 20.0, "y": 20.0}
@@ -114,9 +115,10 @@ class Cleaner:
             if len(point["dev"]) > 0:
                 point["sensor"] = Device(point["dev"], cb_sensor_dummy)
         self.engine = Device('/tmp/dev_engine', self.cb_engine)
+        self.head   = Device('/tmp/dev_head', self.cb_head)
 
     def cb_engine(self, data):
-        """ Der einzige CallBack, von dem Daten erwartet werden """
+        """ Callback für die Motorsteuerung """
         data = string.split(data, "=")
         self.set_position(time.time())
         if data[0] == "drive":
@@ -134,6 +136,16 @@ class Cleaner:
             else:
                 self.action = ((self.action ^ self.ACTION_TURN_RIGHT)
                                ^ self.ACTION_TURN_LEFT)
+
+    def cb_head(self, data):
+        """ Callback für Saugkopf(/Head-)steuerung """
+        data = string.split(data, "=")
+        if data[0] == "move":
+            if data[1] == "up":
+                self.head_down = False
+            elif data[1] == "down":
+                self.head_down = True
+            self.head.write("position=%s" % ["up", "down"][self.head_down])
 
     def set_position(self, current_time):
         """
