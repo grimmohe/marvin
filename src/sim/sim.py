@@ -96,6 +96,7 @@ class cleaner:
                     , {"x":  10.0, "y":  0.0, "sensor": None, "id": "",
                        "dev": "",               "status": 1.0} )
     head_down     = False
+    engine        = None
 
     position      = {"x": 20.0, "y": 20.0}
     starttime     = None
@@ -108,6 +109,29 @@ class cleaner:
         for point in self.head_form:
             if len(point["dev"]) > 0:
                 point["sensor"] = device(point["dev"], cb_sensor_dummy)
+        self.engine = device('/tmp/dev_engine', self.cb_engine)
+
+    """
+    Der einzige CallBack, von dem Daten erwartet werden
+    """
+    def cb_engine(self, data):
+        data = string.split(data, "=")
+        self.set_position(time.time())
+        if data[0] == "drive":
+            if data[1] == "1":
+                self.action = (self.action | self.ACTION_DRIVE)
+            else:
+                self.action = (self.action ^ self.ACTION_DRIVE)
+        elif data[0] == "turn":
+            if data[1] == "left":
+                self.action = ((self.action | self.ACTION_TURN_LEFT)
+                               ^ self.ACTION_TURN_RIGHT)
+            elif data[1] == "right":
+                self.action = ((self.action | self.ACTION_TURN_RIGHT)
+                               ^ self.ACTION_TURN_LEFT)
+            else:
+                self.action = ((self.action ^ self.ACTION_TURN_RIGHT)
+                               ^ self.ACTION_TURN_LEFT)
 
     """
     Setzt die eigene Position aus der Ursprungsposition, Ausrichtung und
@@ -241,7 +265,6 @@ class room:
 Physiksimulator für den Client
 """
 class simulator:
-    engine         = None
     runit          = False
     client         = None
     room           = None
@@ -255,44 +278,12 @@ class simulator:
     gui_window     = None
 
     def __init__(self):
-        self.engine        = device('/tmp/dev_engine', self.cb_engine)
         self.client        = cleaner()
         self.room          = room("../data/room.xy")
 
     """
-    Der einzige CallBack, von dem Daten erwartet werden
+    Die eigentliche Kollisionsprüfung. Löst das Senden von Sensordaten aus.
     """
-    def cb_engine(self, data):
-        data = string.split(data, "=")
-        current_time = time.time()
-        if data[0] == "drive":
-            if data[1] == "1":
-                self.client.starttime = current_time
-                self.client.action    = (self.client.action
-                                         | self.client.ACTION_DRIVE)
-            else:
-                self.client.set_position(current_time)
-                self.client.action = (self.client.action
-                                      ^ self.client.ACTION_DRIVE)
-        elif data[0] == "turn":
-            self.client.set_position(current_time)
-            if data[1] == "left":
-                self.client.action = ((self.client.action
-                                       | self.client.ACTION_TURN_LEFT)
-                                      ^ self.client.ACTION_TURN_RIGHT)
-            elif data[1] == "right":
-                self.client.action = ((self.client.action
-                                       | self.client.ACTION_TURN_RIGHT)
-                                      ^ self.client.ACTION_TURN_LEFT)
-            else:
-                self.client.action = ((self.client.action
-                                       ^ self.client.ACTION_TURN_RIGHT)
-                                      ^ self.client.ACTION_TURN_LEFT)
-
-        elif data[0] == "shutdown\n":
-            self.runit = False
-
-    # Prüfen, ob Sensordaten zu senden sind
     def check(self, now):
         if not self.client.head_down:
             return 1
@@ -407,7 +398,7 @@ class simulator:
         while self.runit:
             timestamp = time.time()
             # Komunikationsdateien checken
-            self.engine.read()
+            self.client.engine.read()
             # Kollisionskontrolle
             self.check(timestamp)
             # GUI
