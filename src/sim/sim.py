@@ -69,11 +69,14 @@ class device:
         if len(data) > 0:
             self.cb_readevent(data)
             self.last_read = data
+        return 1
 
     def write(self, data):
-        os.write(self.file, data)
-        os.lseek(self.file, 0, os.SEEK_END)
-        self.last_write = data
+        if data <> self.last_write:
+            os.write(self.file, data)
+            os.lseek(self.file, 0, os.SEEK_END)
+            self.last_write = data
+        return 1
 
 """
 Representant für den Staubsauger
@@ -82,6 +85,7 @@ class cleaner:
     RADIUS         = 20.0
     SPEED          = 10.0 # 1/s
     SENSOR_RANGE   = 1.0
+    CURVE_RADIUS   = 360 / (2 * math.pi)
 
     ACTION_DRIVE      = 1
     ACTION_TURN_LEFT  = 2
@@ -165,6 +169,7 @@ class cleaner:
         new_pos = {"x": self.position["x"],
                    "y": self.position["y"]}
 
+        # TODO: Berechne eine Kurve mit self.CURVE_RADIUS
         if self.action & self.ACTION_DRIVE:
             distance = self.SPEED * (current_time - self.starttime)
 
@@ -222,10 +227,19 @@ class cleaner:
         for sensor in self.head_form:
             sensor["status"] = self.SENSOR_RANGE
 
-    def send_sensor_data(self):
+    def send_data(self, current_time):
         for sensor in self.head_form:
             if sensor["status"] < self.SENSOR_RANGE:
                 sensor["sensor"].write("distance=%f" % sensor["status"])
+        if self.action & self.ACTION_DRIVE:
+            self.engine.write("distance=%f" % self.SPEED * (current_time
+                                                            - self.starttime))
+        if self.action & self.ACTION_TURN_RIGHT:
+            self.engine.write("turn=%f" % self.SPEED * (current_time
+                                                        - self.starttime))
+        if self.action & self.ACTION_TURN_LEFT:
+            self.engine.write("turn=%f" % self.SPEED * (current_time
+                                                        - self.starttime) * -1)
 
 """
 Datenhalter für Rauminformationen
@@ -285,9 +299,6 @@ class simulator:
     Die eigentliche Kollisionsprüfung. Löst das Senden von Sensordaten aus.
     """
     def check(self, now):
-        if not self.client.head_down:
-            return 1
-
         client_pos = self.client.get_cur_position(now)
         self.client.reset_head_status()
 
@@ -333,7 +344,7 @@ class simulator:
                            get_lsl(line[1]["s"], alpha)):
                     sensor[0]["status"] = min(sensor[0]["status"],
                                               get_hl(line[1]["s"], alpha))
-        self.client.send_sensor_data()
+        self.client.send_data(now)
         return 1
 
     """
