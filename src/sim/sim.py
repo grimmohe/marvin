@@ -16,10 +16,10 @@ def get_n(point, m):
     """ Schnittpunkt (n) mit Y """
     return (point["y"] - m * point["x"])
 
-def get_s(point, x=0, y=0):
+def get_s(point1, point2={"x": 0, "y": 0}):
     """ Distanz von 2 Punkten """
-    return math.sqrt( math.pow(x - point["x"], 2)
-                      + math.pow(y - point["y"], 2) )
+    return math.sqrt( math.pow(point1["x"] - point2["x"], 2)
+                      + math.pow(point1["y"] - point2["y"], 2) )
 
 def get_hs(ss, angle):
     """ die Höhe auf dem Sensor """
@@ -328,10 +328,10 @@ class Simulator:
                 # Schnittwinkel alpha
                 alpha = math.degrees(abs(math.atan(m_line)
                                          - math.atan(sensor[0]["m"])))
-                sensor[0]["s"] = get_s(sensor[0], x_s, y_s)
-                sensor[1]["s"] = get_s(sensor[1], x_s, y_s)
-                line[0]["s"]   = get_s(line[0]  , x_s, y_s)
-                line[1]["s"]   = get_s(line[1]  , x_s, y_s)
+                sensor[0]["s"] = get_s(sensor[0], {"x": x_s, "y": y_s})
+                sensor[1]["s"] = get_s(sensor[1], {"x": x_s, "y": y_s})
+                line[0]["s"]   = get_s(line[0]  , {"x": x_s, "y": y_s})
+                line[1]["s"]   = get_s(line[1]  , {"x": x_s, "y": y_s})
 
                 if in_comp(line[0]["s"], line[1]["s"],
                            get_lss(sensor[0]["s"], alpha)):
