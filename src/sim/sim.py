@@ -383,16 +383,8 @@ class Simulator:
         pygame.init()
         self.gui_window = pygame.display.set_mode( ((self.gui_width * self.gui_factor) + 1,
                                                     (self.gui_height * self.gui_factor) + 1) )
+        pygame.display.set_caption("dust simulator")
         self.gui_window.fill((0, 0, 0))
-        # die Wände malen
-        for line in self.room.get_lines():
-            pygame.draw.line( self.gui_window,
-                              (0, 0, 255),
-                              ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
-                               (line[0]["y"] + self.gui_y_offset) * self.gui_factor),
-                              ((line[1]["x"] + self.gui_x_offset) * self.gui_factor,
-                               (line[1]["y"] + self.gui_y_offset) * self.gui_factor),
-                              1 )
         pygame.display.update()
 
     def update_gui(self, current_time):
@@ -400,14 +392,54 @@ class Simulator:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.runit = False
+        pos_alt = self.client.position
+        pos_neu = self.client.get_cur_position(current_time)
+        # Hintergrund füllen
+        self.gui_window.fill((0, 0, 0))
+        # die Wände zeichnen
+        for line in self.room.get_lines():
+            pygame.draw.line \
+                ( self.gui_window,
+                  (0, 0, 255),
+                  ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
+                   (line[0]["y"] + self.gui_y_offset) * self.gui_factor),
+                  ((line[1]["x"] + self.gui_x_offset) * self.gui_factor,
+                   (line[1]["y"] + self.gui_y_offset) * self.gui_factor),
+                  1 )
+        # die alte Position vor Beginn der Bewegung
+        pygame.draw.circle \
+            ( self.gui_window,
+              (100, 100, 100),
+              ((pos_alt["x"] + self.gui_x_offset) * self.gui_factor,
+               (pos_alt["y"] + self.gui_y_offset) * self.gui_factor),
+              self.client.RADIUS * self.gui_factor,
+              1 )
+        pygame.draw.line \
+            ( self.gui_window,
+              (100, 100, 100),
+              ((pos_alt["x"] + self.gui_x_offset) * self.gui_factor,
+               (pos_alt["y"] + self.gui_y_offset) * self.gui_factor),
+              ((pos_neu["x"] + self.gui_x_offset) * self.gui_factor,
+               (pos_neu["y"] + self.gui_y_offset) * self.gui_factor),
+              1 )
+        # die aktuelle Position
+        pygame.draw.circle \
+            ( self.gui_window,
+              (0, 200, 0),
+              ((pos_neu["x"] + self.gui_x_offset) * self.gui_factor,
+               (pos_neu["y"] + self.gui_y_offset) * self.gui_factor),
+              self.client.RADIUS * self.gui_factor,
+              1 )
+        # Saugkopf zeichnen
         for line in self.client.get_head_lines(current_time):
-            pygame.draw.line( self.gui_window,
-                              (0, 255, 0),
-                              ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
-                               (line[0]["y"] + self.gui_y_offset) * self.gui_factor),
-                              ((line[1]["x"] + self.gui_x_offset) * self.gui_factor,
-                               (line[1]["y"] + self.gui_y_offset) * self.gui_factor),
-                              1 )
+            pygame.draw.line \
+                ( self.gui_window,
+                  (0, 200, 0),
+                  ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
+                   (line[0]["y"] + self.gui_y_offset) * self.gui_factor),
+                  ((line[1]["x"] + self.gui_x_offset) * self.gui_factor,
+                   (line[1]["y"] + self.gui_y_offset) * self.gui_factor),
+                  1 )
         pygame.display.update()
 
     def run(self):
