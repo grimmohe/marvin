@@ -127,8 +127,8 @@ class Client:
         """ Main loop """
         active = 0
         while 1:
-            if active:
-                time.sleep(1)
+            time.sleep(1)
+            #TODO: Heartbeat senden
             # erstes/nächstes Assignment ausführen
             active = self.nextAssignment()
             # wenn nichts mehr zu tun ist
