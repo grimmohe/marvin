@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #coding=utf8
 
+import time
+
 class Assignment:
     """
     Representiert die aktuelle Aufgabe.
@@ -19,15 +21,16 @@ class Assignment:
     start_event = None
     stop_event  = None
 
-    def __init__(self):
-        pass
+    startAssignment = None
+
+    def __init__(self, startAssignment):
+        self.startAssignment = startAssignment
 
     def start(self):
         """ aktiviert das Assignment """
         self.active = True
         if self.start_event <> None:
             self.start_event()
-        #TODO: keep everyone waiting
 
     def process(self):
         """ verarbeitet neue Events """
@@ -73,9 +76,8 @@ class Client:
     """
     Die Zusammenfassung alle Instrumente und Main-Klasse.
     """
-
     transmission_id = None            # Identifikation der letzten Kommunikation
-    assignment_id   = None            # Letztes ausgeführtes Assignment
+    assignment      = None            # Letztes ausgeführtes Assignment
     assignments     = []
     actionlog       = None
 
@@ -83,18 +85,20 @@ class Client:
         self.actionlog = Actionlog()
 
     def getNextAssignments(self):
-        """ holt neue Aufgabn vom Server """
-        self.assignment_id = None
+        """ holt neue Aufgaben vom Server """
+        self.assignment    = None
         self.assignments   = []
         return 1
 
     def nextAssignment(self):
         """ aktiviert das nächste Assignment """
-        activated = False
-        for a in self.assignments:
-            if self.assignment_id == None | self.assignment_id < a.id:
-                activated = self.startAssignment(a.id)
-                break
+        activated = (self.assignment <> None
+                     & self.assignment.activ)
+        if not activated:
+            for a in self.assignments:
+                if self.assignment == None | self.assignment.id < a.id:
+                    activated = self.startAssignment(a.id)
+                    break
         return activated
 
     def startAssignment(self, id):
@@ -103,8 +107,8 @@ class Client:
         a = next((a for a in self.assignments if a.id == id), None)
         if a <> None:
             found = True
-            self.assignment_id = a.id
-            a.start()
+            self.assignment = a
+            self.assignment.start()
         return found
 
     def sendActionlog(self):
@@ -123,6 +127,8 @@ class Client:
         """ Main loop """
         active = 0
         while 1:
+            if active:
+                time.sleep(1)
             # erstes/nächstes Assignment ausführen
             active = self.nextAssignment()
             # wenn nichts mehr zu tun ist
