@@ -32,7 +32,7 @@ class Assignment:
         if self.start_event <> None:
             self.start_event()
 
-    def process(self):
+    def process(self, states):
         """ verarbeitet neue Events """
         if not self.active:
             return 0
@@ -62,8 +62,21 @@ class State:
     Ist der Saugkopft unten?
     Was sagen die Sensoren?
     """
+    dict = {}
+
     def __init__(self):
-        pass
+        self.dict = {}
+
+    def update(self, key, value):
+        """ Erstellt/Aktualisiert einen Wert """
+        self.dict[key] = value
+
+    def getValue(self, key):
+        """ Gibt den value zu key """
+        value = None
+        if self.dict.has_key(key):
+            value = self.dict[key]
+        return value
 
 class Actionlog:
     """
@@ -80,9 +93,11 @@ class Client:
     assignment      = None            # Letztes ausgeführtes Assignment
     assignments     = []
     actionlog       = None
+    states          = None
 
     def __init__(self):
         self.actionlog = Actionlog()
+        self.states    = State()
 
     def getNextAssignments(self):
         """ holt neue Aufgaben vom Server """
