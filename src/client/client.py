@@ -154,7 +154,7 @@ class Client:
             # Verbindugn zum Server aufbauen,
             # Bericht an den Server senden und neue Aufgaben holen
             if not active:
-                self.conntect()
+                self.connect()
                 self.sendActionlog()
                 self.getNextAssignments()
 
