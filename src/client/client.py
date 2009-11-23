@@ -107,8 +107,10 @@ class Client:
 
     def nextAssignment(self):
         """ aktiviert das nächste Assignment """
-        activated = (self.assignment <> None
-                     & self.assignment.activ)
+        activated = False
+        if self.assignment <> None:
+            activated = self.assignment.activ
+        
         if not activated:
             for a in self.assignments:
                 if self.assignment == None | self.assignment.id < a.id:
