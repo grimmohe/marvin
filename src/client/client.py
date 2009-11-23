@@ -145,6 +145,8 @@ class Client:
         active = 0
         while 1:
             time.sleep(1)
+            if not (time.time() % 2):
+                print "beat"
             #TODO: Heartbeat senden
             # erstes/nächstes Assignment ausführen
             active = self.nextAssignment()
@@ -160,8 +162,11 @@ class Client:
         self.disconnect()
 
 if __name__ == '__main__':
+    print "init client"
     client = Client()
+    print "run client"
     client.run()
+    print "done"
 
 
 
