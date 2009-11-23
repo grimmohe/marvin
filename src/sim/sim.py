@@ -264,13 +264,21 @@ class Room:
         in dem wir uns befinden.
         """
         self.waypoints = []
+        self.loaded = False
         file = open(wp_file, "r")
+        if not file:
+            print "can't open file: ".wp_file
+        
         for line in file.readlines():
             split = string.split(line, ";")
             self.waypoints.append({ "x": string.atoi(split[0])
                                   , "y": string.atoi(split[1]) })
         file.close()
-
+        self.loaded = True
+    
+    def isValid(self):
+        return self.loaded
+    
     def get_lines(self):
         """
         Liefert eine Liste von Strecken:
@@ -302,6 +310,11 @@ class Simulator:
     def __init__(self):
         self.client        = Cleaner()
         self.room          = Room("../data/room.xy")
+
+    def isValid(self):
+        if not self.room.isValid():
+            return False
+        return True
 
     def check(self, now):
         """
@@ -460,8 +473,11 @@ class Simulator:
 # Und lauf!
 if __name__ == '__main__':
     mysim = Simulator()
-    mysim.run()
-    print "It's done!"
+    if not mysim.isValid():
+        print "sim is not valid"
+    else:
+        mysim.run()
+        print "It's done!"
 
 
 
