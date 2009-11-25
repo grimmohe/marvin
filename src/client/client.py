@@ -2,6 +2,7 @@
 #coding=utf8
 
 import time
+import socket
 
 class Assignment:
     """
@@ -85,6 +86,27 @@ class Actionlog:
     def __init__(self):
         pass
 
+class Connector:
+    """
+    Stellt die Verbindung zum Server her
+    """
+    def __init__(self):
+        self.host = "127.0.0.1"
+        self.port = "29876"
+        self.connected = False
+        self.socket = None
+
+    def connect(self):
+        if not self.connected:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((self.host, self.port))
+            self.connected = True
+
+    def disconnect(self):
+        if self.connected:
+            self.socket.close()
+            self.connected = False
+
 class Client:
     """
     Die Zusammenfassung alle Instrumente und Main-Klasse.
@@ -94,23 +116,34 @@ class Client:
     assignments     = []
     actionlog       = None
     states          = None
+    connection      = None
 
     def __init__(self):
         self.actionlog = Actionlog()
         self.states    = State()
+        self.connection = Connector()
+
+    def __del__(self):
+        if self.connection <> None:
+            self.connection.disconnect()
 
     def getNextAssignments(self):
         """ holt neue Aufgaben vom Server """
         self.assignment    = None
         self.assignments   = []
-        return 1
+        self.connection.socket.send("Gimme")
+        data = self.connection.socket.resv(4096)
+        self.connection.socket.send("KILL")
+        # TODO: parse data
+        print data
+        return 0
 
     def nextAssignment(self):
         """ aktiviert das nächste Assignment """
         activated = False
         if self.assignment <> None:
             activated = self.assignment.activ
-        
+
         if not activated:
             for a in self.assignments:
                 if self.assignment == None | self.assignment.id < a.id:
@@ -132,21 +165,11 @@ class Client:
         """ unterrichtet den Server """
         return 1
 
-    def connect(self):
-        """ Verbindung zum Server aufbauen """
-        return 1
-
-    def disconnect(self):
-        """ Verbindung zum Server trennen """
-        return 1
-
     def run(self):
         """ Main loop """
         active = 0
         while 1:
             time.sleep(1)
-            if not (time.time() % 2):
-                print "beat"
             #TODO: Heartbeat senden
             # erstes/nächstes Assignment ausführen
             active = self.nextAssignment()
@@ -154,12 +177,12 @@ class Client:
             # Verbindugn zum Server aufbauen,
             # Bericht an den Server senden und neue Aufgaben holen
             if not active:
-                self.connect()
+                self.connection.connect()
                 self.sendActionlog()
-                self.getNextAssignments()
+                if not self.getNextAssignments():
+                    return 0
 
         # Serververbindung trennen
-        self.disconnect()
 
 if __name__ == '__main__':
     print "init client"

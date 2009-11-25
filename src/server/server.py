@@ -42,12 +42,8 @@ class ServCmd:
         print cmd
         self.serverCmd(cmd)
         if self.processing:
-            proc = os.popen(cmd)
-            outp = proc.read()
-            if outp:
-                self.client.send(outp)
-            else:
-                self.client.send('good')
+            if cmd == "Gimme":
+                self.client.send("DaHaste")
 
     def serverCmd(self, cmd):
         cmd = cmd.strip()
