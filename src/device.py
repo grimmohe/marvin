@@ -25,17 +25,18 @@ class Device:
         self.filename = filename
 
         # Neuen Inotifier erzeugen
-        self.wm = WatchManager()
-        self.fileevent = FileEvent()
+        self.wm = pyinotify.WatchManager()
+        fileevent = FileEvent()
         fileevent.cb_modify = self.read
-        self.notifier = ThreadedNotifier(wm, fileevent)
+        self.notifier = pyinotify.ThreadedNotifier(self.wm, fileevent)
         self.notifier.start()
-        self.wdd = self.wm.add_watch(self.file, watchmask, rec=True)
-        self.file = os.open(filename, os.O_CREAT | os.O_RDWR | os.O_SYNC)
+        self.wdd = self.wm.add_watch(self.filename, self.watchmask, rec=True)
+        self.file = os.open(self.filename, os.O_CREAT | os.O_RDWR | os.O_SYNC)
 
     def __del__(self):
-        self.rm_watch(self.wdd.values())
+        self.wm.rm_watch(self.wdd.values())
         self.notifier.stop()
+        print "device stop"
 
     def read(self):
         data = os.read(self.file, 80)

@@ -84,9 +84,15 @@ class Cleaner:
             pass
         for point in self.head_form:
             if len(point["dev"]) > 0:
-                point["sensor"] = Device(point["dev"], cb_sensor_dummy)
-        self.engine = Device('/tmp/dev_engine', self.cb_engine)
-        self.head   = Device('/tmp/dev_head', self.cb_head)
+                point["sensor"] = device.Device(point["dev"], cb_sensor_dummy)
+        self.engine = device.Device('/tmp/dev_engine', self.cb_engine)
+        self.head   = device.Device('/tmp/dev_head', self.cb_head)
+
+    def __del__(self):
+        del self.head
+        del self.engine
+        for point in self.head_form:
+            del point["sensor"]
 
     def cb_engine(self, data):
         """ Callback für die Motorsteuerung """
@@ -280,7 +286,10 @@ class Simulator:
 
     def __init__(self):
         self.client        = Cleaner()
-        self.room          = Room("../data/room.xy")
+        self.room          = Room("data/room.xy")
+
+    def __del__(self):
+        print "sim stop"
 
     def isValid(self):
         if not self.room.isValid():
@@ -446,7 +455,10 @@ if __name__ == '__main__':
         print "sim is not valid"
     else:
         mysim.run()
+        mysim = None
         print "It's done!"
+        #TODO: quit() sollte nicht notwendig sein
+        quit()
 
 
 
