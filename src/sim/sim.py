@@ -6,6 +6,7 @@ import time
 import string
 import math
 import pygame
+import device
 
 def get_m(point1, point2={"x": 0, "y": 0}):
     """ Steigungsfaktor """
@@ -47,36 +48,6 @@ def turn_point(point, degrees):
     alpha = math.atan(get_m(point)) + math.radians(degrees)
     return { "x": s * math.sin(alpha),
              "y": s * math.cos(alpha) }
-
-class Device:
-    """
-    Beobachtet eine Datei, indem regelmäßig read() aufgerufen wird.
-    Schreibt in selbige Datei mit write(data).
-    Sollten mit read() neue Informationen gelesen werden, wird
-    cb_readevent ausgelöst.
-    """
-    file = None
-    cb_readevent = None
-    last_write = None
-    last_read = None
-
-    def __init__(self, filename, cb_event):
-        self.file = os.open(filename, os.O_CREAT | os.O_RDWR | os.O_SYNC)
-        self.cb_readevent = cb_event
-
-    def read(self):
-        data = os.read(self.file, 80)
-        if len(data) > 0:
-            self.cb_readevent(data)
-            self.last_read = data
-        return 1
-
-    def write(self, data):
-        if data <> self.last_write:
-            os.write(self.file, data)
-            os.lseek(self.file, 0, os.SEEK_END)
-            self.last_write = data
-        return 1
 
 class Cleaner:
     """
@@ -268,17 +239,17 @@ class Room:
         file = open(wp_file, "r")
         if not file:
             print "can't open file: ".wp_file
-        
+
         for line in file.readlines():
             split = string.split(line, ";")
             self.waypoints.append({ "x": string.atoi(split[0])
                                   , "y": string.atoi(split[1]) })
         file.close()
         self.loaded = True
-    
+
     def isValid(self):
         return self.loaded
-    
+
     def get_lines(self):
         """
         Liefert eine Liste von Strecken:
@@ -461,8 +432,6 @@ class Simulator:
         self.runit = True
         while self.runit:
             timestamp = time.time()
-            # Komunikationsdateien checken
-            self.client.engine.read()
             # Kollisionskontrolle
             self.check(timestamp)
             # GUI
