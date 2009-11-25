@@ -3,6 +3,7 @@
 
 import time
 import socket
+import xml.sax
 
 class Assignment:
     """
@@ -106,6 +107,42 @@ class Connector:
         if self.connected:
             self.socket.close()
             self.connected = False
+
+class XmlHandler(xml.sax.ContentHandler):
+    """
+    Handles XML.SAX events
+    """
+
+    def __init__(self):
+        pass
+
+    def startDocument(self):
+        pass
+
+    def endDocument(self):
+        pass
+
+    def startElement(self,name,attrs):
+        print "start", name
+        for key,value in attrs.items():
+            print key,value
+
+    def endElement(self,name):
+        print "end", name
+
+    def startElementNS(self,name,qname,attrs):
+        print "start ns", name, qname
+        for key,value in attrs.items():
+            print key,value
+
+    def endElementNS(self,name,qname):
+        print "end", name, qname
+
+    def characters(self,data):
+        print "characters", data
+
+    def ignorableWhitespace(self):
+        print "ignorableWhitespace"
 
 class Client:
     """
