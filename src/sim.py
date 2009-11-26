@@ -89,10 +89,14 @@ class Cleaner:
         self.head   = device.Device('/tmp/dev_head', self.cb_head)
 
     def __del__(self):
+        self.head.close()
         del self.head
+        self.engine.close()
         del self.engine
         for point in self.head_form:
-            del point["sensor"]
+            if point["sensor"] <> None:
+                point["sensor"].close()
+                del point["sensor"]
 
     def cb_engine(self, data):
         """ Callback für die Motorsteuerung """
@@ -458,7 +462,6 @@ if __name__ == '__main__':
         mysim = None
         print "It's done!"
         #TODO: quit() sollte nicht notwendig sein
-        quit()
 
 
 

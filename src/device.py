@@ -26,9 +26,9 @@ class Device:
 
         # Neuen Inotifier erzeugen
         self.wm = pyinotify.WatchManager()
-        fileevent = FileEvent()
-        fileevent.cb_modify = self.read
-        self.notifier = pyinotify.ThreadedNotifier(self.wm, fileevent)
+        self.fileevent = FileEvent()
+        self.fileevent.cb_modify = self.read
+        self.notifier = pyinotify.ThreadedNotifier(self.wm, self.fileevent)
         self.notifier.start()
         self.wdd = self.wm.add_watch(self.filename, self.watchmask, rec=True)
         self.file = os.open(self.filename, os.O_CREAT | os.O_RDWR | os.O_SYNC)
@@ -51,6 +51,9 @@ class Device:
             os.lseek(self.file, 0, os.SEEK_END)
             self.last_write = data
         return 1
+    
+    def close(self):
+        self.fileevent.cb_modify = None
 
 class FileEvent(pyinotify.ProcessEvent):
 
