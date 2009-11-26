@@ -75,12 +75,12 @@ class Cleaner:
     engine        = None
 
     position      = {"x": 20.0, "y": 20.0}
-    starttime     = None
+    starttime     = 0.0
     action        = 0
     orientation   = 0.0
 
     def __init__(self):
-        def cb_sensor_dummy(): # auf diesen Devices wird nur gesendet
+        def cb_sensor_dummy(data): # auf diesen Devices wird nur gesendet
             pass
         for point in self.head_form:
             if len(point["dev"]) > 0:
@@ -90,22 +90,25 @@ class Cleaner:
 
     def __del__(self):
         self.head.close()
-        del self.head
+        self.head = None
         self.engine.close()
-        del self.engine
+        self.engine = None
         for point in self.head_form:
             if point["sensor"] <> None:
                 point["sensor"].close()
-                del point["sensor"]
+                point["sensor"] = None
 
     def cb_engine(self, data):
         """ Callback für die Motorsteuerung """
         data = string.split(data, "=")
         self.set_position(time.time())
+        print "engine does: ", data
         if data[0] == "drive":
-            if data[1] == "1":
+            if data[1] == "1\n":
+                print "drive 1"
                 self.action = (self.action | self.ACTION_DRIVE)
             else:
+                print "drive n"
                 self.action = (self.action ^ self.ACTION_DRIVE)
         elif data[0] == "turn":
             if data[1] == "left":
@@ -121,6 +124,7 @@ class Cleaner:
     def cb_head(self, data):
         """ Callback für Saugkopf(/Head-)steuerung """
         data = string.split(data, "=")
+        print "head does: ", data
         if data[0] == "move":
             if data[1] == "up":
                 self.head_down = False
@@ -223,13 +227,13 @@ class Cleaner:
             if sensor["status"] < self.SENSOR_RANGE:
                 sensor["sensor"].write("distance=%f" % sensor["status"])
         if self.action & self.ACTION_DRIVE:
-            self.engine.write("distance=%f" % self.SPEED * (current_time
+            self.engine.write("distance=%f" % self.SPEED * int(current_time
                                                             - self.starttime))
         if self.action & self.ACTION_TURN_RIGHT:
-            self.engine.write("turn=%f" % self.SPEED * (current_time
-                                                        - self.starttime))
+            self.engine.write("turn=%f" % int(self.SPEED) * int(current_time
+                                                        - self.starttime ))
         if self.action & self.ACTION_TURN_LEFT:
-            self.engine.write("turn=%f" % self.SPEED * (current_time
+            self.engine.write("turn=%f" % self.SPEED * int(current_time
                                                         - self.starttime) * -1)
 
 class Room:
@@ -462,6 +466,6 @@ if __name__ == '__main__':
         mysim = None
         print "It's done!"
         #TODO: quit() sollte nicht notwendig sein
-
+    quit()
 
 
