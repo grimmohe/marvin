@@ -45,9 +45,22 @@ def in_comp(a1, a2, b):
 def turn_point(point, degrees):
     """ Dreht einen Punkt auf der Systemachse """
     s = get_s(point)
-    alpha = math.atan(get_m(point)) + math.radians(degrees)
+    alpha = (math.acos(min(1, abs(get_m(point)))) + math.radians(degrees)) % math.radians(360)
+    if point["x"] < 0:
+        alpha += math.radians(180)
+    #rint s, math.degrees(alpha), get_m(point)
     return { "x": s * math.sin(alpha),
              "y": s * math.cos(alpha) }
+""""
+    deg = math.degrees(alpha)
+
+    if deg >= 0 and deg < 90:
+        return { "x": s * math.cos(alpha),
+                 "y": s * math.sin(alpha) }
+    elif deg >= 90 and deg < 180:
+        return { "x": s * math.sin(alpha),
+                 "y": s * math.cos(alpha) }
+"""
 
 class Cleaner:
     """
