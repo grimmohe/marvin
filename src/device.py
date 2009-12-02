@@ -3,6 +3,7 @@
 
 import os
 import pyinotify
+import string
 
 class Device:
     """
@@ -14,8 +15,6 @@ class Device:
 
     filename = None
     cb_readevent = None
-    last_write = None
-    last_read = None
     wm = None
     wdd = None
     file = None
@@ -23,6 +22,7 @@ class Device:
 
     def __init__(self, filename, cb_event):
         self.filename = filename
+        self.file = open(self.filename, "a+")
         self.cb_readevent = cb_event
 
         # Neuen Inotifier erzeugen
@@ -40,34 +40,22 @@ class Device:
 
     def read(self):
         print "device is reading"
-        self.file = os.open(self.filename, os.O_CREAT | os.O_RDONLY | os.O_SYNC)
-        data = os.read(self.file, 80)
-        if len(data) > 0: 
-            if self.cb_readevent == None:
-                print "device: cb_readevent is None"
-            else:
-                self.cb_readevent(data)
-                self.last_read = data
-        else:
-            print "device: readed message has 0 length"
-            
-        self.file = None
-
+        lines = self.file.readlines()
+        if len(lines) > 0:
+            self.file.seek(0)
+            self.file.truncate()
+        for data in lines:
+            self.cb_readevent(string.strip(data, "\n"))
         return 1
 
     def write(self, data):
-        if data <> self.last_write:
-            self.file = os.open(self.filename, os.O_CREAT | os.O_WRONLY | os.O_SYNC)
-            os.write(self.file, data)
-            os.lseek(self.file, 0, os.SEEK_END)
-            self.last_write = data
-            self.file = None
+        self.file.write(data + "\n")
         return 1
-    
+
     def close(self):
         self.fileevent.cb_modify = None
         self.cb_readevent = None
-        self.file = None
+        self.file.close()
 
 class FileEvent(pyinotify.ProcessEvent):
 
@@ -75,8 +63,8 @@ class FileEvent(pyinotify.ProcessEvent):
     lastevent = None
 
     def process_IN_MODIFY(self, event):
-        if self.lastevent <> event: 
+        if self.lastevent <> event:
             self.lastevent = event
             self.cb_modify()
-        
+
 
