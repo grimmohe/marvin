@@ -213,6 +213,7 @@ class Cleaner:
                     sensor[1]["y"] += cur_pos["y"]
                     sensor[0]["m"] = get_m(sensor[0], sensor[1])
                     sensor[0]["n"] = get_n(sensor[0], sensor[0]["m"])
+                    sensor[0]["o"] = self.head_form[i]
                     lines.append(sensor)
         return lines
 
@@ -327,7 +328,7 @@ class Simulator:
 
                 # jetzt der kürzeste Weg der Eckpunkte zur anderen Gerade
                 # Schnittwinkel alpha
-                alpha = math.degrees(abs(math.atan(m_line)
+                alpha = math.degrees(abs(math.atan(line[0]["m"])
                                          - math.atan(sensor[0]["m"])))
                 sensor[0]["s"] = get_s(sensor[0], {"x": x_s, "y": y_s})
                 sensor[1]["s"] = get_s(sensor[1], {"x": x_s, "y": y_s})
@@ -336,22 +337,22 @@ class Simulator:
 
                 if in_comp(line[0]["s"], line[1]["s"],
                            get_lss(sensor[0]["s"], alpha)):
-                    sensor[0]["status"] = min(sensor[0]["status"],
+                    sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
                                               get_hs(sensor[0]["s"], alpha))
 
                 if in_comp(line[0]["s"], line[1]["s"],
                            get_lss(sensor[1]["s"], alpha)):
-                    sensor[0]["status"] = min(sensor[0]["status"],
+                    sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
                                               get_hs(sensor[1]["s"], alpha))
 
                 if in_comp(sensor[0]["s"], sensor[1]["s"],
                            get_lsl(line[0]["s"], alpha)):
-                    sensor[0]["status"] = min(sensor[0]["status"],
+                    sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
                                               get_hl(line[0]["s"], alpha))
 
                 if in_comp(sensor[0]["s"], sensor[1]["s"],
                            get_lsl(line[1]["s"], alpha)):
-                    sensor[0]["status"] = min(sensor[0]["status"],
+                    sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
                                               get_hl(line[1]["s"], alpha))
         self.client.send_data(now)
         return 1
