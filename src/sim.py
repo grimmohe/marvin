@@ -44,23 +44,20 @@ def in_comp(a1, a2, b):
 
 def turn_point(point, degrees):
     """ Dreht einen Punkt auf der Systemachse """
-    s = get_s(point)
-    alpha = (math.acos(min(1, abs(get_m(point)))) + math.radians(degrees)) % math.radians(360)
+    factor = get_s(point)
+    alpha_x = math.asin(abs(point["x"]) / factor)
+    alpha_y = math.asin(abs(point["y"]) / factor)
+    if point["y"] < 0:
+        alpha_x += math.radians(90)
+        alpha_y += math.radians(180)
     if point["x"] < 0:
-        alpha += math.radians(180)
-    #rint s, math.degrees(alpha), get_m(point)
-    return { "x": s * math.sin(alpha),
-             "y": s * math.cos(alpha) }
-""""
-    deg = math.degrees(alpha)
-
-    if deg >= 0 and deg < 90:
-        return { "x": s * math.cos(alpha),
-                 "y": s * math.sin(alpha) }
-    elif deg >= 90 and deg < 180:
-        return { "x": s * math.sin(alpha),
-                 "y": s * math.cos(alpha) }
-"""
+        alpha_x += math.radians(180)
+        alpha_y += math.radians(90)
+    print factor, math.degrees(alpha_x), math.degrees(alpha_y)
+    alpha_x = alpha_x + math.radians(degrees)
+    alpha_y = alpha_y + math.radians(degrees)
+    return { "x": math.sin(alpha_x) * factor,
+             "y": math.sin(alpha_y) * factor }
 
 class Cleaner:
     """
@@ -75,13 +72,13 @@ class Cleaner:
     ACTION_TURN_LEFT  = 2
     ACTION_TURN_RIGHT = 4
 
-    head_form     = ( {"x": -10.0, "y":  0.0, "sensor": None, "id": "left",
+    head_form     = ( {"x": -20.0, "y":  0.0, "sensor": None, "id": "left",
                        "dev": "/tmp/dev_left",  "status": 1.0}
-                    , {"x": -10.0, "y": 10.0, "sensor": None, "id": "front",
+                    , {"x": -20.0, "y": 20.0, "sensor": None, "id": "front",
                        "dev": "/tmp/dev_front", "status": 1.0}
-                    , {"x":  10.0, "y": 10.0, "sensor": None, "id": "right",
+                    , {"x":  20.0, "y": 20.0, "sensor": None, "id": "right",
                        "dev": "/tmp/dev_right", "status": 1.0}
-                    , {"x":  10.0, "y":  0.0, "sensor": None, "id": "",
+                    , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
                        "dev": "",               "status": 1.0} )
     head_down     = False
     head          = None
@@ -332,12 +329,16 @@ class Simulator:
             for sensor in self.client.get_head_lines(now):
                 # Schnittpunkt
                 # x = n1 - n2 / m2 - m1
-                x_s = ( (line[0]["n"] - sensor[0]["n"])
-                        / (sensor[0]["m"] - line[0]["m"]) )
+                x_s = 0
+                m = (sensor[0]["m"] - line[0]["m"])
+                if m <> 0:
+                    x_s = (line[0]["n"] - sensor[0]["n"]) / m
                 # y = ((m2 * n1) - (m1 * n2)) / (m2 - m1)
-                y_s = ( (sensor[0]["m"] * line[0]["n"]
-                         - sensor[0]["m"] * sensor[0]["n"])
-                      / (sensor[0]["m"] - line[0]["m"]) )
+                y_s = 0
+                m = (sensor[0]["m"] - line[0]["m"])
+                if m <> 0:
+                    y_s = (sensor[0]["m"] * line[0]["n"]
+                           - sensor[0]["m"] * sensor[0]["n"]) / m
 
                 # jetzt der kürzeste Weg der Eckpunkte zur anderen Gerade
                 # Schnittwinkel alpha
