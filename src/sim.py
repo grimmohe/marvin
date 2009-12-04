@@ -46,18 +46,22 @@ def turn_point(point, degrees):
     """ Dreht einen Punkt auf der Systemachse """
     factor = get_s(point)
     alpha_x = math.asin(abs(point["x"]) / factor)
-    alpha_y = math.asin(abs(point["y"]) / factor)
-    if point["y"] < 0:
+    alpha_y = math.acos(abs(point["y"]) / factor)
+    if (point["x"] < 0) <> (point["y"] < 0):
         alpha_x += math.radians(90)
-        alpha_y += math.radians(180)
     if point["x"] < 0:
         alpha_x += math.radians(180)
+    if (point["x"] < 0) and (point["y"] > 0):
+        alpha_y += math.radians(270)
+    elif (point["x"] < 0) and (point["y"] < 0):
+        alpha_y += math.radians(180)
+    elif point["y"] < 0:
         alpha_y += math.radians(90)
     print factor, math.degrees(alpha_x), math.degrees(alpha_y)
     alpha_x = alpha_x + math.radians(degrees)
     alpha_y = alpha_y + math.radians(degrees)
     return { "x": math.sin(alpha_x) * factor,
-             "y": math.sin(alpha_y) * factor }
+             "y": math.cos(alpha_y) * factor }
 
 class Cleaner:
     """
