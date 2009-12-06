@@ -45,23 +45,18 @@ def in_comp(a1, a2, b):
 def turn_point(point, degrees):
     """ Dreht einen Punkt auf der Systemachse """
     factor = get_s(point)
-    alpha_x = math.asin(abs(point["x"]) / factor)
-    alpha_y = math.acos(abs(point["y"]) / factor)
-    if (point["x"] < 0) <> (point["y"] < 0):
-        alpha_x += math.radians(90)
-    if point["x"] < 0:
-        alpha_x += math.radians(180)
-    if (point["x"] < 0) and (point["y"] > 0):
-        alpha_y += math.radians(270)
-    elif (point["x"] < 0) and (point["y"] < 0):
-        alpha_y += math.radians(180)
-    elif point["y"] < 0:
-        alpha_y += math.radians(90)
-    print factor, math.degrees(alpha_x), math.degrees(alpha_y)
-    alpha_x = alpha_x + math.radians(degrees)
-    alpha_y = alpha_y + math.radians(degrees)
-    return { "x": math.sin(alpha_x) * factor,
-             "y": math.cos(alpha_y) * factor }
+    alpha = math.asin(abs(point["x"]) / factor)
+    if point["y"] < 0:
+        if point["x"] > 0:
+            alpha = math.radians(180) - alpha
+        else:
+            alpha += math.radians(180)
+    elif point["x"] < 0:
+        alpha = math.radians(360) - alpha
+    print math.degrees(alpha)
+    alpha += math.radians(degrees)
+    return { "x": math.sin(alpha) * factor,
+             "y": math.cos(alpha) * factor }
 
 class Cleaner:
     """
