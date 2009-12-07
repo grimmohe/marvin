@@ -8,10 +8,36 @@ import math
 import pygame
 import device
 
-def get_m(point1, point2={"x": 0, "y": 0}):
+def get_angle(point1, point2={"x": 0, "y": 0}):
+    """ git den Winkel einer Strecke in Radianten """
+    x = point1["x"] - point2["x"]
+    y = point1["y"] - point2["y"]
+    factor = get_s({"x": x, "y": y})
+    alpha = math.asin(abs(x) / factor)
+    if y < 0:
+        if x > 0:
+            alpha = math.radians(180) - alpha
+        else:
+            alpha += math.radians(180)
+    elif x < 0:
+        alpha = math.radians(360) - alpha
+    return alpha + math.radians(360) % math.radians(360) #immer positiver Winkel
+
+def get_cutting_point(point1, point2):
+    """ Schnittpunkt von 2 Geraden """
+    out = None
+    m1 = get_m(point1)
+    m2 = get_m(point2)
+    if m1 <> m2:
+        n1 = get_n(point1, m1)
+        n2 = get_n(point2, m2)
+        out = {"x": (n1 - n2) / (m2 - m1),
+               "y": ((m2 * n1) - (m1 * n2)) / (m2 - m1)}
+    return out
+
+def get_m(point):
     """ Steigungsfaktor """
-    return ( (point1["y"] - point2["y"])
-             / (point1["x"] - point2["x"] + 0.000001) )
+    return math.tan(math.radians(90) - (point["a"] % math.radians(180)))
 
 def get_n(point, m):
     """ Schnittpunkt (n) mit Y """
@@ -24,19 +50,19 @@ def get_s(point1, point2={"x": 0, "y": 0}):
 
 def get_hs(ss, angle):
     """ die Höhe auf dem Sensor """
-    return math.tan(math.radians(angle)) * ss
+    return math.tan(angle) * ss
 
 def get_hl(sl, angle):
     """ die Höhe auf der Linie """
-    return math.sin(math.radians(angle)) * sl
+    return math.sin(angle) * sl
 
 def get_lss(b, angle):
     """ Schnittpunkt von h auf linie """
-    return b / math.cos(math.radians(angle))
+    return b / math.cos(angle)
 
 def get_lsl(c, angle):
     """ wie lss, nur von s von lien ausgehend """
-    return math.cos(math.radians(angle)) * c
+    return math.cos(angle) * c
 
 def in_comp(a1, a2, b):
     """ Vergleicht, ob b zwischen a1/a2 liegt """
@@ -45,16 +71,7 @@ def in_comp(a1, a2, b):
 def turn_point(point, degrees):
     """ Dreht einen Punkt auf der Systemachse """
     factor = get_s(point)
-    alpha = math.asin(abs(point["x"]) / factor)
-    if point["y"] < 0:
-        if point["x"] > 0:
-            alpha = math.radians(180) - alpha
-        else:
-            alpha += math.radians(180)
-    elif point["x"] < 0:
-        alpha = math.radians(360) - alpha
-    print math.degrees(alpha)
-    alpha += math.radians(degrees)
+    alpha = get_angle(point) + math.radians(degrees)
     return { "x": math.sin(alpha) * factor,
              "y": math.cos(alpha) * factor }
 
@@ -197,13 +214,12 @@ class Cleaner:
             elif part == 3:
                 new_pos["x"] += b
                 new_pos["y"] += a
-
         return new_pos
 
     def get_head_lines(self, current_time):
         """
         Liefert eine Liste von Strecken:
-        (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
+        (({"x": int, "y": int, "a": int}, {"x": int, "y": int}), ...)
         """
         lines = []
         if self.head_down:
@@ -220,8 +236,7 @@ class Cleaner:
                     sensor[0]["y"] += cur_pos["y"]
                     sensor[1]["x"] += cur_pos["x"]
                     sensor[1]["y"] += cur_pos["y"]
-                    sensor[0]["m"] = get_m(sensor[0], sensor[1])
-                    sensor[0]["n"] = get_n(sensor[0], sensor[0]["m"])
+                    sensor[0]["a"] = get_angle(sensor[0], sensor[1])
                     sensor[0]["o"] = self.head_form[i]
                     lines.append(sensor)
         return lines
@@ -277,14 +292,13 @@ class Room:
     def get_lines(self):
         """
         Liefert eine Liste von Strecken:
-        (({"x": int, "y": int, "m": int, "n": int}, {"x": int, "y": int}), ...)
+        (({"x": int, "y": int, "a": int}, {"x": int, "y": int}), ...)
         """
         lines = []
         max   = len(self.waypoints)
         for i in range(len(self.waypoints)):
             line = (self.waypoints[i % max], self.waypoints[(i+1) % max])
-            line[0]["m"] = get_m(line[0], line[1])
-            line[0]["n"] = get_n(line[0], line[0]["m"])
+            line[0]["a"] = get_angle(line[0], line[1])
             lines.append(line)
         return lines
 
@@ -322,51 +336,43 @@ class Simulator:
         self.client.reset_head_status()
 
         for line in self.room.get_lines():
-            line[0]["m"] = get_m(line[0], line[1])
-            line[0]["n"] = get_n(line[0], line[0]["m"])
-
             for sensor in self.client.get_head_lines(now):
-                # Schnittpunkt
-                # x = n1 - n2 / m2 - m1
-                x_s = 0
-                m = (sensor[0]["m"] - line[0]["m"])
-                if m <> 0:
-                    x_s = (line[0]["n"] - sensor[0]["n"]) / m
-                # y = ((m2 * n1) - (m1 * n2)) / (m2 - m1)
-                y_s = 0
-                m = (sensor[0]["m"] - line[0]["m"])
-                if m <> 0:
-                    y_s = (sensor[0]["m"] * line[0]["n"]
-                           - sensor[0]["m"] * sensor[0]["n"]) / m
+                cut = get_cutting_point(sensor[0], line[0])
+                if cut:
+                    # jetzt der kürzeste Weg der Eckpunkte zur anderen Gerade
+                    # Schnittwinkel alpha
+                    sensor[0]["s"] = get_s(sensor[0], cut)
+                    sensor[1]["s"] = get_s(sensor[1], cut)
+                    line[0]["s"]   = get_s(line[0]  , cut)
+                    line[1]["s"]   = get_s(line[1]  , cut)
 
-                # jetzt der kürzeste Weg der Eckpunkte zur anderen Gerade
-                # Schnittwinkel alpha
-                alpha = math.degrees(abs(math.atan(line[0]["m"])
-                                         - math.atan(sensor[0]["m"])))
-                sensor[0]["s"] = get_s(sensor[0], {"x": x_s, "y": y_s})
-                sensor[1]["s"] = get_s(sensor[1], {"x": x_s, "y": y_s})
-                line[0]["s"]   = get_s(line[0]  , {"x": x_s, "y": y_s})
-                line[1]["s"]   = get_s(line[1]  , {"x": x_s, "y": y_s})
+                    alpha = abs(math.atan(line[0]["a"])
+                                - math.atan(sensor[0]["a"]))
+                    if max(sensor[0]["s"], line[0]["s"]) > get_s(sensor[0], line[0]):
+                        alpha = math.radians(180) - alpha
 
-                if in_comp(line[0]["s"], line[1]["s"],
-                           get_lss(sensor[0]["s"], alpha)):
-                    sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                              get_hs(sensor[0]["s"], alpha))
+                    if in_comp(line[0]["s"], line[1]["s"],
+                               get_lss(sensor[0]["s"], alpha)):
+                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
+                                                  get_hs(sensor[0]["s"], alpha))
 
-                if in_comp(line[0]["s"], line[1]["s"],
-                           get_lss(sensor[1]["s"], alpha)):
-                    sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                              get_hs(sensor[1]["s"], alpha))
+                    if in_comp(line[0]["s"], line[1]["s"],
+                               get_lss(sensor[1]["s"], alpha)):
+                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
+                                                  get_hs(sensor[1]["s"], alpha))
 
-                if in_comp(sensor[0]["s"], sensor[1]["s"],
-                           get_lsl(line[0]["s"], alpha)):
-                    sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                              get_hl(line[0]["s"], alpha))
+                    if in_comp(sensor[0]["s"], sensor[1]["s"],
+                               get_lsl(line[0]["s"], alpha)):
+                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
+                                                  get_hl(line[0]["s"], alpha))
 
-                if in_comp(sensor[0]["s"], sensor[1]["s"],
-                           get_lsl(line[1]["s"], alpha)):
-                    sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                              get_hl(line[1]["s"], alpha))
+                    if in_comp(sensor[0]["s"], sensor[1]["s"],
+                               get_lsl(line[1]["s"], alpha)):
+                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
+                                                  get_hl(line[1]["s"], alpha))
+                else: # Parallel
+                    pass
+                self.client.send_data(now)
         self.client.send_data(now)
         return 1
 
@@ -396,8 +402,9 @@ class Simulator:
                               self.GUI_MAX_SIZE / self.gui_width)
         # PyGame init stuff
         pygame.init()
-        self.gui_window = pygame.display.set_mode( ((self.gui_width * self.gui_factor) + 1,
-                                                    (self.gui_height * self.gui_factor) + 1) )
+        self.gui_window \
+            = pygame.display.set_mode(((self.gui_width * self.gui_factor) + 1,
+                                       (self.gui_height * self.gui_factor) + 1))
         pygame.display.set_caption("dust simulator")
         self.gui_window.fill((0, 0, 0))
         pygame.display.update()
