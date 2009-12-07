@@ -22,7 +22,8 @@ class Device:
 
     def __init__(self, filename, cb_event):
         self.filename = filename
-        self.file = open(self.filename, "a+")
+        self.file = os.open(self.filename, os.O_RDWR | os.O_CREAT)
+        os.lseek(self.file, 0, os.SEEK_END)
         self.cb_readevent = cb_event
 
         # Neuen Inotifier erzeugen
@@ -39,23 +40,21 @@ class Device:
         print "device stop"
 
     def read(self):
-        print "device is reading"
-        lines = self.file.readlines()
-        if len(lines) > 0:
-            self.file.seek(0)
-            self.file.truncate()
-        for data in lines:
-            self.cb_readevent(string.strip(data, "\n"))
+        stream = os.read(self.file, 2048)
+        for data in string.split(stream, "\n"):
+            if len(data) > 0:
+                self.cb_readevent(data)
         return 1
 
     def write(self, data):
-        self.file.write(data + "\n")
+        os.write(self.file, data + "\n")
+        print "device", self.filename, "write:", data
         return 1
 
     def close(self):
         self.fileevent.cb_modify = None
         self.cb_readevent = None
-        self.file.close()
+        os.close(self.file)
 
 class FileEvent(pyinotify.ProcessEvent):
 
