@@ -100,7 +100,7 @@ class Cleaner:
     head          = None
     engine        = None
 
-    position      = {"x": 20.0, "y": 20.0}
+    position      = {"x": 20.5, "y": 20.5}
     starttime     = 0.0
     action        = 0
     orientation   = 0.0
@@ -110,9 +110,9 @@ class Cleaner:
             pass
         for point in self.head_form:
             if len(point["dev"]) > 0:
-                point["sensor"] = device.Device(point["dev"], cb_sensor_dummy)
-        self.engine = device.Device('/tmp/dev_engine', self.cb_engine)
-        self.head   = device.Device('/tmp/dev_head', self.cb_head)
+                point["sensor"] = device.Device(point["dev"], cb_sensor_dummy, True)
+        self.engine = device.Device('/tmp/dev_engine', self.cb_engine, True)
+        self.head   = device.Device('/tmp/dev_head', self.cb_head, True)
 
     def __del__(self):
         self.head.close()
@@ -146,6 +146,7 @@ class Cleaner:
             else:
                 self.action = ((self.action ^ self.ACTION_TURN_RIGHT)
                                ^ self.ACTION_TURN_LEFT)
+        print self.action
 
     def cb_head(self, data):
         """ Callback für Saugkopf(/Head-)steuerung """
@@ -248,9 +249,13 @@ class Cleaner:
 
     def send_data(self, current_time):
         """ Schreibt die Sensordaten und Bewegungscounter """
+        did = False
         for sensor in self.head_form:
             if sensor["status"] < self.SENSOR_RANGE:
                 sensor["sensor"].write("distance=%f" % sensor["status"])
+                print sensor["status"]
+                did = True
+        if did: quit()
         if self.action & self.ACTION_DRIVE:
             self.engine.write("distance=%f" % self.SPEED * int(current_time
                                                             - self.starttime))

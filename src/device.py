@@ -20,9 +20,11 @@ class Device:
     file = None
     watchmask = pyinotify.EventsCodes.FLAG_COLLECTIONS["OP_FLAGS"]["IN_MODIFY"]
 
-    def __init__(self, filename, cb_event):
+    def __init__(self, filename, cb_event, truncate=False):
         self.filename = filename
         self.file = os.open(self.filename, os.O_RDWR | os.O_CREAT)
+        if truncate:
+            os.ftruncate(self.file, 0)
         os.lseek(self.file, 0, os.SEEK_END)
         self.cb_readevent = cb_event
 
