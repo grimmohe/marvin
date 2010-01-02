@@ -139,14 +139,13 @@ class Cleaner:
         elif data[0] == "turn":
             if data[1] == "left":
                 self.action = ((self.action | self.ACTION_TURN_LEFT)
-                               ^ self.ACTION_TURN_RIGHT)
+                               & ~self.ACTION_TURN_RIGHT)
             elif data[1] == "right":
                 self.action = ((self.action | self.ACTION_TURN_RIGHT)
-                               ^ self.ACTION_TURN_LEFT)
+                               & ~self.ACTION_TURN_LEFT)
             else:
-                self.action = ((self.action ^ self.ACTION_TURN_RIGHT)
-                               ^ self.ACTION_TURN_LEFT)
-        print self.action
+                self.action = self.action & \
+                              ~(self.ACTION_TURN_RIGHT | self.ACTION_TURN_LEFT)
 
     def cb_head(self, data):
         """ Callback für Saugkopf(/Head-)steuerung """
@@ -175,8 +174,8 @@ class Cleaner:
 
         if self.action & (self.ACTION_TURN_LEFT | self.ACTION_TURN_RIGHT):
             diff = self.SPEED * (current_time - self.starttime)
-            if self.action & self.ACTION_TURN_LEFT:
-                diff = 360 - diff
+            if self.action & self.ACTION_TURN_RIGHT:
+                diff = diff * -1
 
         return (self.orientation + diff) % 360
 
