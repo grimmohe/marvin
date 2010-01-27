@@ -84,6 +84,7 @@ class Cleaner:
     SENSOR_RANGE   = 1.0
     CURVE_RADIUS   = 360 / (2 * math.pi)
 
+    ACTION_HALTED     = 0
     ACTION_DRIVE      = 1
     ACTION_TURN_LEFT  = 2
     ACTION_TURN_RIGHT = 4
@@ -135,7 +136,7 @@ class Cleaner:
                 self.action = (self.action | self.ACTION_DRIVE)
             else:
                 print "drive n"
-                self.action = (self.action ^ self.ACTION_DRIVE)
+                self.action = self.ACTION_HALTED
         elif data[0] == "turn":
             if data[1] == "left":
                 self.action = ((self.action | self.ACTION_TURN_LEFT)
