@@ -13,19 +13,31 @@ class Device:
     cb_readevent ausgelöst.
     """
 
-    filename = None
+    filename_in = None
+    filename_out = None
     cb_readevent = None
     wm = None
     wdd = None
-    file = None
+    file_in = None
+    file_out = None
     watchmask = pyinotify.EventsCodes.FLAG_COLLECTIONS["OP_FLAGS"]["IN_MODIFY"]
 
-    def __init__(self, filename, cb_event, truncate=False):
-        self.filename = filename
-        self.file = os.open(self.filename, os.O_RDWR | os.O_CREAT)
+    def __init__(self, filebasename, cb_event, truncate=False):
+        
+        """ initialize file descriptors """
+        self.filename_in = filebasename + "_in"
+        self.filename_out = filebasename + "_out"
+        
+        self.file_in = os.open(self.filename_in, os.O_RDONLY | os.O_CREAT)
+        self.file_out = os.open(self.filename_out, os.O_WRONLY | os.O_CREAT)
+        
         if truncate:
-            os.ftruncate(self.file, 0)
-        os.lseek(self.file, 0, os.SEEK_END)
+            os.ftruncate(self.file_out, 0)
+            
+        os.lseek(self.file_in, 0, os.SEEK_END)
+        os.lseek(self.file_out, 0, os.SEEK_END)
+        
+        """ what function to call on read event """
         self.cb_readevent = cb_event
 
         # Neuen Inotifier erzeugen
@@ -34,23 +46,26 @@ class Device:
         self.fileevent.cb_modify = self.read
         self.notifier = pyinotify.ThreadedNotifier(self.wm, self.fileevent)
         self.notifier.start()
-        self.wdd = self.wm.add_watch(self.filename, self.watchmask, rec=True)
+        self.wdd = self.wm.add_watch(self.filename_in, self.watchmask, rec=True)
 
     def __del__(self):
         self.wm.rm_watch(self.wdd.values())
         self.notifier.stop()
-        print "device stop"
+        print "device", self.filename_in, "stop"
 
     def read(self):
-        stream = os.read(self.file, 2048)
+        stream = os.read(self.file_in, 2048)
+        """print self.filename, "readed", stream"""
+        
         for data in string.split(stream, "\n"):
             if len(data) > 0:
+                """print "device:", self.filename, "readed:", data"""
                 self.cb_readevent(data)
         return 1
 
     def write(self, data):
-        os.write(self.file, data + "\n")
-        print "device", self.filename, "write:", data
+        os.write(self.file_out, data + "\n")
+        """print "device", self.filename, "write:", data"""
         return 1
 
     def close(self):
