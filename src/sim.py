@@ -174,7 +174,7 @@ class Cleaner:
 
         if self.action & (self.ACTION_TURN_LEFT | self.ACTION_TURN_RIGHT):
             diff = self.SPEED * (current_time - self.starttime)
-            if self.action & self.ACTION_TURN_RIGHT:
+            if self.action & self.ACTION_TURN_LEFT:
                 diff = diff * -1
 
         return (self.orientation + diff) % 360
@@ -248,22 +248,22 @@ class Cleaner:
 
     def send_data(self, current_time):
         """ Schreibt die Sensordaten und Bewegungscounter """
-        did = False
+        #did = False
         for sensor in self.head_form:
             if sensor["status"] < self.SENSOR_RANGE:
                 sensor["sensor"].write("distance=%f" % sensor["status"])
-                print sensor["status"]
-                did = True
-        if did: quit()
+        #        print sensor["status"]
+        #        did = True
+        #if did: quit()
         if self.action & self.ACTION_DRIVE:
-            self.engine.write("distance=%f" % self.SPEED * int(current_time
-                                                            - self.starttime))
+            self.engine.write("distance=%f" % (self.SPEED * (current_time
+                                                             - self.starttime)))
         if self.action & self.ACTION_TURN_RIGHT:
-            self.engine.write("turn=%f" % int(self.SPEED) * int(current_time
-                                                        - self.starttime ))
+            self.engine.write("turn=%f" % (self.SPEED * (current_time
+                                                         - self.starttime)))
         if self.action & self.ACTION_TURN_LEFT:
-            self.engine.write("turn=%f" % self.SPEED * int(current_time
-                                                        - self.starttime) * -1)
+            self.engine.write("turn=%f" % (self.SPEED * (current_time
+                                                         - self.starttime) * -1))
 
 class Room:
     """
