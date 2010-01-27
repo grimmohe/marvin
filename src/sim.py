@@ -187,33 +187,14 @@ class Cleaner:
         """
         new_pos = {"x": self.position["x"],
                    "y": self.position["y"]}
-
         # TODO: Berechne eine Kurve mit self.CURVE_RADIUS
         if self.action & self.ACTION_DRIVE:
+            orientation = math.radians(self.get_cur_orientation(current_time))
             distance = self.SPEED * (current_time - self.starttime)
 
-            # c = distance
-            # Alpha = orientation MOD 90°
-            # also Sin Alpha = a/c -> a = Sin Alpha * c
-            # und  Cos Altha = b/c -> b = Cos Alpha * c
-            orientation = self.get_cur_orientation(current_time)
-            alpha = math.radians(orientation % 90)
-            a = math.sin(alpha) * distance
-            b = math.cos(alpha) * distance
+            new_pos["x"] += math.sin(orientation) * distance
+            new_pos["y"] += math.cos(orientation) * distance
 
-            part = round(orientation / 90)
-            if part == 0:
-                new_pos["x"] += a
-                new_pos["y"] += b
-            elif part == 1:
-                new_pos["x"] += b
-                new_pos["y"] += a
-            elif part == 2:
-                new_pos["x"] += a
-                new_pos["y"] += b
-            elif part == 3:
-                new_pos["x"] += b
-                new_pos["y"] += a
         return new_pos
 
     def get_head_lines(self, current_time):

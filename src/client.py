@@ -146,7 +146,7 @@ class XmlHandler(xml.sax.ContentHandler):
 
 class Client:
     """
-    Die Zusammenfassung alle Instrumente und Main-Klasse.
+    Die Zusammenfassung aller Instrumente und Main-Klasse.
     """
     transmission_id = None            # Identifikation der letzten Kommunikation
     assignment      = None            # Letztes ausgeführtes Assignment
