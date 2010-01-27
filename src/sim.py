@@ -130,7 +130,7 @@ class Cleaner:
         self.set_position(time.time())
         print "engine does: ", data
         if data[0] == "drive":
-            if data[1] == "1\n":
+            if data[1] == "1":
                 print "drive 1"
                 self.action = (self.action | self.ACTION_DRIVE)
             else:
