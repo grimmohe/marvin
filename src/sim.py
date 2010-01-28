@@ -72,8 +72,8 @@ def turn_point(point, degrees):
     """ Dreht einen Punkt auf der Systemachse """
     factor = get_s(point)
     alpha = get_angle(point) + math.radians(degrees)
-    return { "x": math.sin(alpha) * factor,
-             "y": math.cos(alpha) * factor }
+    return { "x": round(math.sin(alpha) * factor, 5),
+             "y": round(math.cos(alpha) * factor, 5) }
 
 class Cleaner:
     """
