@@ -230,13 +230,10 @@ class Cleaner:
 
     def send_data(self, current_time):
         """ Schreibt die Sensordaten und Bewegungscounter """
-        #did = False
         for sensor in self.head_form:
             if sensor["status"] < self.SENSOR_RANGE:
                 sensor["sensor"].write("distance=%f" % sensor["status"])
-        #        print sensor["status"]
-        #        did = True
-        #if did: quit()
+
         if self.action & self.ACTION_DRIVE:
             self.engine.write("distance=%f" % (self.SPEED * (current_time
                                                              - self.starttime)))
@@ -316,13 +313,14 @@ class Simulator:
 
     def check(self, now):
         """
-        Die eigentliche Kollisionsprüfung. Löst das Senden von Sensordaten aus.
+        Die Kollisionsprüfung. Löst das Senden von Sensordaten aus.
         """
         client_pos = self.client.get_cur_position(now)
         self.client.reset_head_status()
 
         for line in self.room.get_lines():
             for sensor in self.client.get_head_lines(now):
+                #Schnittpunkt berechnen
                 cut = get_cutting_point(sensor[0], line[0])
                 if cut:
                     # jetzt der kürzeste Weg der Eckpunkte zur anderen Gerade
@@ -357,7 +355,26 @@ class Simulator:
                         sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
                                                   get_hl(line[1]["s"], alpha))
                 else: # Parallel
-                    pass
+                    # 0°
+                    if sensor[0]["x"] == sensor[1]["x"]:
+                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
+                                             abs(sensor[0]["x"] - line[0]["x"]))
+                    # 180°
+                    elif sensor[0]["y"] == sensor[1]["y"]:
+                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
+                                             abs(sensor[0]["y"] - line[0]["y"]))
+                    else:
+                        #TODO: Kreuzung von c und d verhindern
+                        # Formel aus Wikipedia (en)
+                        a = get_s(sensor[0], sensor[1])
+                        b = get_s(line[1], line[0])
+                        c = get_s(sensor[0], line[0])
+                        d = get_s(sensor[1], line[1])
+                        h = math.sqrt((-a+b+c+d)*(a-b+c+d)*(a-b+c-d)*(a-b-c+d)/math.pow(2*(math.abs(b-a)), 2))
+
+                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], h)
+
+
                 self.client.send_data(now)
         self.client.send_data(now)
         return 1
