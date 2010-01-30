@@ -75,6 +75,22 @@ def turn_point(point, degrees):
     return { "x": round(math.sin(alpha) * factor, 5),
              "y": round(math.cos(alpha) * factor, 5) }
 
+def max_point(point1, point2):
+    """ Gibt den Point mit größerem X zurück """
+    if point1["x"] > point2["x"]:
+        bigger = point1
+    else:
+        bigger = point2
+    return bigger
+
+def min_point(point1, point2):
+    """ Gibt den Point mit kleinerem X zurück """
+    if point1["x"] < point2["x"]:
+        smaler = point1
+    else:
+        smaler = point2
+    return smaler
+
 class Cleaner:
     """
     Representant für den Staubsauger
@@ -364,13 +380,14 @@ class Simulator:
                         sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
                                              abs(sensor[0]["y"] - line[0]["y"]))
                     else:
-                        #TODO: Kreuzung von c und d verhindern
                         # Formel aus Wikipedia (en)
                         a = get_s(sensor[0], sensor[1])
                         b = get_s(line[1], line[0])
-                        c = get_s(sensor[0], line[0])
-                        d = get_s(sensor[1], line[1])
-                        h = math.sqrt((-a+b+c+d)*(a-b+c+d)*(a-b+c-d)*(a-b-c+d)/math.pow(2*(math.abs(b-a)), 2))
+                        c = get_s(min_point(sensor[0], sensor[1]),
+                                  min_point(line[0], line[1]))
+                        d = get_s(max_point(sensor[0], sensor[1]),
+                                  max_point(line[0], line[1]))
+                        h = math.sqrt((-a+b+c+d)*(a-b+c+d)*(a-b+c-d)*(a-b-c+d)/math.pow(2*(abs(b-a)), 2))
 
                         sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], h)
 
