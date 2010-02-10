@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uml:Package xmi:version="2.1" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmlns:uml="http://www.eclipse.org/uml2/3.0.0/UML" xmi:id="_HBlOkBaLEd-SgJkT9i22Rw">
+  <elementImport xmi:id="_HCNgsBaLEd-SgJkT9i22Rw">
+    <importedElement xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Boolean"/>
+  </elementImport>
+  <elementImport xmi:id="_HCNgsRaLEd-SgJkT9i22Rw">
+    <importedElement xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+  </elementImport>
+  <elementImport xmi:id="_HCNgshaLEd-SgJkT9i22Rw">
+    <importedElement xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#UnlimitedNatural"/>
+  </elementImport>
+  <elementImport xmi:id="_HCOHwBaLEd-SgJkT9i22Rw">
+    <importedElement xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Integer"/>
+  </elementImport>
+  <packagedElement xmi:type="uml:Activity" xmi:id="_IUUBwBaLEd-SgJkT9i22Rw" name="Aktionsliste erstellen">
+    <node xmi:type="uml:OpaqueAction" xmi:id="_f9LwgBaLEd-SgJkT9i22Rw" name="Erkundungsmodus" outgoing="_nkRLwBaNEd-SgJkT9i22Rw" incoming="_l886kBaLEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:DecisionNode" xmi:id="_kQNE4BaLEd-SgJkT9i22Rw" name="DecisionNode" outgoing="_l886kBaLEd-SgJkT9i22Rw _1gdrwBaLEd-SgJkT9i22Rw" incoming="_zkThEBaLEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:OpaqueAction" xmi:id="_tYuIkBaLEd-SgJkT9i22Rw" name="Anweisungen zum Saugen von Fläschen berechnen" outgoing="_36hogBaNEd-SgJkT9i22Rw" incoming="_1gdrwBaLEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:OpaqueAction" xmi:id="_w2eB0BaLEd-SgJkT9i22Rw" name="Fläche zum Saugen gefunden" outgoing="_zkThEBaLEd-SgJkT9i22Rw" incoming="_o-bSEBaMEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:AcceptEventAction" xmi:id="_R0N1QBaMEd-SgJkT9i22Rw" name="Protokoll vom Client empfangen" outgoing="_i5CBIBaMEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:OpaqueAction" xmi:id="_XBt04BaMEd-SgJkT9i22Rw" name="Rauminfos anpassen" outgoing="_jYAcIBaMEd-SgJkT9i22Rw" incoming="_i5CBIBaMEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:OpaqueAction" xmi:id="_gtYB4BaMEd-SgJkT9i22Rw" name="Rauminfos auswerten" outgoing="_o-bSEBaMEd-SgJkT9i22Rw" incoming="_jYAcIBaMEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:OpaqueAction" xmi:id="_bWkf0BaNEd-SgJkT9i22Rw" name="Anweisung &quot;Richtung erkunden&quot;" outgoing="_4VOngBaNEd-SgJkT9i22Rw" incoming="_nkRLwBaNEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:OpaqueAction" xmi:id="_q5AS8BaNEd-SgJkT9i22Rw" name="Standard Abbruchanweisungen" outgoing="_KwaJYBaOEd-SgJkT9i22Rw" incoming="_4saYcBaNEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:DecisionNode" xmi:id="_3d5W4BaNEd-SgJkT9i22Rw" name="DecisionNode" outgoing="_4saYcBaNEd-SgJkT9i22Rw" incoming="_36hogBaNEd-SgJkT9i22Rw _4VOngBaNEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:SendSignalAction" xmi:id="_IRnywBaOEd-SgJkT9i22Rw" name="Anweisungen versenden" outgoing="_MvUGEBaOEd-SgJkT9i22Rw" incoming="_KwaJYBaOEd-SgJkT9i22Rw"/>
+    <node xmi:type="uml:FlowFinalNode" xmi:id="_MVWt8BaOEd-SgJkT9i22Rw" incoming="_MvUGEBaOEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_l886kBaLEd-SgJkT9i22Rw" name="Nein" source="_kQNE4BaLEd-SgJkT9i22Rw" target="_f9LwgBaLEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_zkThEBaLEd-SgJkT9i22Rw" source="_w2eB0BaLEd-SgJkT9i22Rw" target="_kQNE4BaLEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_1gdrwBaLEd-SgJkT9i22Rw" name="Ja" source="_kQNE4BaLEd-SgJkT9i22Rw" target="_tYuIkBaLEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_i5CBIBaMEd-SgJkT9i22Rw" source="_R0N1QBaMEd-SgJkT9i22Rw" target="_XBt04BaMEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_jYAcIBaMEd-SgJkT9i22Rw" source="_XBt04BaMEd-SgJkT9i22Rw" target="_gtYB4BaMEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_o-bSEBaMEd-SgJkT9i22Rw" source="_gtYB4BaMEd-SgJkT9i22Rw" target="_w2eB0BaLEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_nkRLwBaNEd-SgJkT9i22Rw" source="_f9LwgBaLEd-SgJkT9i22Rw" target="_bWkf0BaNEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_36hogBaNEd-SgJkT9i22Rw" source="_tYuIkBaLEd-SgJkT9i22Rw" target="_3d5W4BaNEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_4VOngBaNEd-SgJkT9i22Rw" source="_bWkf0BaNEd-SgJkT9i22Rw" target="_3d5W4BaNEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_4saYcBaNEd-SgJkT9i22Rw" source="_3d5W4BaNEd-SgJkT9i22Rw" target="_q5AS8BaNEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_KwaJYBaOEd-SgJkT9i22Rw" source="_q5AS8BaNEd-SgJkT9i22Rw" target="_IRnywBaOEd-SgJkT9i22Rw"/>
+    <edge xmi:type="uml:ControlFlow" xmi:id="_MvUGEBaOEd-SgJkT9i22Rw" source="_IRnywBaOEd-SgJkT9i22Rw" target="_MVWt8BaOEd-SgJkT9i22Rw"/>
+  </packagedElement>
+</uml:Package>
