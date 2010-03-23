@@ -29,7 +29,7 @@
       <children xmi:type="notation:DecorationNode" xmi:id="_R0cewBaMEd-SgJkT9i22Rw" type="5040"/>
       <children xmi:type="notation:DecorationNode" xmi:id="_R0cewRaMEd-SgJkT9i22Rw" type="5095"/>
       <element xmi:type="uml:AcceptEventAction" href="aktionsliste erstellen.uml#_R0N1QBaMEd-SgJkT9i22Rw"/>
-      <layoutConstraint xmi:type="notation:Bounds" xmi:id="_R0b3sRaMEd-SgJkT9i22Rw" x="88" y="15" width="269"/>
+      <layoutConstraint xmi:type="notation:Bounds" xmi:id="_R0b3sRaMEd-SgJkT9i22Rw" x="88" y="23" width="269"/>
     </children>
     <children xmi:type="notation:Shape" xmi:id="_XB6CIBaMEd-SgJkT9i22Rw" type="3029" fontName="Sans">
       <children xmi:type="notation:DecorationNode" xmi:id="_XB6CIhaMEd-SgJkT9i22Rw" type="5023"/>
@@ -136,7 +136,7 @@
     <styles xmi:type="notation:FontStyle" xmi:id="_i5CoMhaMEd-SgJkT9i22Rw" fontName="Sans"/>
     <element xmi:type="uml:ControlFlow" href="aktionsliste erstellen.uml#_i5CBIBaMEd-SgJkT9i22Rw"/>
     <bendpoints xmi:type="notation:RelativeBendpoints" xmi:id="_i5CoMxaMEd-SgJkT9i22Rw" points="[18, 6, -127, -48]$[222, 52, 77, -2]"/>
-    <sourceAnchor xmi:type="notation:IdentityAnchor" xmi:id="_i5FrgBaMEd-SgJkT9i22Rw" id="(0.9330855018587361,0.6)"/>
+    <sourceAnchor xmi:type="notation:IdentityAnchor" xmi:id="_i5FrgBaMEd-SgJkT9i22Rw" id="(0.9739776951672863,0.48)"/>
   </edges>
   <edges xmi:type="notation:Edge" xmi:id="_jYBqQBaMEd-SgJkT9i22Rw" type="4001" source="_XB6CIBaMEd-SgJkT9i22Rw" target="_gtkPIBaMEd-SgJkT9i22Rw">
     <children xmi:type="notation:DecorationNode" xmi:id="_jYBqRBaMEd-SgJkT9i22Rw" type="6003">
