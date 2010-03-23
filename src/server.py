@@ -25,7 +25,7 @@ class ServCmd:
             self.listen()
             self.processing = 1
             while self.processing:
-               self.procCmd()
+                self.procCmd()
             self.client.close()
         self.server.close()
 

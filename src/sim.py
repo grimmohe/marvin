@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #coding=utf8
 
-import os
 import time
 import string
 import math
