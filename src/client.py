@@ -4,11 +4,12 @@
 import time
 import socket
 import xml.sax
+import device
 
 class Assignment:
     """
     Representiert die aktuelle Aufgabe.
-    Jede Aufgabe hat Ihre eigenen Events. die in der Hauptschleife run()
+    Jede Aufgabe hat Ihre eigenen Events. die in der Hauptschleife Client.run()
     verarbeitet werden.
     Ein Assignment beginnt in der Regel mit einem Event (start_event) ohne
     Bedingung und löst durch z.B. Bewegung weitere Events aus.
@@ -19,18 +20,21 @@ class Assignment:
     active = False
     events = []
     lastprocessing = 0
+    starttime = None
 
     start_event = None
     stop_event  = None
 
     startAssignment = None
 
-    def __init__(self, startAssignment):
+    def __init__(self, startAssignment, stateholder):
         self.startAssignment = startAssignment
+        self.stateholder = stateholder
 
     def start(self):
         """ aktiviert das Assignment """
         self.active = True
+        self.starttime = time.time()
         if self.start_event <> None:
             self.start_event()
 
@@ -38,6 +42,7 @@ class Assignment:
         """ verarbeitet neue Events """
         if not self.active:
             return 0
+        self.stateholder.update("running", time.time( - self.starttime))
         return 1
 
     def stop(self):
@@ -46,15 +51,49 @@ class Assignment:
             self.stop_event()
         self.active = False
 
+class Argument:
+    """
+    Ist ein statischer Wert oder eine Abfrage an State.
+    """
+    ARG_STATIC = 1
+    ARG_STATE = 2
+
+    def __init__(self, arg_key, arg_typ, stateholder):
+        self.key = arg_key
+        self.typ = arg_typ
+        self.stateholder = stateholder
+
+    def get(self):
+        ret_val = None
+        if self.typ == self.ARG_STATIC:
+            ret_val = self.key
+        elif self.typ == self.ARG_STATE:
+            ret_val = self.stateholder.getValue(self.key)
+        return ret_val
+
 class Event:
     """
     Events stellen Bedingungen und können den Client zu Bewegungen veranlassen.
     """
-    def __init__(self):
-        pass
+    def __init__(self, arg1, arg2, compare, action):
+        self.arg1 = arg1
+        self.arg2 = arg2
+        self.compare = compare
+        self.action = action
 
     def check(self):
-        pass
+        match = 0
+
+        if ">" in self.compare:
+            match = match or self.arg1.get() > self.arg2.get()
+        if "<" in self.compare:
+            match = match or self.arg1.get() < self.arg2.get()
+        if "=" in self.compare:
+            match = match or self.arg1.get() == self.arg2.get()
+
+        if match:
+            self.action()
+        return match
 
 class State:
     """
@@ -65,9 +104,34 @@ class State:
     Was sagen die Sensoren?
     """
     dict = {}
+    devices = {}
 
     def __init__(self):
         self.dict = {}
+        self.devices = \
+            { "engine": device.Device('/tmp/dev_engine',
+                                      lambda data: self.update("engine", data),
+                                      True, True),
+              "head":   device.Device('/tmp/dev_head',
+                                      lambda data: self.update("head", data),
+                                      True, True),
+              "left":   device.Device('/tmp/dev_left',
+                                      lambda data: self.update("left", data),
+                                      True, True),
+              "front":  device.Device('/tmp/dev_front',
+                                      lambda data: self.update("front", data),
+                                      True, True),
+              "right":  device.Device('/tmp/dev_right',
+                                      lambda data: self.update("right", data),
+                                      True, True) }
+
+    def __del__(self):
+        self.devices["engine"].close()
+        self.devices["head"].close()
+        self.devices["left"].close()
+        self.devices["front"].close()
+        self.devices["right"].close()
+        self.devices = None
 
     def update(self, key, value):
         """ Erstellt/Aktualisiert einen Wert """
@@ -152,12 +216,12 @@ class Client:
     assignment      = None            # Letztes ausgeführtes Assignment
     assignments     = []
     actionlog       = None
-    states          = None
+    stateholder     = None
     connection      = None
 
     def __init__(self):
         self.actionlog = Actionlog()
-        self.states    = State()
+        self.stateholder = State()
         self.connection = Connector()
 
     def __del__(self):
@@ -207,7 +271,6 @@ class Client:
         active = 0
         while 1:
             time.sleep(1)
-            #TODO: Heartbeat senden
             # erstes/nächstes Assignment ausführen
             active = self.nextAssignment()
             # wenn nichts mehr zu tun ist
@@ -220,6 +283,8 @@ class Client:
                     return 0
 
         # Serververbindung trennen
+        if self.connection <> None:
+            self.connection.disconnect()
 
 if __name__ == '__main__':
     print "init client"
