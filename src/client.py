@@ -7,7 +7,7 @@ import xml.sax
 import device
 
 class Action:
-    """ Ausführen von  """
+    """ Ausführen von/ direkte weitergabe an die devices """
     def __init__(self, device_id="", value=0):
         self.device_id = device_id
         self.value = value
