@@ -22,33 +22,38 @@ class Assignment:
     lastprocessing = 0
     starttime = None
 
-    start_event = None
-    stop_event  = None
+    startAction = None
+    stopAction = None
 
-    startAssignment = None
+    def __init__(self, startAction, stopAction):
+        self.startAction = startAction
+        self.stopAction = stopAction
 
-    def __init__(self, startAssignment, stateholder):
-        self.startAssignment = startAssignment
-        self.stateholder = stateholder
-
-    def start(self):
+    def start(self, states):
         """ aktiviert das Assignment """
         self.active = True
         self.starttime = time.time()
-        if self.start_event <> None:
-            self.start_event()
+        if self.startAction <> None:
+            self.startAction.execute()
 
     def process(self, states):
         """ verarbeitet neue Events """
         if not self.active:
             return 0
-        self.stateholder.update("running", time.time( - self.starttime))
-        return 1
 
-    def stop(self):
+        states.update("running", time.time( - self.starttime))
+        goon = 1
+
+        for event in self.events:
+            goon = goon and event.check(states)
+
+        self.active = goon
+        return goon
+
+    def stop(self, states):
         """ deaktiviert das Assignment """
-        if self.stop_event <> None:
-            self.stop_event()
+        if self.stopAction <> None:
+            self.stopAction.execute()
         self.active = False
 
 class Argument:
@@ -58,17 +63,16 @@ class Argument:
     ARG_STATIC = 1
     ARG_STATE = 2
 
-    def __init__(self, arg_key, arg_typ, stateholder):
+    def __init__(self, arg_key, arg_typ):
         self.key = arg_key
         self.typ = arg_typ
-        self.stateholder = stateholder
 
-    def get(self):
+    def get(self, states):
         ret_val = None
         if self.typ == self.ARG_STATIC:
             ret_val = self.key
         elif self.typ == self.ARG_STATE:
-            ret_val = self.stateholder.getValue(self.key)
+            ret_val = states.getValue(self.key)
         return ret_val
 
 class Event:
@@ -81,19 +85,20 @@ class Event:
         self.compare = compare
         self.action = action
 
-    def check(self):
+    def check(self, states):
         match = 0
+        goon = 1
 
         if ">" in self.compare:
-            match = match or self.arg1.get() > self.arg2.get()
+            match = match or self.arg1.get(states) > self.arg2.get(states)
         if "<" in self.compare:
-            match = match or self.arg1.get() < self.arg2.get()
+            match = match or self.arg1.get(states) < self.arg2.get(states)
         if "=" in self.compare:
-            match = match or self.arg1.get() == self.arg2.get()
+            match = match or self.arg1.get(states) == self.arg2.get(states)
 
         if match:
-            self.action()
-        return match
+            goon = self.action.execute()
+        return goon
 
 class State:
     """
@@ -105,6 +110,7 @@ class State:
     """
     dict = {}
     devices = {}
+    cb_anyAction = None
 
     def __init__(self):
         self.dict = {}
@@ -136,6 +142,8 @@ class State:
     def update(self, key, value):
         """ Erstellt/Aktualisiert einen Wert """
         self.dict[key] = value
+        if self.cb_anyAction:
+            self.cb_anyAction(self)
 
     def getValue(self, key):
         """ Gibt den value zu key """
@@ -146,7 +154,7 @@ class State:
 
 class Actionlog:
     """
-    Eine Aufzeichnungen der letzten Aktivitäten seit Rückmeldung an den Server.
+    Eine Aufzeichnung der letzten Aktivitäten seit Rückmeldung an den Server.
     """
     def __init__(self):
         pass
@@ -259,7 +267,7 @@ class Client:
         if a <> None:
             found = True
             self.assignment = a
-            self.assignment.start()
+            self.assignment.start(self.stateholder)
         return found
 
     def sendActionlog(self):
@@ -273,10 +281,13 @@ class Client:
             time.sleep(1)
             # erstes/nächstes Assignment ausführen
             active = self.nextAssignment()
+            # sekündliche Prüfung
+            if active:
+                self.assignment.process(self.stateholder)
             # wenn nichts mehr zu tun ist
             # Verbindugn zum Server aufbauen,
             # Bericht an den Server senden und neue Aufgaben holen
-            if not active:
+            else:
                 self.connection.connect()
                 self.sendActionlog()
                 if not self.getNextAssignments():
