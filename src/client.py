@@ -6,6 +6,17 @@ import socket
 import xml.sax
 import device
 
+class Action:
+    """ Ausführen von  """
+    def __init__(self, device_id="", value=0):
+        self.device_id = device_id
+        self.value = value
+
+    def execute(self, states):
+        if states.devices.has_key(self.device_id):
+            states.devices[self.device_id].write(self.value)
+        return self.value
+
 class Assignment:
     """
     Representiert die aktuelle Aufgabe.
@@ -53,7 +64,7 @@ class Assignment:
     def stop(self, states):
         """ deaktiviert das Assignment """
         if self.stopAction <> None:
-            self.stopAction.execute()
+            self.stopAction.execute(states)
         self.active = False
 
 class Argument:
@@ -97,7 +108,7 @@ class Event:
             match = match or self.arg1.get(states) == self.arg2.get(states)
 
         if match:
-            goon = self.action.execute()
+            goon = self.action.execute(states)
         return goon
 
 class State:
