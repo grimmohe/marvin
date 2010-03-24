@@ -5,6 +5,7 @@ import time
 import socket
 import xml.sax
 import device
+import threading
 
 class Action:
     """ Ausführen von/ direkte weitergabe an die devices """
@@ -170,15 +171,18 @@ class Actionlog:
     def __init__(self):
         pass
 
-class Connector:
+class Connector(threading.Thread):
     """
     Stellt die Verbindung zum Server her
     """
     def __init__(self):
+        threading.Thread.__init__(self)
         self.host = "127.0.0.1"
-        self.port = "29876"
+        self.port = 29875
         self.connected = False
         self.socket = None
+        self.data = ''
+        self.start()
 
     def connect(self):
         if not self.connected:
@@ -190,6 +194,28 @@ class Connector:
         if self.connected:
             self.socket.close()
             self.connected = False
+
+    def run(self):
+        self.connect()
+        self.read()
+
+    def read(self):
+        truedata=''
+        while self.socket:
+            print "thread reads..."
+            data = self.socket.recv(4096)
+            truedata += data
+            if ":*#" in data:
+                self.data=truedata
+                truedata=''
+                
+    def write(self,data):
+        self.socket.send(data)    
+        
+    def getData(self):
+        data = self.data
+        self.data = ''
+        return data    
 
 class XmlHandler(xml.sax.ContentHandler):
     """
@@ -251,11 +277,10 @@ class Client:
         """ holt neue Aufgaben vom Server """
         self.assignment    = None
         self.assignments   = []
-        self.connection.socket.send("Gimme")
-        data = self.connection.socket.resv(4096)
-        self.connection.socket.send("KILL")
-        # TODO: parse data
-        print data
+        data = self.connection.getData()
+        if data:
+            print data
+        #todo: pase data
         return 0
 
     def nextAssignment(self):
@@ -299,10 +324,8 @@ class Client:
             # Verbindugn zum Server aufbauen,
             # Bericht an den Server senden und neue Aufgaben holen
             else:
-                self.connection.connect()
                 self.sendActionlog()
-                if not self.getNextAssignments():
-                    return 0
+                self.getNextAssignments()
 
         # Serververbindung trennen
         if self.connection <> None:
