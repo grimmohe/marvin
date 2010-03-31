@@ -7,22 +7,22 @@ import xml.sax
 import device
 import threading
 import re
-from xml.sax import make_parser
 
 class Action:
     """ Ausführen von/ direkte weitergabe an die devices """
     # dev:command=1
-    def __init__(self, args):
+    def __init__(self, args, final):
         args = args.split("=", 2)
         self.value = args[1]
         args = args[0].split(":", 2)
         self.device_id = args[0]
         self.command = args[1]
+        self.final = (final == "true")
 
     def execute(self, states):
         if states.devices.has_key(self.device_id):
             states.devices[self.device_id].write(self.command + "=" + self.value)
-        return self.value
+        return not self.final
 
 class Assignment:
     """
@@ -34,19 +34,15 @@ class Assignment:
     Das Assignment wird durch ein Event beendet.
     Abschließend wird, wenn belegt, stop_event verarbeitet.
     """
-    id     = None
-    active = False
-    events = []
-    lastprocessing = 0
-    starttime = None
-
-    startAction = None
-    stopAction = None
 
     def __init__(self, id, startAction, stopAction):
         self.id = id
+        self.active = False
         self.startAction = startAction
         self.stopAction = stopAction
+        self.events = []
+        self.lastprocessing = 0
+        self.starttime = None
 
     def start(self, states):
         """ aktiviert das Assignment """
@@ -61,7 +57,7 @@ class Assignment:
             return 0
 
         states.update("running", time.time() - self.starttime)
-        goon = 1
+        goon = (len(self.events) > 0)
 
         for event in self.events:
             goon = goon and event.check(states)
@@ -86,7 +82,7 @@ class Argument:
         # nur float (0.0)
         if re.match("^([\d]+\.?[\d]*|[\d]*\.?[\d]+)$", arg, 0):
             arg_typ = self.ARG_STATIC
-            arg_key = float(arg)
+            arg_key = float(arg) / 100
         else:
             arg_typ = self.ARG_STATE
             arg_key = arg
@@ -116,11 +112,17 @@ class Event:
         goon = 1
 
         if "g" in self.compare:
-            match = match or self.arg1.get(states) > self.arg2.get(states)
+            arg1 = self.arg1.get(states)
+            arg2 = self.arg2.get(states)
+            match = match or arg1 > arg2
         if "l" in self.compare:
-            match = match or self.arg1.get(states) < self.arg2.get(states)
+            arg1 = self.arg1.get(states)
+            arg2 = self.arg2.get(states)
+            match = match or arg1 < arg2
         if "e" in self.compare:
-            match = match or self.arg1.get(states) == self.arg2.get(states)
+            arg1 = self.arg1.get(states)
+            arg2 = self.arg2.get(states)
+            match = match or arg1 == arg2
 
         if match:
             goon = self.action.execute(states)
@@ -140,20 +142,28 @@ class State:
         self.cb_anyAction = None
         self.devices = \
             { "engine": device.Device('/tmp/dev_engine',
-                                      lambda data: self.update("engine", data),
+                                      lambda data: self.update("engine", float(data)),
                                       True, True),
               "head":   device.Device('/tmp/dev_head',
-                                      lambda data: self.update("head", data),
+                                      lambda data: self.update("head", float(data == "down")),
                                       True, True),
               "left":   device.Device('/tmp/dev_left',
-                                      lambda data: self.update("left", data),
+                                      lambda data: self.update("left", float(data)),
                                       True, True),
               "front":  device.Device('/tmp/dev_front',
-                                      lambda data: self.update("front", data),
+                                      lambda data: self.update("front", float(data)),
                                       True, True),
               "right":  device.Device('/tmp/dev_right',
-                                      lambda data: self.update("right", data),
+                                      lambda data: self.update("right", float(data)),
                                       True, True) }
+        self.devices["engine"].write("reset")
+
+        self.update("engine:drive", 0.0)
+        self.update("engine:turn", 0.0)
+        self.update("head:move", 0.0)
+        self.update("front:distance", 1.0)
+        self.update("left:distance", 1.0)
+        self.update("right:distance", 1.0)
 
     def __del__(self):
         self.devices["engine"].close()
@@ -247,9 +257,9 @@ class XmlHandler(xml.sax.ContentHandler):
             id = 0
             for key,value in attrs.items():
                 if key == "start":
-                    actionStart = Action(value)
+                    actionStart = Action(value, "false")
                 elif key == "end":
-                    actionEnd = Action(value)
+                    actionEnd = Action(value, "false")
                 elif key == "id":
                     id = int(value)
             self.openAssignment = Assignment(id, actionStart, actionEnd)
@@ -260,6 +270,8 @@ class XmlHandler(xml.sax.ContentHandler):
             arg2 = None
             compare = None
             action = None
+            then = None
+            final = None
 
             for key,value in attrs.items():
                 if key == "ifarg1":
@@ -272,8 +284,12 @@ class XmlHandler(xml.sax.ContentHandler):
                     compare = value
 
                 elif key == "then":
-                    action = Action(value)
+                    then = value
 
+                elif key == "final":
+                    final = value
+
+            action = Action(then, final)
             self.openAssignment.events.append(Event(arg1, arg2, compare, action))
 
 

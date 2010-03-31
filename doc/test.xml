@@ -1,5 +1,7 @@
 <what-to-do>
-<assignment id="1" start="engine:drive=1" end="engine:drive=0">
-<event ifarg1="front:sensor" ifcompare="ge" then="engine:drive=0" ifarg2="0"/>
+<assignment id="1" start="head:move=down">
+</assignment>
+<assignment id="2" start="engine:drive=1">
+<event ifarg1="front:distance" ifcompare="le" ifarg2="50" then="engine:drive=0" final="true"/>
 </assignment>
 </what-to-do>
