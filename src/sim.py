@@ -140,6 +140,13 @@ class Cleaner:
                 point["sensor"].close()
                 point["sensor"] = None
 
+    def reset(self):
+        self.head_down     = False
+        self.position      = {"x": 20.5, "y": 20.5}
+        self.starttime     = 0.0
+        self.action        = 0
+        self.orientation   = 0.0
+
     def cb_engine(self, data):
         """ Callback für die Motorsteuerung """
         data = string.split(data, "=")
@@ -162,6 +169,8 @@ class Cleaner:
             else:
                 self.action = self.action & \
                               ~(self.ACTION_TURN_RIGHT | self.ACTION_TURN_LEFT)
+        elif data[0] == "reset":
+            self.reset()
 
     def cb_head(self, data):
         """ Callback für Saugkopf(/Head-)steuerung """
