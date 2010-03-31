@@ -133,12 +133,10 @@ class State:
     Ist der Saugkopft unten?
     Was sagen die Sensoren?
     """
-    dict = {}
-    devices = {}
-    cb_anyAction = None
 
     def __init__(self):
         self.dict = {}
+        self.cb_anyAction = None
         self.devices = \
             { "engine": device.Device('/tmp/dev_engine',
                                       lambda data: self.update("engine", data),
