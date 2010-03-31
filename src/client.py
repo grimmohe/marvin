@@ -6,16 +6,21 @@ import socket
 import xml.sax
 import device
 import threading
+import re
+from xml.sax import make_parser
 
 class Action:
     """ Ausführen von/ direkte weitergabe an die devices """
-    def __init__(self, device_id="", value=0):
-        self.device_id = device_id
-        self.value = value
+    def __init__(self, args):
+        args = args.split("=", 2)
+        self.value = args[1]
+        args = args[0].slpit(":", 2)
+        self.device_id = args[0]
+        self.command = args[1]
 
     def execute(self, states):
         if states.devices.has_key(self.device_id):
-            states.devices[self.device_id].write(self.value)
+            states.devices[self.device_id].write(self.command + "=" + self.value)
         return self.value
 
 class Assignment:
@@ -37,7 +42,8 @@ class Assignment:
     startAction = None
     stopAction = None
 
-    def __init__(self, startAction, stopAction):
+    def __init__(self, id, startAction, stopAction):
+        self.id = id
         self.startAction = startAction
         self.stopAction = stopAction
 
@@ -75,7 +81,14 @@ class Argument:
     ARG_STATIC = 1
     ARG_STATE = 2
 
-    def __init__(self, arg_key, arg_typ):
+    def __init__(self, arg):
+        # nur float (0.0)
+        if re.match("^[\d]+\.?[\d]*$", arg, 0):
+            arg_typ = self.ARG_STATIC
+            arg_key = float(arg)
+        else:
+            arg_typ = self.ARG_STATE
+            arg_key = arg
         self.key = arg_key
         self.typ = arg_typ
 
@@ -205,53 +218,67 @@ class Connector(threading.Thread):
             print "thread reads..."
             data = self.socket.recv(4096)
             truedata += data
-            if ":*#" in data:
+            if "</what-to-do>" in data:
                 self.data=truedata
                 truedata=''
-                
+
     def write(self,data):
-        self.socket.send(data)    
-        
+        self.socket.send(data)
+
     def getData(self):
         data = self.data
         self.data = ''
-        return data    
+        return data
 
 class XmlHandler(xml.sax.ContentHandler):
     """
     Handles XML.SAX events
     """
 
-    def __init__(self):
-        pass
-
-    def startDocument(self):
-        pass
-
-    def endDocument(self):
-        pass
+    def __init__(self, client):
+        self.client = client
 
     def startElement(self,name,attrs):
         print "start", name
-        for key,value in attrs.items():
-            print key,value
 
-    def endElement(self,name):
-        print "end", name
+        openAssignment = None
 
-    def startElementNS(self,name,qname,attrs):
-        print "start ns", name, qname
-        for key,value in attrs.items():
-            print key,value
+        if name == "assignment":
+            actionStart = None
+            actionEnd = None
+            id = 0
+            for key,value in attrs.items():
+                if key == "start":
+                    actionStart = Action(value)
+                elif key == "end":
+                    actionEnd = Action(value)
+                elif key == "id":
+                    id = int(value)
+            openAssignment = Assignment(actionStart, actionEnd)
+            self.client.assignments.append(openAssignment)
 
-    def endElementNS(self,name,qname):
-        print "end", name, qname
+        elif name == "event":
+            arg1 = None
+            arg2 = None
+            compare = None
+            action = None
 
-    def characters(self,data):
-        print "characters", data
+            for key,value in attrs.items():
+                if key == "ifarg1":
+                    arg1 = Argument(value)
 
-    def ignorableWhitespace(self):
-        print "ignorableWhitespace"
+                elif key == "ifarg2":
+                    arg2 = Argument(value)
+
+                elif key == "ifcompare":
+                    compare = value
+
+                elif key == "then":
+                    action = Action(value)
+
+            openAssignment.events.append(Event(arg1, arg2, compare, action))
+
+
 
 class Client:
     """
@@ -280,7 +307,10 @@ class Client:
         data = self.connection.getData()
         if data:
             print data
-        #todo: pase data
+            parser = make_parser()
+            parser.setContentHandler(XmlHandler(self))
+            parser.parse(data)
+
         return 0
 
     def nextAssignment(self):
