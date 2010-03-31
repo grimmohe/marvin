@@ -11,10 +11,11 @@ from xml.sax import make_parser
 
 class Action:
     """ Ausführen von/ direkte weitergabe an die devices """
+    # dev:command=1
     def __init__(self, args):
         args = args.split("=", 2)
         self.value = args[1]
-        args = args[0].slpit(":", 2)
+        args = args[0].split(":", 2)
         self.device_id = args[0]
         self.command = args[1]
 
@@ -52,14 +53,14 @@ class Assignment:
         self.active = True
         self.starttime = time.time()
         if self.startAction <> None:
-            self.startAction.execute()
+            self.startAction.execute(states)
 
     def process(self, states):
         """ verarbeitet neue Events """
         if not self.active:
             return 0
 
-        states.update("running", time.time( - self.starttime))
+        states.update("running", time.time() - self.starttime)
         goon = 1
 
         for event in self.events:
@@ -83,7 +84,7 @@ class Argument:
 
     def __init__(self, arg):
         # nur float (0.0)
-        if re.match("^[\d]+\.?[\d]*$", arg, 0):
+        if re.match("^([\d]+\.?[\d]*|[\d]*\.?[\d]+)$", arg, 0):
             arg_typ = self.ARG_STATIC
             arg_key = float(arg)
         else:
@@ -114,11 +115,11 @@ class Event:
         match = 0
         goon = 1
 
-        if ">" in self.compare:
+        if "g" in self.compare:
             match = match or self.arg1.get(states) > self.arg2.get(states)
-        if "<" in self.compare:
+        if "l" in self.compare:
             match = match or self.arg1.get(states) < self.arg2.get(states)
-        if "=" in self.compare:
+        if "e" in self.compare:
             match = match or self.arg1.get(states) == self.arg2.get(states)
 
         if match:
@@ -235,11 +236,10 @@ class XmlHandler(xml.sax.ContentHandler):
 
     def __init__(self, client):
         self.client = client
+        self.openAssignment = None
 
     def startElement(self,name,attrs):
         print "start", name
-
-        openAssignment = None
 
         if name == "assignment":
             actionStart = None
@@ -252,8 +252,8 @@ class XmlHandler(xml.sax.ContentHandler):
                     actionEnd = Action(value)
                 elif key == "id":
                     id = int(value)
-            openAssignment = Assignment(actionStart, actionEnd)
-            self.client.assignments.append(openAssignment)
+            self.openAssignment = Assignment(id, actionStart, actionEnd)
+            self.client.assignments.append(self.openAssignment)
 
         elif name == "event":
             arg1 = None
@@ -274,7 +274,7 @@ class XmlHandler(xml.sax.ContentHandler):
                 elif key == "then":
                     action = Action(value)
 
-            openAssignment.events.append(Event(arg1, arg2, compare, action))
+            self.openAssignment.events.append(Event(arg1, arg2, compare, action))
 
 
 
@@ -305,9 +305,7 @@ class Client:
         data = self.connection.getData()
         if data:
             print data
-            parser = make_parser()
-            parser.setContentHandler(XmlHandler(self))
-            parser.parse(data)
+            xml.sax.parseString(data, XmlHandler(self))
 
         return 0
 
@@ -315,11 +313,11 @@ class Client:
         """ aktiviert das nächste Assignment """
         activated = False
         if self.assignment <> None:
-            activated = self.assignment.activ
+            activated = self.assignment.active
 
         if not activated:
             for a in self.assignments:
-                if self.assignment == None | self.assignment.id < a.id:
+                if self.assignment == None or self.assignment.id < a.id:
                     activated = self.startAssignment(a.id)
                     break
         return activated

@@ -52,30 +52,30 @@ class ServCmd:
             self.shell.processCommand("echo try killing me")
             self.listening = self.processing = 0
             del self.server
-            
+
     def sendFile(self, file):
         ofile = os.open(file, os.O_RDONLY)
         rc=1
         while True:
             stream = os.read(ofile, 2048)
             if len(stream) > 0:
-                self.client.send(stream + "</what-to-do>")
+                self.client.send(stream)
                 rc = 0
             else:
                 break
         os.close(ofile)
         return rc
-    
+
 class shell(threading.Thread):
-    
+
     def __init__(self,server):
         threading.Thread.__init__(self)
         self.server = server
         self.start()
-        
+
     def run(self):
-        self.awaitingCommands()    
-        
+        self.awaitingCommands()
+
     def awaitingCommands(self):
         cmd=''
         while True:
@@ -85,7 +85,7 @@ class shell(threading.Thread):
     def processCommand(self,cmd):
         if len(cmd) == 0:
             return
-        
+
         cmd = cmd.replace("  "," ").strip().split(" ")
         if "sf" == cmd[0]:
             print "sending file: ", cmd[1]
@@ -102,12 +102,12 @@ class shell(threading.Thread):
             print "sf <file>"
             print "echo <text>"
             print "srv disco|kill"
-            print "help"    
+            print "help"
 
     def closeCmdLine(self):
         self.processCommand("echo close shell")
-        
-     
+
+
 
 if __name__ == '__main__':
     serv = ServCmd()
