@@ -204,6 +204,7 @@ class Connector(threading.Thread):
         self.connected = False
         self.socket = None
         self.data = ''
+        self.stop = False
         self.start()
 
     def connect(self):
@@ -214,6 +215,8 @@ class Connector(threading.Thread):
 
     def disconnect(self):
         if self.connected:
+            print "disconnecting..."
+            self.write("DISCO")
             self.socket.close()
             self.connected = False
 
@@ -223,13 +226,15 @@ class Connector(threading.Thread):
 
     def read(self):
         truedata=''
-        while self.socket:
+        while not self.stop:
             print "thread reads..."
             data = self.socket.recv(4096)
             truedata += data
             if "</what-to-do>" in data:
                 self.data=truedata
                 truedata=''
+        if self.data == "DISCO":
+            self.stop = True
 
     def write(self,data):
         self.socket.send(data)
