@@ -23,20 +23,20 @@ class State:
         self.cb_anyAction = cb_process
         self.devices = \
             { "engine": device.Device('/tmp/dev_engine',
-                                      lambda data: self.update("engine", float(data)),
-                                      True, True),
+                                      lambda data: self.debugstep("engine:"+data.split("=")[0], data),
+                                      truncate=True, host=True),
               "head":   device.Device('/tmp/dev_head',
-                                      lambda data: self.update("head", float(data == "down")),
-                                      True, True),
+                                      lambda data: self.debugstep("head:move", data),
+                                      truncate=True, host=True),
               "left":   device.Device('/tmp/dev_left',
-                                      lambda data: self.update("left", float(data)),
-                                      True, True),
+                                      lambda data: self.debugstep("left:distance", data),
+                                      truncate=True, host=True),
               "front":  device.Device('/tmp/dev_front',
-                                      lambda data: self.update("front", float(data)),
-                                      True, True),
+                                      lambda data: self.debugstep("front:distance", data),
+                                      truncate=True, host=True),
               "right":  device.Device('/tmp/dev_right',
-                                      lambda data: self.update("right", float(data)),
-                                      True, True) }
+                                      lambda data: self.debugstep("right:distance", data),
+                                      truncate=True, host=True) }
         self.devices["engine"].write("reset")
 
         self.update("engine:drive", 0.0)
@@ -45,6 +45,14 @@ class State:
         self.update("front:distance", 1.0)
         self.update("left:distance", 1.0)
         self.update("right:distance", 1.0)
+
+    #TODO: do it right
+    def debugstep(self, key, value):
+        print key, value
+        if key == "head:move":
+            self.update(key, float(value.split("=")[1] == "down"))
+        else:
+            self.update(key, float(value.split("=")[1]))
 
     def __del__(self):
         self.devices["engine"].close()

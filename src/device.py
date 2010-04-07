@@ -23,7 +23,6 @@ class Device:
     watchmask = pyinotify.EventsCodes.FLAG_COLLECTIONS["OP_FLAGS"]["IN_MODIFY"]
 
     def __init__(self, filebasename, cb_event, truncate=False, host=False):
-
         """ initialize file descriptors """
         if host:
             self.filename_in = filebasename + "_in"
@@ -32,8 +31,8 @@ class Device:
             self.filename_in = filebasename + "_out"
             self.filename_out = filebasename + "_in"
 
-        self.file_in = os.open(self.filename_in, os.O_RDONLY | os.O_CREAT)
-        self.file_out = os.open(self.filename_out, os.O_WRONLY | os.O_CREAT)
+        self.file_in = os.open(self.filename_in, os.O_RDONLY | os.O_CREAT | os.O_SYNC)
+        self.file_out = os.open(self.filename_out, os.O_WRONLY | os.O_CREAT | os.O_SYNC)
 
         if truncate:
             os.ftruncate(self.file_out, 0)
@@ -61,9 +60,10 @@ class Device:
         stream = os.read(self.file_in, 2048)
         """print self.filename, "readed", stream"""
 
+        print self.filename_in, stream
+
         for data in string.split(stream, "\n"):
             if len(data) > 0:
-                """print "device:", self.filename, "readed:", data"""
                 self.cb_readevent(data)
         return 1
 
