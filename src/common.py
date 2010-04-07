@@ -3,9 +3,71 @@
 
 import time
 import re
+import xml.sax
+
+class Actionlog:
+    """
+    Eine Aufzeichnung der letzten Aktivitäten seit Rückmeldung an den Server.
+    """
+    def __init__(self):
+        self.actions = []
+
+    def readXml(self, xml):
+        xml.sax.parseString(xml, ActionlogXmlHandler(self))
+        return 1
+
+    def toXml(self):
+        cReturn = "<what-have-i-done>"
+        for action in self.actions:
+            cReturn += action.toXml()
+        cReturn += "</what-have-i-done>"
+        return cReturn
+
+    def update(self, action, value):
+        if ( len(self.actions) == 0
+             or not self.actions[len(self.actions)-1].update(action, value) ) :
+            self.actions.append(ActionlogEntry(action, value))
+        return 1
+
+
+class ActionlogEntry:
+    """
+    Eintrag im Actionlog beschreibt eine Aktion mit andauernen Zuständen
+    """
+    def __init__(self, action, value, start=None):
+        self.action = action
+        self.value = value
+        if start <> None:
+            self.start_value = start
+        else:
+            self.start_value = value
+
+    def toXml(self):
+        return "<" + self.action  \
+               + " value='" + str(int((self.value - self.start_value) * 100)) + "'/>"
+
+    def update(self, action, value, touch):
+        iReturn = 0
+        if self.action == action:
+            iReturn = 1
+            self.value = value
+        return iReturn
+
+class ActionlogXmlHandler(xml.sax.ContentHandler):
+    """
+    Handles XML.SAX events to create ActionlogEntry
+    """
+    def __init__(self, actionlog):
+        self.actionlog = actionlog
+
+    def startElement(self,name,attrs):
+        pass
+        #TODO: mach weiter
 
 class Action:
-    """ Ausführen von/ direkte weitergabe an die devices """
+    """
+    Ausführen von/ direkte weitergabe an die devices
+    """
     # dev:command=1
     def __init__(self, args, final):
         args = args.split("=", 2)
@@ -73,7 +135,6 @@ class Assignment:
         if not self.active:
             return 0
 
-        states.update("running", time.time() - self.starttime)
         goon = (len(self.events) > 0)
 
         for event in self.events:

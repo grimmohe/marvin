@@ -6,7 +6,7 @@ import socket
 import xml.sax
 import device
 import threading
-from common import Action, Argument, Assignment, Event
+from common import Action, Actionlog, Argument, Assignment, Event
 
 class State:
     """
@@ -17,9 +17,10 @@ class State:
     Was sagen die Sensoren?
     """
 
-    def __init__(self):
+    def __init__(self, actionlog, cb_process):
+        self.actionlog = actionlog
         self.dict = {}
-        self.cb_anyAction = None
+        self.cb_anyAction = cb_process
         self.devices = \
             { "engine": device.Device('/tmp/dev_engine',
                                       lambda data: self.update("engine", float(data)),
@@ -53,12 +54,6 @@ class State:
         self.devices["right"].close()
         self.devices = None
 
-    def update(self, key, value):
-        """ Erstellt/Aktualisiert einen Wert """
-        self.dict[key] = value
-        if self.cb_anyAction:
-            self.cb_anyAction(self)
-
     def getValue(self, key):
         """ Gibt den value zu key """
         value = None
@@ -66,12 +61,16 @@ class State:
             value = self.dict[key]
         return value
 
-class Actionlog:
-    """
-    Eine Aufzeichnung der letzten Aktivitäten seit Rückmeldung an den Server.
-    """
-    def __init__(self):
-        pass
+    def sendAction(self, key, value):
+        action = key.split(":")[0]
+        self.actionlog.update(action, value)
+
+    def update(self, key, value):
+        """ Erstellt/Aktualisiert einen Wert """
+        self.dict[key] = value
+        self.sendAction(key, value)
+        if self.cb_anyAction:
+            self.cb_anyAction(self)
 
 class Connector(threading.Thread):
     """
@@ -192,7 +191,7 @@ class Client:
 
     def __init__(self):
         self.actionlog = Actionlog()
-        self.stateholder = State()
+        self.stateholder = State(self.actionlog, self.process)
         self.connection = Connector()
 
     def __del__(self):
@@ -246,7 +245,7 @@ class Client:
             active = self.nextAssignment()
             # sekündliche Prüfung
             if active:
-                self.assignment.process(self.stateholder)
+                self.process()
             # wenn nichts mehr zu tun ist
             # Verbindugn zum Server aufbauen,
             # Bericht an den Server senden und neue Aufgaben holen
@@ -257,6 +256,11 @@ class Client:
         # Serververbindung trennen
         if self.connection <> None:
             self.connection.disconnect()
+
+    def process(self):
+        if self.assignment:
+            self.stateholder.update("running", time.time() - self.assignment.starttime)
+            self.assignment.process(self.stateholder)
 
 if __name__ == '__main__':
     print "init client"
