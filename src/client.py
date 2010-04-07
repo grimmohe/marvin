@@ -102,18 +102,22 @@ class Connector(threading.Thread):
     def run(self):
         self.connect()
         self.read()
+        self.disconnect()
 
     def read(self):
         truedata=''
         while not self.stop:
             print "thread reads..."
             data = self.socket.recv(4096)
+            if not data:
+                self.stop = True
+                break
             truedata += data
             if "</what-to-do>" in data:
                 self.data=truedata
                 truedata=''
-        if self.data == "DISCO":
-            self.stop = True
+            if self.data == "DISCO":
+                self.stop = True
 
     def write(self,data):
         self.socket.send(data)
