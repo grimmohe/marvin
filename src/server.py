@@ -14,28 +14,29 @@ ADDR = (HOST,PORT)
 class serverListener(threading.Thread):
     def __init__(self, shell):
         threading.Thread.__init__(self)
-        self.server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.server.bind((ADDR))
+        self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.socket.bind((ADDR))
         self.listening  = 0
         self.clients = []
         self.shell = shell
         self.start()
 
     def __del__(self):
-        self.shell.processCommand("echo server destroyed")
+        self.shell.processCommand("echo destroy server")
+        self.socket = None
         
     def run(self):
         self.listening = 1
-        while self.listening:
+        while self.listening and self.socket:
             self.listen()
         self.shell.processCommand("echo server shutdown")
         self.shutdown()
 
     def listen(self):
         self.shell.processCommand("echo server is listening")
-        self.server.listen(5)
-        if self.server:
-            cli = self.server.accept()
+        self.socket.listen(1)
+        if self.socket:
+            cli = self.socket.accept()
             self.clients.append(clientConnection(self,cli))
 
     def serverCmd(self, cmd):
@@ -68,9 +69,14 @@ class serverListener(threading.Thread):
         self.shell.processCommand("echo try killing me")
         self.listening = 0
         self.disconnectClients()
-        self.server.shutdown(socket.SHUT_RDWR)
-        self.server.close()
+        self.socketClose()
         self.shell.processCommand("echo done???")
+        
+    def socketClose(self):
+        if self.socket:
+            self.socket.shutdown(socket.SHUT_RDWR)
+            self.socket.close()
+
 
 class clientConnection(threading.Thread):
     
@@ -79,6 +85,7 @@ class clientConnection(threading.Thread):
         self.server = server
         self.client = client[0]
         self.clientInfo = client[1]
+        self.clientStuff = client
         self.reader = None 
         self.start()
 
@@ -91,10 +98,11 @@ class clientConnection(threading.Thread):
 
     def disconnect(self):
         self.shellEcho("disconnecting...")
-        self.send("DISCO")
+        #self.send("DISCO")
         self.reader.stop = True
-        self.client.shutdown(socket.SHUT_RDWR)
-        self.client.close()
+        if self.client:
+            self.client.shutdown(socket.SHUT_RDWR)
+            self.client.close()
         self.reader = None
         self.client = None
         self.clientInfo = None
@@ -134,15 +142,25 @@ class clientConnectionReader(threading.Thread):
     def awaitIncoming(self):
         while not self.stop:
             data = self.clientCon.client.recv(BUFSIZE)
+            if not data:
+                self.clientCon.shellEcho("client disconnected")
+                break
             self.clientCon.receive(data)
+        self.clientCon.server.clients.remove(self.clientCon)
+        self.clientCon = None
        
 
-class shell():
+class shell:
 
     def __init__(self):
         self.server = serverListener(self)
         self.exit = False
         self.run()
+
+    def __del__(self):
+        print "destroy shelL"
+        if self.server:
+            self.server.shutdown()
 
     def run(self):
         self.awaitingCommands()
@@ -152,8 +170,7 @@ class shell():
         while not self.exit:
             cmd = raw_input("cmd#>: ")
             self.processCommand(cmd)
-        if self.server:
-            self.server = None
+        self.processCommand("stop")
 
     def processCommand(self,cmd):
         if len(cmd) == 0:
