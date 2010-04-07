@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#coding=ut
+#coding=utf8
 
 import time
 import re
@@ -46,7 +46,7 @@ class ActionlogEntry:
         return "<" + self.action  \
                + " value='" + str(int((self.value - self.start_value) * 100)) + "'/>"
 
-    def update(self, action, value, touch):
+    def update(self, action, value):
         iReturn = 0
         if self.action == action:
             iReturn = 1

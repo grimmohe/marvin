@@ -65,12 +65,12 @@ class State:
         action = key.split(":")[0]
         self.actionlog.update(action, value)
 
-    def update(self, key, value):
+    def update(self, key, value, process=True):
         """ Erstellt/Aktualisiert einen Wert """
         self.dict[key] = value
         self.sendAction(key, value)
-        if self.cb_anyAction:
-            self.cb_anyAction(self)
+        if process and self.cb_anyAction:
+            self.cb_anyAction()
 
 class Connector(threading.Thread):
     """
@@ -263,7 +263,7 @@ class Client:
 
     def process(self):
         if self.assignment:
-            self.stateholder.update("running", time.time() - self.assignment.starttime)
+            self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
             self.assignment.process(self.stateholder)
 
 if __name__ == '__main__':
