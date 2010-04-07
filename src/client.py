@@ -223,6 +223,7 @@ class Connector(threading.Thread):
     def run(self):
         self.connect()
         self.read()
+        self.disconnect()
 
     def read(self):
         truedata=''
