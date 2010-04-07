@@ -230,6 +230,9 @@ class Connector(threading.Thread):
         while not self.stop:
             print "thread reads..."
             data = self.socket.recv(4096)
+            if not data:
+                self.stop = True
+                break
             truedata += data
             if "</what-to-do>" in data:
                 self.data=truedata
