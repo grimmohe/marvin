@@ -20,6 +20,12 @@ class Action:
             states.devices[self.device_id].write(self.command + "=" + self.value)
         return not self.final
 
+    def toXml(self, value_only=False):
+        cReturn = self.device_id + ":" + self.command + "=" + self.value
+        if not value_only:
+            cReturn = "then='" + cReturn + "' final='" + ["false", "true"][self.final] + "'"
+        return cReturn
+
 class Assignment:
     """
     Representiert die aktuelle Aufgabe.
@@ -46,6 +52,21 @@ class Assignment:
         self.starttime = time.time()
         if self.startAction <> None:
             self.startAction.execute(states)
+
+    def toXml(self):
+        cReturn = "<assignment id='" + str(self.id) + "'"
+
+        if self.startAction:
+            cReturn += " start='" + self.startAction.toXml(value_only=True) + "'"
+        if self.stopAction:
+            cReturn += " end='" + self.stopAction.toXml(value_only=True) + "'"
+
+        cReturn += ">"
+        for event in self.events:
+            cReturn += event.toXml()
+        cReturn += "</assignment>"
+
+        return cReturn
 
     def process(self, states):
         """ verarbeitet neue Events """
@@ -93,6 +114,15 @@ class Argument:
             ret_val = states.getValue(self.key)
         return ret_val
 
+    def toXml(self):
+        cReturn = ""
+        if self.typ == self.ARG_STATIC:
+            cReturn = str(int(self.key * 100))
+        elif self.typ == self.ARG_STATE:
+            cReturn = self.key
+        return cReturn
+
+
 class Event:
     """
     Events stellen Bedingungen und können den Client zu Bewegungen veranlassen.
@@ -123,3 +153,12 @@ class Event:
         if match:
             goon = self.action.execute(states)
         return goon
+
+    def toXml(self):
+        cReturn = "<event" \
+                + " ifarg1='" + self.arg1.toXml() + "'" \
+                + " ifarg2='" + self.arg2.toXml() + "'" \
+                + " ifcompare='" + self.compare + "'" \
+                + self.action.toXml() \
+                + "/>"
+        return cReturn
