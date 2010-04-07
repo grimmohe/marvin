@@ -237,8 +237,8 @@ class Connector(threading.Thread):
             if "</what-to-do>" in data:
                 self.data=truedata
                 truedata=''
-        if self.data == "DISCO":
-            self.stop = True
+            if self.data == "DISCO":
+                self.stop = True
 
     def write(self,data):
         self.socket.send(data)
