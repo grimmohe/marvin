@@ -463,9 +463,9 @@ class Simulator:
         pygame.draw.circle \
             ( self.gui_window,
               (100, 100, 100),
-              ((pos_alt["x"] + self.gui_x_offset) * factor,
-               (pos_alt["y"] + self.gui_y_offset) * factor),
-              self.client.RADIUS * factor,
+              (int((pos_alt["x"] + self.gui_x_offset) * factor),
+               int((pos_alt["y"] + self.gui_y_offset) * factor)),
+              int(self.client.RADIUS * factor),
               1 )
         pygame.draw.line \
             ( self.gui_window,
@@ -479,9 +479,9 @@ class Simulator:
         pygame.draw.circle \
             ( self.gui_window,
               (0, 200, 0),
-              ((pos_neu["x"] + self.gui_x_offset) * factor,
-               (pos_neu["y"] + self.gui_y_offset) * factor),
-              self.client.RADIUS * factor,
+              (int((pos_neu["x"] + self.gui_x_offset) * factor),
+               int((pos_neu["y"] + self.gui_y_offset) * factor)),
+              int(self.client.RADIUS * factor),
               1 )
         # Saugkopf zeichnen
         for line in self.client.get_head_lines(current_time):
