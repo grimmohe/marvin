@@ -107,13 +107,13 @@ class Cleaner:
 
     def __init__(self):
         self.head_form     = ( {"x": -20.0, "y":  0.0, "sensor": None, "id": "left",
-                                "dev": "/tmp/dev_left",  "status": 1.0}
+                                "status": 1.0}
                              , {"x": -20.0, "y": 20.0, "sensor": None, "id": "front",
-                                "dev": "/tmp/dev_front", "status": 1.0}
+                                "status": 1.0}
                              , {"x":  20.0, "y": 20.0, "sensor": None, "id": "right",
-                                "dev": "/tmp/dev_right", "status": 1.0}
+                                "status": 1.0}
                              , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
-                                "dev": "",               "status": 1.0} )
+                                "status": 1.0} )
         self.head_down     = False
         self.head          = None
         self.engine        = None
@@ -126,10 +126,10 @@ class Cleaner:
         def cb_sensor_dummy(data): # auf diesen Devices wird nur gesendet
             pass
         for point in self.head_form:
-            if len(point["dev"]) > 0:
-                point["sensor"] = device.Device(point["dev"], cb_sensor_dummy, True)
-        self.engine = device.Device('/tmp/dev_engine', self.cb_engine, True)
-        self.head   = device.Device('/tmp/dev_head', self.cb_head, True)
+            if len(point["id"]) > 0:
+                point["sensor"] = device.Device(point["id"], cb_sensor_dummy, True)
+        self.engine = device.Device('engine', self.cb_engine)
+        self.head   = device.Device('head', self.cb_head)
 
     def __del__(self):
         self.head.close()
