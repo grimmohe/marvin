@@ -127,7 +127,7 @@ class Cleaner:
             pass
         for point in self.head_form:
             if len(point["id"]) > 0:
-                point["sensor"] = device.Device(point["id"], cb_sensor_dummy, True)
+                point["sensor"] = device.Device(point["id"], cb_sensor_dummy)
         self.engine = device.Device('engine', self.cb_engine)
         self.head   = device.Device('head', self.cb_head)
 
@@ -152,7 +152,6 @@ class Cleaner:
         """ Callback für die Motorsteuerung """
         data = string.split(data, "=")
         self.set_position(time.time())
-        print "engine does: ", data
         if data[0] == "drive":
             if data[1] == "1":
                 print "drive 1"
@@ -425,7 +424,7 @@ class Simulator:
         Initialisiert das PyGame Fenster
         """
         pygame.init()
-        self.gui_window = pygame.display.set_mode((600, 600), pygame.RESIZABLE)
+        self.gui_window = pygame.display.set_mode((200, 200), pygame.RESIZABLE)
         pygame.display.set_caption("dust simulator")
         self.gui_window.fill((0, 0, 0))
         pygame.display.update()

@@ -32,7 +32,7 @@ class State:
                                       lambda data: self.debugstep("front:distance", data)),
               "right":  device.Device('right',
                                       lambda data: self.debugstep("right:distance", data)) }
-        self.devices["engine"].write("reset")
+        self.devices["engine"].write("reset=1")
 
         self.update("engine:drive", 0.0)
         self.update("engine:turn", 0.0)
@@ -43,7 +43,6 @@ class State:
 
     #TODO: do it right
     def debugstep(self, key, value):
-        print key, value
         if key == "head:move":
             self.update(key, float(value.split("=")[1] == "down"))
         else:
@@ -79,8 +78,8 @@ class Connector(threading.Thread):
     """
     Stellt die Verbindung zum Server her
     """
-    def __init__(self):
-        threading.Thread.__init__(self,ip,port)
+    def __init__(self, ip, port):
+        threading.Thread.__init__(self)
         self.host = ip
         self.port = port
         self.connected = False
@@ -111,19 +110,19 @@ class Connector(threading.Thread):
     def read(self):
         truedata=''
         while not self.stop:
-            print "thread reads..."
             data = self.socket.recv(4096)
             if not data:
                 self.stop = True
                 break
             truedata += data
-            if "</what-to-do>" in data:
-                self.data=truedata
+            if "\n\n" == truedata[-2:]:
+                self.data=truedata.strip("\n")
+                if self.cb_incoming:
+                    self.cb_incoming(self)
                 truedata=''
+
             if self.data == "DISCO":
                 self.stop = True
-        if self.cb_incoming:
-            self.cb_incoming(self)
 
     def write(self,data):
         self.socket.send(data)
@@ -132,7 +131,7 @@ class Connector(threading.Thread):
         data = self.data
         self.data = ''
         return data
-    
+
     def setDataIncomingCb(self,cb):
         self.cb_incoming = cb
 
@@ -146,7 +145,6 @@ class XmlHandler(xml.sax.ContentHandler):
         self.openAssignment = None
 
     def startElement(self,name,attrs):
-        print "start", name
 
         if name == "assignment":
             actionStart = None
@@ -217,7 +215,6 @@ class Client:
         self.assignments   = []
         data = self.connection.getData()
         if data:
-            print data
             xml.sax.parseString(data, XmlHandler(self))
 
         return 0
