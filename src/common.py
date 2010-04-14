@@ -61,8 +61,14 @@ class ActionlogXmlHandler(xml.sax.ContentHandler):
         self.actionlog = actionlog
 
     def startElement(self,name,attrs):
-        pass
-        #TODO: mach weiter
+        val = 0.0
+        for attr,val in attrs:
+            if attr == "value":
+                value = float(val) / 100
+        if name <> "what-have-i-done":
+            self.actionlog.actions.append(ActionlogEntry(name, value, 0.0))
+        return 0
+
 
 class Action:
     """

@@ -94,6 +94,7 @@ class Cleaner:
     """
     Representant für den Staubsauger
     """
+
     RADIUS         = 20.0
     SPEED          = 10.0 # 1/s
     SENSOR_RANGE   = 1.0
@@ -104,24 +105,24 @@ class Cleaner:
     ACTION_TURN_LEFT  = 2
     ACTION_TURN_RIGHT = 4
 
-    head_form     = ( {"x": -20.0, "y":  0.0, "sensor": None, "id": "left",
-                       "dev": "/tmp/dev_left",  "status": 1.0}
-                    , {"x": -20.0, "y": 20.0, "sensor": None, "id": "front",
-                       "dev": "/tmp/dev_front", "status": 1.0}
-                    , {"x":  20.0, "y": 20.0, "sensor": None, "id": "right",
-                       "dev": "/tmp/dev_right", "status": 1.0}
-                    , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
-                       "dev": "",               "status": 1.0} )
-    head_down     = False
-    head          = None
-    engine        = None
-
-    position      = {"x": 20.5, "y": 20.5}
-    starttime     = 0.0
-    action        = 0
-    orientation   = 0.0
-
     def __init__(self):
+        self.head_form     = ( {"x": -20.0, "y":  0.0, "sensor": None, "id": "left",
+                                "dev": "/tmp/dev_left",  "status": 1.0}
+                             , {"x": -20.0, "y": 20.0, "sensor": None, "id": "front",
+                                "dev": "/tmp/dev_front", "status": 1.0}
+                             , {"x":  20.0, "y": 20.0, "sensor": None, "id": "right",
+                                "dev": "/tmp/dev_right", "status": 1.0}
+                             , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
+                                "dev": "",               "status": 1.0} )
+        self.head_down     = False
+        self.head          = None
+        self.engine        = None
+
+        self.position      = {"x": 20.5, "y": 20.5}
+        self.starttime     = 0.0
+        self.action        = 0
+        self.orientation   = 0.0
+
         def cb_sensor_dummy(data): # auf diesen Devices wird nur gesendet
             pass
         for point in self.head_form:
@@ -272,7 +273,6 @@ class Room:
     """
     Datenhalter für Rauminformationen
     """
-    waypoints = []
 
     def __init__(self, wp_file):
         """
@@ -309,21 +309,38 @@ class Room:
             lines.append(line)
         return lines
 
-class Simulator:
-    """ Physiksimulator für den Client """
-    runit          = False
-    client         = None
-    room           = None
+    def get_size(self):
+        min_x = 0
+        max_x = 0
+        min_y = 0
+        max_y = 0
 
-    gui_height     = 1
-    gui_y_offset   = 0
-    gui_width      = 1
-    gui_x_offset   = 0
-    gui_factor     = 1
-    GUI_MAX_SIZE   = 600
-    gui_window     = None
+        for point in self.waypoints:
+            min_x = min(min_x, point["x"])
+            max_x = max(max_x, point["x"])
+            min_y = min(min_y, point["y"])
+            max_y = max(max_y, point["y"])
+
+        return {"x": -min_x + max_x,
+                "y": -min_y + max_y}
+
+
+class Simulator:
+    """
+    Physiksimulator für den Client
+    """
 
     def __init__(self):
+        self.runit          = False
+        self.client         = None
+        self.room           = None
+
+        self.gui_height     = 1
+        self.gui_y_offset   = 0
+        self.gui_width      = 1
+        self.gui_x_offset   = 0
+        self.gui_window     = None
+
         self.client        = Cleaner()
         self.room          = Room("data/room.xy")
 
@@ -339,7 +356,6 @@ class Simulator:
         """
         Die Kollisionsprüfung. Löst das Senden von Sensordaten aus.
         """
-        client_pos = self.client.get_cur_position(now)
         self.client.reset_head_status()
 
         for line in self.room.get_lines():
@@ -406,33 +422,10 @@ class Simulator:
 
     def init_gui(self):
         """
-        Ermittelt das Ausmaß des Raumes, erstellt das Fenster und malt die Wände
+        Initialisiert das PyGame Fenster
         """
-        for line in self.room.get_lines():
-            for point in line:
-                if point["y"] > 0:
-                    self.gui_height = max(self.gui_height,
-                                          point["y"] + self.gui_y_offset)
-                if point["y"] < 0:
-                    diff = max(0, abs(point["y"]) - self.gui_y_offset)
-                    self.gui_y_offset += diff
-                    self.gui_height   += diff
-
-                if point["x"] > 0:
-                    self.gui_width = max(self.gui_width,
-                                         point["x"] + self.gui_x_offset)
-                if point["x"] < 0:
-                    diff = max(0, abs(point["x"]) - self.gui_x_offset)
-                    self.gui_x_offset += diff
-                    self.gui_width    += diff
-
-        self.gui_factor = max(self.GUI_MAX_SIZE / self.gui_height,
-                              self.GUI_MAX_SIZE / self.gui_width)
-        # PyGame init stuff
         pygame.init()
-        self.gui_window \
-            = pygame.display.set_mode(((self.gui_width * self.gui_factor) + 1,
-                                       (self.gui_height * self.gui_factor) + 1))
+        self.gui_window = pygame.display.set_mode((600, 600), pygame.RESIZABLE)
         pygame.display.set_caption("dust simulator")
         self.gui_window.fill((0, 0, 0))
         pygame.display.update()
@@ -442,8 +435,18 @@ class Simulator:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.runit = False
+            elif event.type == pygame.VIDEORESIZE:
+                self.gui_window = pygame.display.set_mode(event.size, pygame.RESIZABLE)
+
         pos_alt = self.client.position
         pos_neu = self.client.get_cur_position(current_time)
+
+        room_size = self.room.get_size()
+        screen_size_x, screen_size_y = self.gui_window.get_size()
+        screen_size_x -= 1
+        screen_size_y -= 1
+        factor = min(float(screen_size_x) / room_size["x"], float(screen_size_y) / room_size["y"])
+
         # Hintergrund füllen
         self.gui_window.fill((0, 0, 0))
         # die Wände zeichnen
@@ -451,44 +454,44 @@ class Simulator:
             pygame.draw.line \
                 ( self.gui_window,
                   (0, 0, 255),
-                  ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
-                   (line[0]["y"] + self.gui_y_offset) * self.gui_factor),
-                  ((line[1]["x"] + self.gui_x_offset) * self.gui_factor,
-                   (line[1]["y"] + self.gui_y_offset) * self.gui_factor),
+                  ((line[0]["x"] + self.gui_x_offset) * factor,
+                   (line[0]["y"] + self.gui_y_offset) * factor),
+                  ((line[1]["x"] + self.gui_x_offset) * factor,
+                   (line[1]["y"] + self.gui_y_offset) * factor),
                   1 )
         # die alte Position vor Beginn der Bewegung
         pygame.draw.circle \
             ( self.gui_window,
               (100, 100, 100),
-              ((pos_alt["x"] + self.gui_x_offset) * self.gui_factor,
-               (pos_alt["y"] + self.gui_y_offset) * self.gui_factor),
-              self.client.RADIUS * self.gui_factor,
+              (int((pos_alt["x"] + self.gui_x_offset) * factor),
+               int((pos_alt["y"] + self.gui_y_offset) * factor)),
+              int(self.client.RADIUS * factor),
               1 )
         pygame.draw.line \
             ( self.gui_window,
               (100, 100, 100),
-              ((pos_alt["x"] + self.gui_x_offset) * self.gui_factor,
-               (pos_alt["y"] + self.gui_y_offset) * self.gui_factor),
-              ((pos_neu["x"] + self.gui_x_offset) * self.gui_factor,
-               (pos_neu["y"] + self.gui_y_offset) * self.gui_factor),
+              ((pos_alt["x"] + self.gui_x_offset) * factor,
+               (pos_alt["y"] + self.gui_y_offset) * factor),
+              ((pos_neu["x"] + self.gui_x_offset) * factor,
+               (pos_neu["y"] + self.gui_y_offset) * factor),
               1 )
         # die aktuelle Position
         pygame.draw.circle \
             ( self.gui_window,
               (0, 200, 0),
-              ((pos_neu["x"] + self.gui_x_offset) * self.gui_factor,
-               (pos_neu["y"] + self.gui_y_offset) * self.gui_factor),
-              self.client.RADIUS * self.gui_factor,
+              (int((pos_neu["x"] + self.gui_x_offset) * factor),
+               int((pos_neu["y"] + self.gui_y_offset) * factor)),
+              int(self.client.RADIUS * factor),
               1 )
         # Saugkopf zeichnen
         for line in self.client.get_head_lines(current_time):
             pygame.draw.line \
                 ( self.gui_window,
                   (0, 200, 0),
-                  ((line[0]["x"] + self.gui_x_offset) * self.gui_factor,
-                   (line[0]["y"] + self.gui_y_offset) * self.gui_factor),
-                  ((line[1]["x"] + self.gui_x_offset) * self.gui_factor,
-                   (line[1]["y"] + self.gui_y_offset) * self.gui_factor),
+                  ((line[0]["x"] + self.gui_x_offset) * factor,
+                   (line[0]["y"] + self.gui_y_offset) * factor),
+                  ((line[1]["x"] + self.gui_x_offset) * factor,
+                   (line[1]["y"] + self.gui_y_offset) * factor),
                   1 )
         pygame.display.update()
 
