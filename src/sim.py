@@ -94,6 +94,7 @@ class Cleaner:
     """
     Representant für den Staubsauger
     """
+
     RADIUS         = 20.0
     SPEED          = 10.0 # 1/s
     SENSOR_RANGE   = 1.0
@@ -104,24 +105,24 @@ class Cleaner:
     ACTION_TURN_LEFT  = 2
     ACTION_TURN_RIGHT = 4
 
-    head_form     = ( {"x": -20.0, "y":  0.0, "sensor": None, "id": "left",
-                       "dev": "/tmp/dev_left",  "status": 1.0}
-                    , {"x": -20.0, "y": 20.0, "sensor": None, "id": "front",
-                       "dev": "/tmp/dev_front", "status": 1.0}
-                    , {"x":  20.0, "y": 20.0, "sensor": None, "id": "right",
-                       "dev": "/tmp/dev_right", "status": 1.0}
-                    , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
-                       "dev": "",               "status": 1.0} )
-    head_down     = False
-    head          = None
-    engine        = None
-
-    position      = {"x": 20.5, "y": 20.5}
-    starttime     = 0.0
-    action        = 0
-    orientation   = 0.0
-
     def __init__(self):
+        self.head_form     = ( {"x": -20.0, "y":  0.0, "sensor": None, "id": "left",
+                                "dev": "/tmp/dev_left",  "status": 1.0}
+                             , {"x": -20.0, "y": 20.0, "sensor": None, "id": "front",
+                                "dev": "/tmp/dev_front", "status": 1.0}
+                             , {"x":  20.0, "y": 20.0, "sensor": None, "id": "right",
+                                "dev": "/tmp/dev_right", "status": 1.0}
+                             , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
+                                "dev": "",               "status": 1.0} )
+        self.head_down     = False
+        self.head          = None
+        self.engine        = None
+
+        self.position      = {"x": 20.5, "y": 20.5}
+        self.starttime     = 0.0
+        self.action        = 0
+        self.orientation   = 0.0
+
         def cb_sensor_dummy(data): # auf diesen Devices wird nur gesendet
             pass
         for point in self.head_form:
@@ -272,7 +273,6 @@ class Room:
     """
     Datenhalter für Rauminformationen
     """
-    waypoints = []
 
     def __init__(self, wp_file):
         """
@@ -309,21 +309,38 @@ class Room:
             lines.append(line)
         return lines
 
-class Simulator:
-    """ Physiksimulator für den Client """
-    runit          = False
-    client         = None
-    room           = None
+    def get_size(self):
+        min_x = 0
+        max_x = 0
+        min_y = 0
+        max_y = 0
 
-    gui_height     = 1
-    gui_y_offset   = 0
-    gui_width      = 1
-    gui_x_offset   = 0
-    gui_factor     = 1
-    GUI_MAX_SIZE   = 600
-    gui_window     = None
+        for point in self.waypoints:
+            min_x = min(min_x, point["x"])
+            max_x = max(max_x, point["x"])
+            min_y = min(min_y, point["y"])
+            max_y = max(max_y, point["y"])
+
+        return {"x": -min_x + max_x,
+                "y": -min_y + max_y}
+
+
+class Simulator:
+    """
+    Physiksimulator für den Client
+    """
 
     def __init__(self):
+        self.runit          = False
+        self.client         = None
+        self.room           = None
+
+        self.gui_height     = 1
+        self.gui_y_offset   = 0
+        self.gui_width      = 1
+        self.gui_x_offset   = 0
+        self.gui_window     = None
+
         self.client        = Cleaner()
         self.room          = Room("data/room.xy")
 
@@ -339,7 +356,6 @@ class Simulator:
         """
         Die Kollisionsprüfung. Löst das Senden von Sensordaten aus.
         """
-        client_pos = self.client.get_cur_position(now)
         self.client.reset_head_status()
 
         for line in self.room.get_lines():
