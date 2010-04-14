@@ -4,6 +4,7 @@
 import os
 import pyinotify
 import string
+from client import Connector
 
 class Device:
     """
@@ -13,69 +14,29 @@ class Device:
     cb_readevent ausgelöst.
     """
 
-    filename_in = None
-    filename_out = None
     cb_readevent = None
-    wm = None
-    wdd = None
-    file_in = None
-    file_out = None
-    watchmask = pyinotify.EventsCodes.FLAG_COLLECTIONS["OP_FLAGS"]["IN_MODIFY"]
 
-    def __init__(self, filebasename, cb_event, truncate=False, host=False):
-        """ initialize file descriptors """
-        if host:
-            self.filename_in = filebasename + "_in"
-            self.filename_out = filebasename + "_out"
-        else:
-            self.filename_in = filebasename + "_out"
-            self.filename_out = filebasename + "_in"
-
-        self.file_in = os.open(self.filename_in, os.O_RDONLY | os.O_CREAT | os.O_SYNC)
-        self.file_out = os.open(self.filename_out, os.O_WRONLY | os.O_CREAT | os.O_SYNC)
-
-        if truncate:
-            os.ftruncate(self.file_out, 0)
-
-        os.lseek(self.file_in, 0, os.SEEK_END)
-        os.lseek(self.file_out, 0, os.SEEK_END)
-
-        """ what function to call on read event """
-        self.cb_readevent = cb_event
-
-        # Neuen Inotifier erzeugen
-        self.wm = pyinotify.WatchManager()
-        self.fileevent = FileEvent()
-        self.fileevent.cb_modify = self.read
-        self.notifier = pyinotify.ThreadedNotifier(self.wm, self.fileevent)
-        self.notifier.start()
-        self.wdd = self.wm.add_watch(self.filename_in, self.watchmask, rec=True)
-
+    def __init__(self, devname, cb_event):
+        self.con = Connection('127.0.0.1', 29874)
+        self.con.setDataIncomingCb(self.read())
+        self.name = devname
+        
     def __del__(self):
-        self.wm.rm_watch(self.wdd.values())
-        self.notifier.stop()
-        """print "device", self.filename_in, "stop"""
-
-    def read(self):
-        stream = os.read(self.file_in, 2048)
-        """print self.filename, "readed", stream"""
-
-        print self.filename_in, stream
-
-        for data in string.split(stream, "\n"):
-            if len(data) > 0:
-                self.cb_readevent(data)
+        self.close()
+        
+    def read(self,src):
+        data = src.getData()
+        if data.split("#")[0] == self.name:
+            self.cb_readevent(data)
         return 1
 
     def write(self, data):
-        os.write(self.file_out, data + "\n")
-        """print "device", self.filename_out, "write:", data"""
+        self.con.write(self.name + "#" + data)
         return 1
 
     def close(self):
-        self.fileevent.cb_modify = None
-        self.cb_readevent = None
-        os.close(self.file)
+        if self.con:
+            self.con.disconnect()
 
 class FileEvent(pyinotify.ProcessEvent):
 

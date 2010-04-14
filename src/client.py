@@ -22,21 +22,16 @@ class State:
         self.dict = {}
         self.cb_anyAction = cb_process
         self.devices = \
-            { "engine": device.Device('/tmp/dev_engine',
-                                      lambda data: self.debugstep("engine:"+data.split("=")[0], data),
-                                      truncate=True, host=True),
-              "head":   device.Device('/tmp/dev_head',
-                                      lambda data: self.debugstep("head:move", data),
-                                      truncate=True, host=True),
-              "left":   device.Device('/tmp/dev_left',
-                                      lambda data: self.debugstep("left:distance", data),
-                                      truncate=True, host=True),
-              "front":  device.Device('/tmp/dev_front',
-                                      lambda data: self.debugstep("front:distance", data),
-                                      truncate=True, host=True),
-              "right":  device.Device('/tmp/dev_right',
-                                      lambda data: self.debugstep("right:distance", data),
-                                      truncate=True, host=True) }
+            { "engine": device.Device('engine',
+                                      lambda data: self.debugstep("engine:"+data.split("=")[0], data)),
+              "head":   device.Device('head',
+                                      lambda data: self.debugstep("head:move", data)),
+              "left":   device.Device('left',
+                                      lambda data: self.debugstep("left:distance", data)),
+              "front":  device.Device('front',
+                                      lambda data: self.debugstep("front:distance", data)),
+              "right":  device.Device('right',
+                                      lambda data: self.debugstep("right:distance", data)) }
         self.devices["engine"].write("reset")
 
         self.update("engine:drive", 0.0)
@@ -85,13 +80,14 @@ class Connector(threading.Thread):
     Stellt die Verbindung zum Server her
     """
     def __init__(self):
-        threading.Thread.__init__(self)
-        self.host = "127.0.0.1"
-        self.port = 29875
+        threading.Thread.__init__(self,ip,port)
+        self.host = ip
+        self.port = port
         self.connected = False
         self.socket = None
         self.data = ''
         self.stop = False
+        self.cb_incoming = None
         self.start()
 
     def connect(self):
@@ -126,6 +122,8 @@ class Connector(threading.Thread):
                 truedata=''
             if self.data == "DISCO":
                 self.stop = True
+        if self.cb_incoming:
+            self.cb_incoming(self)
 
     def write(self,data):
         self.socket.send(data)
@@ -134,6 +132,9 @@ class Connector(threading.Thread):
         data = self.data
         self.data = ''
         return data
+    
+    def setDataIncomingCb(self,cb):
+        self.cb_incoming = cb
 
 class XmlHandler(xml.sax.ContentHandler):
     """
@@ -204,7 +205,7 @@ class Client:
     def __init__(self):
         self.actionlog = Actionlog()
         self.stateholder = State(self.actionlog, self.process)
-        self.connection = Connector()
+        self.connection = Connector('127.0.0.1',29875)
 
     def __del__(self):
         if self.connection <> None:

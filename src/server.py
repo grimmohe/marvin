@@ -7,58 +7,61 @@ import socket
 import threading
 
 BUFSIZE = 4096
-HOST = ''
-PORT = 29875
-ADDR = (HOST,PORT)
 
 class serverListener(threading.Thread):
-    def __init__(self, shell):
+    
+    def __init__(self, name, shell, ip, port, cb_read):
         threading.Thread.__init__(self)
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.socket.bind((ADDR))
+        self.socket.bind((ip,port))
         self.listening  = 0
         self.clients = []
         self.shell = shell
+        self.cb_read = cb_read
+        self.name = name
         self.start()
 
     def __del__(self):
-        self.shell.processCommand("echo destroy server")
+        self.shellEcho("destroy server")
         self.socket = None
         
     def run(self):
         self.listening = 1
         while self.listening and self.socket:
             self.listen()
-        self.shell.processCommand("echo server shutdown")
+        self.shellEcho("server shutdown")
         self.shutdown()
 
     def listen(self):
-        self.shell.processCommand("echo server is listening")
+        self.shellEcho("server is listening")
         self.socket.listen(1)
         if self.socket:
             cli = self.socket.accept()
-            self.clients.append(clientConnection(self,cli))
+            self.clients.append(clientConnection(self,cli,self.cb_read))
 
     def serverCmd(self, cmd):
         cmd = cmd.strip()
         if cmd == 'disco':
-            self.shell.processCommand("echo disconnect all clients")
+            self.shellEcho("disconnect all clients")
             self.disconnectClients()
         elif cmd == "kill":
             self.shutdown()
 
     def sendFile(self, file):
-        ofile = os.open(file, os.O_RDONLY)
-        rc=1
-        while True:
-            stream = os.read(ofile, 2048)
-            if len(stream) > 0:
-                self.clients[0].send(stream)
-                rc = 0
-            else:
-                break
-        os.close(ofile)
-        return rc
+        if self.clients and self.clients[0]:
+            ofile = os.open(file, os.O_RDONLY)
+            rc=1
+            while True:
+                stream = os.read(ofile, 2048)
+                if len(stream) > 0:
+                    self.clients[0].send(stream)
+                    rc = 0
+                else:
+                    break
+            os.close(ofile)
+            return rc
+        else:
+            self.shellEcho("no client available")
 
     def disconnectClients(self):
         for client in self.clients:
@@ -66,27 +69,31 @@ class serverListener(threading.Thread):
         self.clients = []
     
     def shutdown(self):
-        self.shell.processCommand("echo try killing me")
+        self.shellEcho("try killing me")
         self.listening = 0
         self.disconnectClients()
         self.socketClose()
-        self.shell.processCommand("echo done???")
+        self.shellEcho("done???")
         
     def socketClose(self):
         if self.socket:
             self.socket.shutdown(socket.SHUT_RDWR)
             self.socket.close()
 
+    def shellEcho(self, msg):
+        self.shell.processCommand("echo [" + self.name + "] " + msg)
+
 
 class clientConnection(threading.Thread):
     
-    def __init__(self, server, client):
+    def __init__(self, server, client, cb_read):
         threading.Thread.__init__(self)
         self.server = server
         self.client = client[0]
         self.clientInfo = client[1]
         self.clientStuff = client
         self.reader = None 
+        self.cb_read = cb_read
         self.start()
 
     def __del__(self):
@@ -98,7 +105,6 @@ class clientConnection(threading.Thread):
 
     def disconnect(self):
         self.shellEcho("disconnecting...")
-        #self.send("DISCO")
         self.reader.stop = True
         if self.client:
             self.client.shutdown(socket.SHUT_RDWR)
@@ -116,6 +122,7 @@ class clientConnection(threading.Thread):
         self.shellEcho("something has been received: " + data)
         if data == "DISCO":
             self.reader.stop = True
+        self.cb_read(self,data)
         
     def getClientString(self):
         if self.clientInfo:
@@ -123,7 +130,7 @@ class clientConnection(threading.Thread):
         return "[<unknown>]"
     
     def shellEcho(self, msg):
-        self.server.shell.processCommand("echo " + self.getClientString() + " " + msg)
+        self.server.shellEcho(self.getClientString() + " " + msg)
         
 class clientConnectionReader(threading.Thread):
     
@@ -153,14 +160,15 @@ class clientConnectionReader(threading.Thread):
 class shell:
 
     def __init__(self):
-        self.server = serverListener(self)
+        self.dustsrv = DustServer(self)
+        self.devsrv = DeviceServer(self)
         self.exit = False
         self.run()
 
     def __del__(self):
         print "destroy shelL"
-        if self.server:
-            self.server.shutdown()
+        self.destroyServers()
+
 
     def run(self):
         self.awaitingCommands()
@@ -177,9 +185,11 @@ class shell:
             return
 
         cmd = cmd.replace("  "," ").strip().split(" ")
+        if "sft" == cmd[0]:
+            self.processCommand("sf ../doc/test.xml")
         if "sf" == cmd[0]:
             print "sending file: ", cmd[1]
-            if self.server.sendFile(cmd[1]) == 0:
+            if self.dustsrv.srvlis.sendFile(cmd[1]) == 0:
                 print "send ok"
             else:
                 print "send failed"
@@ -188,27 +198,65 @@ class shell:
         elif "exit" == cmd[0]:
             self.exit = True
         elif "start" == cmd[0]:
-            if not self.server:
-                self.server = serverListener(self)
+            if not self.dustsrv:
+                self.dustsrv = DustServer(self)
+            if not self.devsrv:
+                self.devsrv = DeviceServer(self)
         elif "stop" == cmd[0]:
-            if self.server:
-                self.server.shutdown()
-                self.server = None
+            self.destroyServers()
         elif "srv" == cmd[0]:
-            if self.server:
-                self.server.serverCmd(cmd[1])
+            if self.dustsrv:
+                self.dustsrv.srvlis.serverCmd(cmd[1])
+        elif "dev" == cmd[0]:
+            if self.devsrv:
+                elf.devsrv.srvlis.serverCmd(cmd[1])
         elif "help" == cmd[0]:
             print "command unkown: ",cmd[0]
             print "sf <file>"
             print "echo <text>"
             print "start|stop (a server instance)"
-            print "srv disco|kill"
+            print "srv|dev disco|kill"
             print "help"
 
     def closeCmdLine(self):
         self.processCommand("echo close shell")
+        
+    def destroyServers(self):
+        if self.dustsrv:
+            self.dustsrv.srvlis.shutdown()
+            self.dustsrv = None
+        if self.devsrv:
+            self.devsrv.srvlis.shutdown()
+            self.devsrv = None   
+            
+class Server:
 
+    def __init__(self,name,shell,ip,port,cb_read):
+        self.srvlis = serverListener(name, shell,ip,port,cb_read)
+        
+    def __del__(self):
+        self.srvlis = None
+        
+    def broadcast(self,data):
+        for client in self.srvlis.clients:
+            client.send(data)
 
+class DustServer(Server):
+
+    def __init__(self,shell):
+        Server.__init__(self,"DustSrv",shell,'',29875, self.CliendReceiving)
+        
+    def CliendReceiving(self):
+        print "dustsrv: client send: ",data
+
+class DeviceServer(Server):
+    
+    def __init__(self,shell):
+        Server.__init__(self,"DevSrv",shell,'',29874, self.CliendReceiving)
+        
+    def CliendReceiving(self):
+        print "devsrv: client send: ",data
+        
 
 if __name__ == '__main__':
     shell = shell()
