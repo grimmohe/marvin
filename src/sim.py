@@ -90,6 +90,13 @@ def min_point(point1, point2):
         smaler = point2
     return smaler
 
+def within(g1p1, g1p2, g2p1, g2p2):
+    """ Überschneiden sich 2 Geraden """
+    lreturn = ( min(g1p1,g1p2) < max(g2p1,g2p2)
+                and
+                max(g1p1,g1p2) > min(g2p1,g2p2) )
+    return lreturn
+
 class Cleaner:
     """
     Representant für den Staubsauger
@@ -396,14 +403,17 @@ class Simulator:
                 else: # Parallel
                     # 0°
                     if sensor[0]["x"] == sensor[1]["x"]:
-                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                             abs(sensor[0]["x"] - line[0]["x"]))
+                        if within( sensor[0]["y"], sensor[1]["y"], line[0]["y"], line[1]["y"] ):
+                            sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
+                                                           abs(sensor[0]["x"] - line[0]["x"]))
                     # 180°
                     elif sensor[0]["y"] == sensor[1]["y"]:
-                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                             abs(sensor[0]["y"] - line[0]["y"]))
+                        if within( sensor[0]["x"], sensor[1]["x"], line[0]["x"], line[1]["x"] ):
+                            sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
+                                                 abs(sensor[0]["y"] - line[0]["y"]))
                     else:
                         # Formel aus Wikipedia (en)
+                        #TODO: wie bei den parallelen ein "within"
                         a = get_s(sensor[0], sensor[1])
                         b = get_s(line[1], line[0])
                         c = get_s(min_point(sensor[0], sensor[1]),
