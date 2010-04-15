@@ -147,8 +147,12 @@ class clientConnectionReader(threading.Thread):
         self.awaitIncoming()
 
     def awaitIncoming(self):
+        data = "" # in case of an exception, data would be unreferenced
         while not self.stop:
-            data = self.clientCon.client.recv(BUFSIZE).strip("\n")
+            try:
+                data = self.clientCon.client.recv(BUFSIZE).strip("\n")
+            except socket.error:
+                print "Unfriendly connection reset"
             if not data:
                 self.clientCon.shellEcho("client disconnected")
                 break
