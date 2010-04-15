@@ -158,8 +158,8 @@ class Cleaner:
     def cb_engine(self, data):
         """ Callback für die Motorsteuerung """
         data = string.split(data, "=")
-        self.set_position(time.time())
         if data[0] == "drive":
+            self.set_position(time.time())
             if data[1] == "1":
                 print "drive 1"
                 self.action = (self.action | self.ACTION_DRIVE)
@@ -167,6 +167,7 @@ class Cleaner:
                 print "drive n"
                 self.action = self.ACTION_HALTED
         elif data[0] == "turn":
+            self.set_position(time.time())
             if data[1] == "left":
                 self.action = ((self.action | self.ACTION_TURN_LEFT)
                                & ~self.ACTION_TURN_RIGHT)
