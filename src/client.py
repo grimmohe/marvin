@@ -250,18 +250,21 @@ class Client:
         """ Main loop """
         active = 0
         while 1:
-            time.sleep(1)
-            # erstes/nächstes Assignment ausführen
-            active = self.nextAssignment()
-            # sekündliche Prüfung
-            if active:
-                self.process()
-            # wenn nichts mehr zu tun ist
-            # Verbindugn zum Server aufbauen,
-            # Bericht an den Server senden und neue Aufgaben holen
-            else:
-                self.sendActionlog()
-                self.getNextAssignments()
+            try:
+                time.sleep(1)
+                # erstes/nächstes Assignment ausführen
+                active = self.nextAssignment()
+                # sekündliche Prüfung
+                if active:
+                    self.process()
+                # wenn nichts mehr zu tun ist
+                # Verbindugn zum Server aufbauen,
+                # Bericht an den Server senden und neue Aufgaben holen
+                else:
+                    self.sendActionlog()
+                    self.getNextAssignments()
+            except KeyboardInterrupt:
+                break
 
         # Serververbindung trennen
         if self.connection <> None:
@@ -278,6 +281,7 @@ if __name__ == '__main__':
     print "run client"
     client.run()
     print "done"
+    quit()
 
 
 
