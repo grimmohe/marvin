@@ -68,34 +68,59 @@ def in_comp(a1, a2, b):
     return min(a1, a2) < b < max(a1, a2)
 
 def turn_point(point, degrees):
+    """ wie turn_pointr, aber in grad """
+    return turn_pointr(point, math.radians(degrees))
+
+def turn_pointr(point, rad):
     """ Dreht einen Punkt auf der Systemachse """
     factor = get_s(point)
-    alpha = get_angle(point) + math.radians(degrees)
+    alpha = get_angle(point) + rad
     return { "x": round(math.sin(alpha) * factor, 5),
              "y": round(math.cos(alpha) * factor, 5) }
 
 def max_point(point1, point2):
-    """ Gibt den Point mit größerem X zurück """
-    if point1["x"] > point2["x"]:
+    """ Gibt den Point mit größerem y zurück """
+    if point1["y"] > point2["y"]:
         bigger = point1
     else:
         bigger = point2
     return bigger
 
 def min_point(point1, point2):
-    """ Gibt den Point mit kleinerem X zurück """
-    if point1["x"] < point2["x"]:
+    """ Gibt den Point mit kleinerem y zurück """
+    if point1["y"] < point2["y"]:
         smaler = point1
     else:
         smaler = point2
     return smaler
 
-def within(g1p1, g1p2, g2p1, g2p2):
-    """ Überschneiden sich 2 Geraden """
-    lreturn = ( min(g1p1,g1p2) < max(g2p1,g2p2)
+def within(p1, p2, s):
+    """ liegt der Schnittpunkt im Bereich des Vektors? """
+    lreturn = ( s["x"] > min(p1["x"], p2["x"])
                 and
-                max(g1p1,g1p2) > min(g2p1,g2p2) )
+                s["x"] < max(p1["x"], p2["x"])
+                and
+                s["y"] > min(p1["y"], p2["y"])
+                and
+                s["y"] < max(p1["y"], p2["y"]))
     return lreturn
+
+def getVectorIntersectionRatio(v1, v2, v3):
+    """
+    v1 = (bx1;by1)
+    v2 = (bx2;by2)
+    v3 = (bx3;by3)
+
+    dp1 = -by3*bx2 + bx3*by2
+    dp2 = -by1*bx2 + bx1*by2
+
+    rat = dp1/dp2
+    """
+    try:
+        return ( (-v3["y"]*v2["x"] + v3["x"]*v2["y"])
+                 / (-v1["y"]*v2["x"] + v1["x"]*v2["y"]) )
+    except ZeroDivisionError:
+        return None # parallel
 
 class Cleaner:
     """
@@ -233,7 +258,8 @@ class Cleaner:
     def get_head_lines(self, current_time):
         """
         Liefert eine Liste von Strecken:
-        (({"x": int, "y": int, "a": int}, {"x": int, "y": int}), ...)
+          Ursprung              Vektor
+        (({"x": int, "y": int}, {"x": int, "y": int}), ...)
         """
         lines = []
         if self.head_down:
@@ -245,12 +271,14 @@ class Cleaner:
                     sensor = ( turn_point(self.head_form[i % max],
                                           orientation),
                                turn_point(self.head_form[(i+1) % max],
-                                          orientation) )
+                                          orientation),
+                               {"x": 0.0, "y": 0.0} )
                     sensor[0]["x"] += cur_pos["x"]
                     sensor[0]["y"] += cur_pos["y"]
                     sensor[1]["x"] += cur_pos["x"]
                     sensor[1]["y"] += cur_pos["y"]
-                    sensor[0]["a"] = get_angle(sensor[0], sensor[1])
+                    sensor[2]["x"] = sensor[1]["x"] - sensor[0]["x"]
+                    sensor[2]["y"] = sensor[1]["y"] - sensor[0]["y"]
                     sensor[0]["o"] = self.head_form[i]
                     lines.append(sensor)
         return lines
@@ -306,13 +334,17 @@ class Room:
     def get_lines(self):
         """
         Liefert eine Liste von Strecken:
-        (({"x": int, "y": int, "a": int}, {"x": int, "y": int}), ...)
+          Ursprung              Vektor
+        (({"x": int, "y": int}, {"x": int, "y": int}), ...)
         """
         lines = []
         max   = len(self.waypoints)
         for i in range(len(self.waypoints)):
-            line = (self.waypoints[i % max], self.waypoints[(i+1) % max])
-            line[0]["a"] = get_angle(line[0], line[1])
+            point1 = self.waypoints[i % max]
+            point2 = self.waypoints[(i+1) % max]
+            vector = {"x": point2["x"] - point1["x"],
+                      "y": point2["y"] - point1["y"]}
+            line = (point1, point2, vector)
             lines.append(line)
         return lines
 
@@ -367,66 +399,57 @@ class Simulator:
 
         for line in self.room.get_lines():
             for sensor in self.client.get_head_lines(now):
-                #Schnittpunkt berechnen
-                cut = get_cutting_point(sensor[0], line[0])
-                if cut:
-                    # jetzt der kürzeste Weg der Eckpunkte zur anderen Gerade
-                    # Schnittwinkel alpha
-                    sensor[0]["s"] = get_s(sensor[0], cut)
-                    sensor[1]["s"] = get_s(sensor[1], cut)
-                    line[0]["s"]   = get_s(line[0]  , cut)
-                    line[1]["s"]   = get_s(line[1]  , cut)
-
-                    alpha = abs(math.atan(line[0]["a"])
-                                - math.atan(sensor[0]["a"]))
-                    if max(sensor[0]["s"], line[0]["s"]) > get_s(sensor[0], line[0]):
-                        alpha = math.radians(180) - alpha
-
-                    if in_comp(line[0]["s"], line[1]["s"],
-                               get_lss(sensor[0]["s"], alpha)):
-                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                                  get_hs(sensor[0]["s"], alpha))
-
-                    if in_comp(line[0]["s"], line[1]["s"],
-                               get_lss(sensor[1]["s"], alpha)):
-                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                                  get_hs(sensor[1]["s"], alpha))
-
-                    if in_comp(sensor[0]["s"], sensor[1]["s"],
-                               get_lsl(line[0]["s"], alpha)):
-                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                                  get_hl(line[0]["s"], alpha))
-
-                    if in_comp(sensor[0]["s"], sensor[1]["s"],
-                               get_lsl(line[1]["s"], alpha)):
-                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                                  get_hl(line[1]["s"], alpha))
-                else: # Parallel
-                    # 0°
-                    if sensor[0]["x"] == sensor[1]["x"]:
-                        if within( sensor[0]["y"], sensor[1]["y"], line[0]["y"], line[1]["y"] ):
-                            sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                                           abs(sensor[0]["x"] - line[0]["x"]))
-                    # 180°
-                    elif sensor[0]["y"] == sensor[1]["y"]:
-                        if within( sensor[0]["x"], sensor[1]["x"], line[0]["x"], line[1]["x"] ):
-                            sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"],
-                                                 abs(sensor[0]["y"] - line[0]["y"]))
+                status = 1.0
+                v3 = {"x": line[0]["x"] - sensor[0]["x"],
+                      "y": line[0]["y"] - sensor[0]["y"]}
+                ratio = getVectorIntersectionRatio(sensor[1], line[1], v3)
+                if ratio:
+                    intersection = {"x": sensor[2]["x"]*ratio,
+                                    "y": sensor[2]["y"]*ratio}
+                    if ( within(sensor[0], sensor[1], intersection)
+                         and
+                         within(line[0], line[1], intersection) ):
+                        # direkter Schnitt
+                        status = 0.0
                     else:
-                        # Formel aus Wikipedia (en)
-                        #TODO: wie bei den parallelen ein "within"
-                        a = get_s(sensor[0], sensor[1])
-                        b = get_s(line[1], line[0])
-                        c = get_s(min_point(sensor[0], sensor[1]),
-                                  min_point(line[0], line[1]))
-                        d = get_s(max_point(sensor[0], sensor[1]),
-                                  max_point(line[0], line[1]))
-                        h = math.sqrt((-a+b+c+d)*(a-b+c+d)*(a-b+c-d)*(a-b-c+d)/math.pow(2*(abs(b-a)), 2))
+                        # wie weit bis zum Schnitt
+                        # Drehen
+                        angle = - get_angle(sensor[0], sensor[1])
+                        s = (turn_pointr(sensor[0], angle),
+                             turn_pointr(sensor[1], angle))
+                        l = (turn_pointr(line[0], angle),
+                             turn_pointr(line[1], angle))
+                        if abs(l[0]["x"] - s[0]["x"]) < abs(l[1]["x"] - s[0]["x"]):
+                            if ( l[0]["y"] < min(s[0]["y"], s[1]["y"])
+                                 or
+                                 l[0]["y"] > max(s[0]["y"], s[1]["y"]) ):
+                                pass
+                            else:
+                                status = abs(l[0]["x"] - s[0]["x"])
+                        else:
+                            if ( l[1]["y"] < min(s[0]["y"], s[1]["y"])
+                                 or
+                                 l[1]["y"] > max(s[0]["y"], s[1]["y"]) ):
+                                pass
+                            else:
+                                status = abs(l[1]["x"] - s[0]["x"])
 
-                        sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], h)
+                else:
+                    # Parallel
+                    # Drehen
+                    angle = - get_angle(sensor[0], sensor[1])
+                    l1 = (turn_pointr(sensor[0], angle),
+                          turn_pointr(sensor[1], angle))
+                    l2 = (turn_pointr(line[0], angle),
+                          turn_pointr(line[1], angle))
+                    # Jetzt ist X bei beiden Punkten einer Linie gleich
+                    # Überschneiden sich die Linien auf Y?
+                    if (min(l1[0]["y"], l1[1]["y"]) < max(l2[0]["y"], l2[1]["y"])
+                        and
+                        max(l1[0]["y"], l1[1]["y"]) > min(l2[0]["y"], l2[1]["y"])):
+                        status = abs(l1[0]["x"] - l2[0]["x"])
 
-
-                self.client.send_data(now)
+                sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], status)
         self.client.send_data(now)
         return 1
 
