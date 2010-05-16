@@ -342,13 +342,15 @@ class Simulator:
                     # Sensor um range verschieben
                     x = math.sqrt(range * range * vector_ratio)
                     y = math.sqrt(range * range * (1 - vector_ratio))
-                    if sensor_o[2]["x"] > 0:
-                        y = -y
-                    if sensor_o[2]["y"] > 0:
-                        x = -x
-                    if range < .0:
+                    if (sensor_o[2]["y"] > 0) <> (sensor_o[2]["x"] > 0):
                         x = -x
                         y = -y
+                    else:
+                        y = -y
+                    if range < 0.0:
+                        x = -x
+                        y = -y
+
                     sensor = ({"x": sensor_o[0]["x"]+x, "y": sensor_o[0]["y"]+y},
                               {"x": sensor_o[1]["x"]+x, "y": sensor_o[1]["y"]+y},
                               {"x": sensor_o[2]["x"],   "y": sensor_o[2]["y"]})
