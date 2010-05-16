@@ -109,7 +109,7 @@ class Connector(threading.Thread):
 
     def read(self):
         truedata=''
-        while not self.stop:
+        while not self.stop and self.connected:
             data = self.socket.recv(4096)
             if not data:
                 self.stop = True

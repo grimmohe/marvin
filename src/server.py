@@ -117,10 +117,13 @@ class clientConnection(threading.Thread):
         self.shellEcho(".. done")
 
     def send(self, data):
-        self.client.send(data + "\n\n")
+        try:
+            self.client.send(data + "\n\n")
+        except socket.error:
+            self.shellEcho("Connection disbanded")
 
     def receive(self,data):
-        if data == "DISCO":
+        if data == "DISCO" and self.reader:
             self.reader.stop = True
         self.cb_read(data)
 
