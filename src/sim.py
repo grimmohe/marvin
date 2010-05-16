@@ -25,50 +25,10 @@ def get_angle(point1, point2={"x": 0, "y": 0}):
         alpha = math.radians(360) - alpha
     return alpha + math.radians(360) % math.radians(360) #immer positiver Winkel
 
-def get_cutting_point(point1, point2):
-    """ Schnittpunkt von 2 Geraden """
-    out = None
-    m1 = get_m(point1)
-    m2 = get_m(point2)
-    if m1 <> m2:
-        n1 = get_n(point1, m1)
-        n2 = get_n(point2, m2)
-        out = {"x": (n1 - n2) / (m2 - m1),
-               "y": ((m2 * n1) - (m1 * n2)) / (m2 - m1)}
-    return out
-
-def get_m(point):
-    """ Steigungsfaktor """
-    return math.tan(math.radians(90) - (point["a"] % math.radians(180)))
-
-def get_n(point, m):
-    """ Schnittpunkt (n) mit Y """
-    return (point["y"] - m * point["x"])
-
 def get_s(point1, point2={"x": 0, "y": 0}):
     """ Distanz von 2 Punkten """
     return math.sqrt( math.pow(point1["x"] - point2["x"], 2)
                       + math.pow(point1["y"] - point2["y"], 2) )
-
-def get_hs(ss, angle):
-    """ die Höhe auf dem Sensor """
-    return math.tan(angle) * ss
-
-def get_hl(sl, angle):
-    """ die Höhe auf der Linie """
-    return math.sin(angle) * sl
-
-def get_lss(b, angle):
-    """ Schnittpunkt von h auf linie """
-    return b / math.cos(angle)
-
-def get_lsl(c, angle):
-    """ wie lss, nur von s von lien ausgehend """
-    return math.cos(angle) * c
-
-def in_comp(a1, a2, b):
-    """ Vergleicht, ob b zwischen a1/a2 liegt """
-    return min(a1, a2) < b < max(a1, a2)
 
 def turn_point(point, degrees):
     """ wie turn_pointr, aber in grad """
@@ -80,33 +40,6 @@ def turn_pointr(point, rad):
     alpha = get_angle(point) + rad
     return { "x": round(math.sin(alpha) * factor, 5),
              "y": round(math.cos(alpha) * factor, 5) }
-
-def max_point(point1, point2):
-    """ Gibt den Point mit größerem y zurück """
-    if point1["y"] > point2["y"]:
-        bigger = point1
-    else:
-        bigger = point2
-    return bigger
-
-def min_point(point1, point2):
-    """ Gibt den Point mit kleinerem y zurück """
-    if point1["y"] < point2["y"]:
-        smaler = point1
-    else:
-        smaler = point2
-    return smaler
-
-def within(p1, p2, s):
-    """ liegt der Schnittpunkt im Bereich des Vektors? """
-    lreturn = ( s["x"] > min(p1["x"], p2["x"])
-                and
-                s["x"] < max(p1["x"], p2["x"])
-                and
-                s["y"] > min(p1["y"], p2["y"])
-                and
-                s["y"] < max(p1["y"], p2["y"]))
-    return lreturn
 
 def getVectorIntersectionRatio(v1, v2, v3):
     """
