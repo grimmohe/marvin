@@ -12,7 +12,10 @@ def get_angle(point1, point2={"x": 0, "y": 0}):
     x = point1["x"] - point2["x"]
     y = point1["y"] - point2["y"]
     factor = get_s({"x": x, "y": y})
-    alpha = math.asin(abs(x) / factor)
+    try:
+        alpha = math.asin(abs(x) / factor)
+    except ZeroDivisionError:
+        alpha = 0.0
     if y < 0:
         if x > 0:
             alpha = math.radians(180) - alpha
@@ -398,58 +401,55 @@ class Simulator:
         self.client.reset_head_status()
 
         for line in self.room.get_lines():
-            for sensor in self.client.get_head_lines(now):
+            for sensor_o in self.client.get_head_lines(now):
                 status = 1.0
-                v3 = {"x": line[0]["x"] - sensor[0]["x"],
-                      "y": line[0]["y"] - sensor[0]["y"]}
-                ratio = getVectorIntersectionRatio(sensor[1], line[1], v3)
-                if ratio:
-                    intersection = {"x": sensor[2]["x"]*ratio,
-                                    "y": sensor[2]["y"]*ratio}
-                    if ( within(sensor[0], sensor[1], intersection)
-                         and
-                         within(line[0], line[1], intersection) ):
-                        # direkter Schnitt
-                        status = 0.0
-                    else:
-                        # wie weit bis zum Schnitt
+                vector_ratio = ( math.pow(sensor_o[2]["x"], 2)
+                                 / (math.pow(sensor_o[2]["x"], 2)
+                                    + math.pow(sensor_o[2]["y"], 2)) )
+                for range in [0.0, .2, -.2, .4, -.4, .6, -.6, .8, -.8, 1.0, -1.0]:
+                    if status < 1.0:
+                        break
+                    # Sensor um range verschieben
+                    x = math.sqrt(range * range * vector_ratio)
+                    y = math.sqrt(range * range * (1 - vector_ratio))
+                    if sensor_o[2]["x"] > 0:
+                        y = -y
+                    if sensor_o[2]["y"] > 0:
+                        x = -x
+                    if range < .0:
+                        x = -x
+                        y = -y
+                    sensor = ({"x": sensor_o[0]["x"]+x, "y": sensor_o[0]["y"]+y},
+                              {"x": sensor_o[1]["x"]+x, "y": sensor_o[1]["y"]+y},
+                              {"x": sensor_o[2]["x"],   "y": sensor_o[2]["y"]})
+
+                    v3 = {"x": line[0]["x"] - sensor[0]["x"],
+                          "y": line[0]["y"] - sensor[0]["y"]}
+                    ratio = getVectorIntersectionRatio(sensor[2], line[2], v3)
+                    if ratio:
+                        intersection = {"x": sensor[2]["x"]*ratio,
+                                        "y": sensor[2]["y"]*ratio}
+                        if ( within(sensor[0], sensor[1], intersection)
+                             and
+                             within(line[0], line[1], intersection) ):
+                            # direkter Schnitt
+                            status = max(0, abs(range - .1))
+                    elif range == 0.0:
+                        # Parallel
                         # Drehen
                         angle = - get_angle(sensor[0], sensor[1])
-                        s = (turn_pointr(sensor[0], angle),
-                             turn_pointr(sensor[1], angle))
-                        l = (turn_pointr(line[0], angle),
-                             turn_pointr(line[1], angle))
-                        if abs(l[0]["x"] - s[0]["x"]) < abs(l[1]["x"] - s[0]["x"]):
-                            if ( l[0]["y"] < min(s[0]["y"], s[1]["y"])
-                                 or
-                                 l[0]["y"] > max(s[0]["y"], s[1]["y"]) ):
-                                pass
-                            else:
-                                status = abs(l[0]["x"] - s[0]["x"])
-                        else:
-                            if ( l[1]["y"] < min(s[0]["y"], s[1]["y"])
-                                 or
-                                 l[1]["y"] > max(s[0]["y"], s[1]["y"]) ):
-                                pass
-                            else:
-                                status = abs(l[1]["x"] - s[0]["x"])
+                        l1 = (turn_pointr(sensor[0], angle),
+                              turn_pointr(sensor[1], angle))
+                        l2 = (turn_pointr(line[0], angle),
+                              turn_pointr(line[1], angle))
+                        # Jetzt ist X bei beiden Punkten einer Linie gleich
+                        # Überschneiden sich die Linien auf Y?
+                        if (min(l1[0]["y"], l1[1]["y"]) < max(l2[0]["y"], l2[1]["y"])
+                            and
+                            max(l1[0]["y"], l1[1]["y"]) > min(l2[0]["y"], l2[1]["y"])):
+                            status = abs(l1[0]["x"] - l2[0]["x"])
 
-                else:
-                    # Parallel
-                    # Drehen
-                    angle = - get_angle(sensor[0], sensor[1])
-                    l1 = (turn_pointr(sensor[0], angle),
-                          turn_pointr(sensor[1], angle))
-                    l2 = (turn_pointr(line[0], angle),
-                          turn_pointr(line[1], angle))
-                    # Jetzt ist X bei beiden Punkten einer Linie gleich
-                    # Überschneiden sich die Linien auf Y?
-                    if (min(l1[0]["y"], l1[1]["y"]) < max(l2[0]["y"], l2[1]["y"])
-                        and
-                        max(l1[0]["y"], l1[1]["y"]) > min(l2[0]["y"], l2[1]["y"])):
-                        status = abs(l1[0]["x"] - l2[0]["x"])
-
-                sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], status)
+                sensor_o[0]["o"]["status"] = min(sensor_o[0]["o"]["status"], status)
         self.client.send_data(now)
         return 1
 
