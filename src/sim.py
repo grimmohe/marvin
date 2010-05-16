@@ -121,14 +121,11 @@ class Cleaner:
                                 "status": 1.0}
                              , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
                                 "status": 1.0} )
-        self.head_down     = False
+
         self.head          = None
         self.engine        = None
 
-        self.position      = {"x": 20.5, "y": 20.5}
-        self.starttime     = 0.0
-        self.action        = 0
-        self.orientation   = 0.0
+        self.reset()
 
         def cb_sensor_dummy(data): # auf diesen Devices wird nur gesendet
             pass
