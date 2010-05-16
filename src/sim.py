@@ -403,7 +403,7 @@ class Simulator:
         for line in self.room.get_lines():
             for sensor_o in self.client.get_head_lines(now):
                 status = 1.0
-                vector_ratio = ( math.pow(sensor_o[2]["x"], 2)
+                vector_ratio = ( math.pow(sensor_o[2]["y"], 2)
                                  / (math.pow(sensor_o[2]["x"], 2)
                                     + math.pow(sensor_o[2]["y"], 2)) )
                 for range in [0.0, .2, -.2, .4, -.4, .6, -.6, .8, -.8, 1.0, -1.0]:
@@ -423,15 +423,14 @@ class Simulator:
                               {"x": sensor_o[1]["x"]+x, "y": sensor_o[1]["y"]+y},
                               {"x": sensor_o[2]["x"],   "y": sensor_o[2]["y"]})
 
-                    v3 = {"x": line[0]["x"] - sensor[0]["x"],
+                    v1 = {"x": line[0]["x"] - sensor[0]["x"],
                           "y": line[0]["y"] - sensor[0]["y"]}
-                    ratio = getVectorIntersectionRatio(sensor[2], line[2], v3)
-                    if ratio:
-                        intersection = {"x": sensor[2]["x"]*ratio,
-                                        "y": sensor[2]["y"]*ratio}
-                        if ( within(sensor[0], sensor[1], intersection)
-                             and
-                             within(line[0], line[1], intersection) ):
+                    v2 = {"x": sensor[0]["x"] - line[0]["x"],
+                          "y": sensor[0]["y"] - line[0]["y"]}
+                    ratio1 = getVectorIntersectionRatio(sensor[2], line[2], v1)
+                    ratio2 = getVectorIntersectionRatio(line[2], sensor[2], v2)
+                    if ratio1 and ratio2:
+                        if (0 <= ratio1 <= 1) and (0 <= ratio2 <= 1):
                             # direkter Schnitt
                             status = max(0, abs(range - .1))
                     elif range == 0.0:
