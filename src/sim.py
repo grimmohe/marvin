@@ -403,7 +403,7 @@ class Simulator:
                 vector_ratio = ( math.pow(sensor_o[2]["y"], 2)
                                  / (math.pow(sensor_o[2]["x"], 2)
                                     + math.pow(sensor_o[2]["y"], 2)) )
-                for range in [0.0, .2, -.2, .4, -.4, .6, -.6, .8, -.8, 1.0, -1.0]:
+                for range in [0.0, .4, -.4, .6, -.6, 1.0, -1.0]:
                     if status < 1.0:
                         break
                     # Sensor um range verschieben
@@ -429,7 +429,7 @@ class Simulator:
                     if ratio1 and ratio2:
                         if (0 <= ratio1 <= 1) and (0 <= ratio2 <= 1):
                             # direkter Schnitt
-                            status = max(0, abs(range - .1))
+                            status = max(0, abs(range - .05))
                     elif range == 0.0:
                         # Parallel
                         # Drehen
