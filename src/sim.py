@@ -97,6 +97,9 @@ class Cleaner:
         self.head   = device.Device('head', self.cb_head)
 
     def __del__(self):
+        self.quit()
+
+    def quit(self):
         self.head.close()
         self.head = None
         self.engine.close()
@@ -261,6 +264,12 @@ class Room:
         file.close()
         self.loaded = True
 
+    def __del__(self):
+        self.quit()
+
+    def quit(self):
+        self.waypoints = None
+
     def isValid(self):
         return self.loaded
 
@@ -303,15 +312,13 @@ class Simulator:
     """
 
     def __init__(self):
-        self.runit          = False
-        self.client         = None
-        self.room           = None
-
         self.gui_height     = 1
         self.gui_y_offset   = 0
         self.gui_width      = 1
         self.gui_x_offset   = 0
         self.gui_window     = None
+
+        self.runit          = False
 
         self.client        = Cleaner()
         self.room          = Room("data/room.xy")
@@ -471,6 +478,10 @@ class Simulator:
             self.update_gui(timestamp)
             # warten, aber bitte alle 0.01 aufwachen
             time.sleep(max(0, 0.01 - (time.time() - timestamp)))
+
+        pygame.quit()
+        self.client.quit()
+        self.room.quit()
 
 # Und lauf!
 if __name__ == '__main__':
