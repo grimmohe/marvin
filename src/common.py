@@ -17,13 +17,14 @@ class Actionlog:
         return 1
 
     def toXml(self):
-        cReturn = "<what-have-i-done>"
+        cReturn = '<?xml version="1.0" encoding="UTF-8"?><what-have-i-done>'
         for action in self.actions:
             cReturn += action.toXml()
         cReturn += "</what-have-i-done>"
         return cReturn
 
     def update(self, action, value):
+        print "action", action, value
         if ( len(self.actions) == 0
              or not self.actions[len(self.actions)-1].update(action, value) ) :
             self.actions.append(ActionlogEntry(action, value))
