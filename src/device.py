@@ -6,10 +6,7 @@ from client import Connector
 
 class Device:
     """
-    Beobachtet eine Datei, indem regelmäßig read() aufgerufen wird.
-    Schreibt in selbige Datei mit write(data).
-    Sollten mit read() neue Informationen gelesen werden, wird
-    cb_readevent ausgelöst.
+    Ein Netzwerkdevice, mit dem Daten zwischen Client und Simulator ausgetauscht werden.
     """
 
     cb_readevent = None
