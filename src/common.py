@@ -11,10 +11,10 @@ class Actionlog:
     """
     def __init__(self):
         self.clear()
-        
+
     def __del__(self):
         self.actions = None
-        
+
     def clear(self):
         self.actions = []
 
@@ -29,36 +29,31 @@ class Actionlog:
         cReturn += "</what-have-i-done>"
         return cReturn
 
-    def update(self, action, value):
-        print "action", action, value
-        if ( len(self.actions) == 0
-             or not self.actions[len(self.actions)-1].update(action, value) ) :
-            self.actions.append(ActionlogEntry(action, value))
+    def update(self, id, action, value):
+        set = 0
+        for entry in self.actions:
+            if entry.id == id and entry.action == action:
+                entry.value = value
+                set = 1
+        if not set:
+            self.actions.insert(0, ActionlogEntry(id, action, value))
         return 1
 
 
 class ActionlogEntry:
     """
-    Eintrag im Actionlog beschreibt eine Aktion mit andauernen Zuständen
+    Eintrag im Actionlog beschreibt einen Zustand während eines Vorganges (id)
     """
-    def __init__(self, action, value, start=None):
+    def __init__(self, id, action, value):
+        self.id = id
         self.action = action
         self.value = value
-        if start <> None:
-            self.start_value = start
-        else:
-            self.start_value = value
 
     def toXml(self):
-        return "<" + self.action  \
-               + " value='" + str(int((self.value - self.start_value) * 100)) + "'/>"
-
-    def update(self, action, value):
-        iReturn = 0
-        if self.action == action:
-            iReturn = 1
-            self.value = value
-        return iReturn
+        return "<" + self.action \
+            + " id='" + str(self.id) + "'" \
+            + " value='" + str(int(self.value * 100)) + "'" \
+            + "/>"
 
 class ActionlogXmlHandler(xml.sax.ContentHandler):
     """
@@ -69,11 +64,14 @@ class ActionlogXmlHandler(xml.sax.ContentHandler):
 
     def startElement(self,name,attrs):
         val = 0.0
+        id = None
         for attr,val in attrs:
             if attr == "value":
                 value = float(val) / 100
-        if name <> "what-have-i-done":
-            self.actionlog.actions.append(ActionlogEntry(name, value, 0.0))
+            elif attr == "id":
+                id = int(val)
+        if name <> "what-have-i-done" and id:
+            self.actionlog.actions.append(ActionlogEntry(id, name, value))
         return 0
 
 
@@ -83,11 +81,16 @@ class Action:
     """
     # dev:command=1
     def __init__(self, args, final):
-        args = args.split("=", 2)
-        self.value = args[1]
-        args = args[0].split(":", 2)
-        self.device_id = args[0]
-        self.command = args[1]
+        if "=" in args and ":" in args:
+            args = args.split("=", 2)
+            self.value = args[1]
+            args = args[0].split(":", 2)
+            self.device_id = args[0]
+            self.command = args[1]
+        else:
+            self.value = None
+            self.device_id = None
+            self.command = None
         self.final = (final == "true")
 
     def execute(self, states):
@@ -125,6 +128,7 @@ class Assignment:
         """ aktiviert das Assignment """
         self.active = True
         self.starttime = time.time()
+        states.current_action_id = self.id
         if self.startAction <> None:
             self.startAction.execute(states)
 
@@ -153,13 +157,16 @@ class Assignment:
         for event in self.events:
             goon = goon and event.check(states)
 
-        self.active = goon
+        if not goon:
+            self.stop(states)
+
         return goon
 
     def stop(self, states):
         """ deaktiviert das Assignment """
         if self.stopAction <> None:
             self.stopAction.execute(states)
+        states.current_action_id = None
         self.active = False
 
 class Argument:

@@ -20,6 +20,7 @@ class State:
     def __init__(self, cb_process):
         self.actionlog = Actionlog()
         self.dict = {}
+        self.current_action_id = None
         self.cb_anyAction = cb_process
         self.devices = \
             { "engine": device.Device('engine',
@@ -40,6 +41,9 @@ class State:
         self.update("front:distance", 1.0)
         self.update("left:distance", 1.0)
         self.update("right:distance", 1.0)
+
+    def clearActionlog(self):
+        self.actionlog.clear()
 
     #TODO: do it right
     def debugstep(self, key, value):
@@ -63,14 +67,15 @@ class State:
         if self.dict.has_key(key):
             value = self.dict[key]
         return value
-    
+
     def getActionlogXml(self):
         return self.actionlog.toXml()
 
     def update(self, key, value, process=True):
         """ Erstellt/Aktualisiert einen Wert """
         self.dict[key] = value
-        self.actionlog.update(key, value)
+        if self.current_action_id:
+            self.actionlog.update(self.current_action_id, key, value)
         if process and self.cb_anyAction:
             self.cb_anyAction()
 
@@ -187,8 +192,6 @@ class XmlHandler(xml.sax.ContentHandler):
             action = Action(then, final)
             self.openAssignment.events.append(Event(arg1, arg2, compare, action))
 
-
-
 class Client:
     """
     Die Zusammenfassung aller Instrumente und Main-Klasse.
@@ -220,6 +223,7 @@ class Client:
     def nextAssignment(self):
         """ aktiviert das nächste Assignment """
         activated = False
+
         if self.assignment <> None:
             activated = self.assignment.active
 
@@ -242,6 +246,10 @@ class Client:
 
     def sendActionlog(self):
         """ unterrichtet den Server """
+        xml = self.stateholder.getActionlogXml()
+        if xml <> '<?xml version="1.0" encoding="UTF-8"?><what-have-i-done></what-have-i-done>':
+            print xml
+        self.stateholder.clearActionlog()
         return 1
 
     def run(self):
