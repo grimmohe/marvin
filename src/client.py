@@ -17,8 +17,8 @@ class State:
     Was sagen die Sensoren?
     """
 
-    def __init__(self, actionlog, cb_process):
-        self.actionlog = actionlog
+    def __init__(self, cb_process):
+        self.actionlog = Actionlog()
         self.dict = {}
         self.cb_anyAction = cb_process
         self.devices = \
@@ -55,6 +55,7 @@ class State:
         self.devices["front"].close()
         self.devices["right"].close()
         self.devices = None
+        self.actionlog = None
 
     def getValue(self, key):
         """ Gibt den value zu key """
@@ -62,6 +63,9 @@ class State:
         if self.dict.has_key(key):
             value = self.dict[key]
         return value
+    
+    def getActionlogXml(self):
+        return self.actionlog.toXml()
 
     def update(self, key, value, process=True):
         """ Erstellt/Aktualisiert einen Wert """
@@ -192,13 +196,11 @@ class Client:
     transmission_id = None            # Identifikation der letzten Kommunikation
     assignment      = None            # Letztes ausgeführtes Assignment
     assignments     = []
-    actionlog       = None
     stateholder     = None
     connection      = None
 
     def __init__(self):
-        self.actionlog = Actionlog()
-        self.stateholder = State(self.actionlog, self.process)
+        self.stateholder = State(self.process)
         self.connection = Connector('127.0.0.1',29875)
 
     def __del__(self):

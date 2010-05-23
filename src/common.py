@@ -10,6 +10,12 @@ class Actionlog:
     Eine Aufzeichnung der letzten Aktivitäten seit Rückmeldung an den Server.
     """
     def __init__(self):
+        self.clear()
+        
+    def __del__(self):
+        self.actions = None
+        
+    def clear(self):
         self.actions = []
 
     def readXml(self, xml):
