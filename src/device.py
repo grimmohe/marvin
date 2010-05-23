@@ -26,8 +26,10 @@ class Device:
             if len(item):
                 data = item.split("#")
                 if data[0] == self.name:
+                    if len(data) < 2:
+                        # here once raised an index error exception and this should show why
+                        print "item:", item
                     self.cb_readevent(data[1])
-
         return 1
 
     def write(self, data):
