@@ -218,7 +218,7 @@ class Client:
 
         return 0
 
-    def nextAssignment(self):
+    def runNextAssignment(self):
         """ aktiviert das nächste Assignment """
         activated = False
 
@@ -257,7 +257,7 @@ class Client:
             try:
                 time.sleep(1)
                 # erstes/nächstes Assignment ausführen
-                active = self.nextAssignment()
+                active = self.runNextAssignment()
                 # sekündliche Prüfung
                 if active:
                     self.process()
