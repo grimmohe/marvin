@@ -46,10 +46,17 @@ class State:
 
     #TODO: do it right
     def debugstep(self, key, value):
+        value = value.split("=")[1]
+
         if key == "head:move":
-            self.update(key, float(value.split("=")[1] == "down"))
+            self.update(key, float(value == "down"))
+        elif key == "engine:turn":
+            if value == "left":
+                self.update(key, -1.0)
+            else:
+                self.update(key, float(value == "right"))
         else:
-            self.update(key, float(value.split("=")[1]))
+            self.update(key, float(value))
 
     def __del__(self):
         self.devices["engine"].close()
@@ -138,11 +145,10 @@ class Connector(threading.Thread):
     def setDataIncomingCb(self,cb):
         self.cb_incoming = cb
 
-class XmlHandler(xml.sax.ContentHandler):
+class AssignmentXmlHandler(xml.sax.ContentHandler):
     """
     Handles XML.SAX events
     """
-
     def __init__(self, client):
         self.client = client
         self.openAssignment = None
@@ -155,13 +161,22 @@ class XmlHandler(xml.sax.ContentHandler):
             id = 0
             for key,value in attrs.items():
                 if key == "start":
-                    actionStart = Action(value, "false")
+                    actionStart = Action(value, "false", self.openAssignment)
                 elif key == "end":
-                    actionEnd = Action(value, "false")
+                    actionEnd = Action(value, "false", self.openAssignment)
                 elif key == "id":
                     id = int(value)
-            self.openAssignment = Assignment(id, actionStart, actionEnd)
-            self.client.assignments.append(self.openAssignment)
+            if self.openAssignment:
+                parent = self.openAssignment.parentAssignment
+            else:
+                parent = None
+
+            self.openAssignment = Assignment(id, actionStart, actionEnd, parent=parent)
+
+            if parent:
+                parent.subAssignments.append(self.openAssignment)
+            else:
+                self.client.assignments.append(self.openAssignment)
 
         elif name == "event":
             arg1 = None
@@ -187,8 +202,12 @@ class XmlHandler(xml.sax.ContentHandler):
                 elif key == "final":
                     final = value
 
-            action = Action(then, final)
+            action = Action(then, final, self.openAssignment)
             self.openAssignment.events.append(Event(arg1, arg2, compare, action))
+
+    def endElement(self, name):
+        if name == "assignment" and self.openAssignment:
+            self.openAssignment = self.openAssignment.parentAssignment
 
 class Client:
     """
@@ -214,7 +233,7 @@ class Client:
         self.assignments   = []
         data = self.connection.getData()
         if data:
-            xml.sax.parseString(data, XmlHandler(self))
+            xml.sax.parseString(data, AssignmentXmlHandler(self))
 
         return 0
 

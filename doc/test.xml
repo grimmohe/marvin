@@ -1,8 +1,25 @@
 <what-to-do>
-<assignment id="1" start="head:move=down">
-<event ifarg1="head:move" ifcompare="e" ifarg2="100" then="" final="true"/>
-</assignment>
-<assignment id="2" start="engine:drive=1">
-<event ifarg1="front:distance" ifcompare="le" ifarg2="50" then="engine:drive=0" final="true"/>
+<assignment id="1">
+	<assignment id="1" start="engine:drive=1" end="engine:drive=0">
+		<!-- wenn vorne oder links angestoßen ist endgültig Schluss -->
+		<event ifarg1="front:distance" ifcompare="l" ifarg2="50" then="" final="true"/>
+		<event ifarg1="left:distance" ifcompare="l" ifarg2="100" then="" final="true"/>
+
+		<!-- wird zu sehr von der Wand abgewichen, muss ein anderes Assignment ausgleichen -->
+		<event ifarg1="right:distance" ifcompare="g" ifarg2="60" then="a#=2" final="true"/>
+		<event ifarg1="right:distance" ifcompare="l" ifarg2="40" then="a#=4" final="true"/>
+	</assignment>
+	<assignment id="2" end="a#=3">
+		<event ifarg1="right:distance" ifcompare="g" ifarg2="60" then="engine:turn=right" final="true"/>
+	</assignment>
+	<assignment id="3" end="a#=1">
+		<event ifarg1="right:distance" ifcompare="le" ifarg2="50" then="engine:turn=stop" final="true"/>
+	</assignment>
+	<assignment id="4" end="a#=5">
+		<event ifarg1="right:distance" ifcompare="l" ifarg2="40" then="engine:turn=left" final="true"/>
+	</assignment>
+	<assignment id="5" end="a#=1">
+		<event ifarg1="front:distance" ifcompare="ge" ifarg2="50" then="engine:turn=stop" final="true"/>
+	</assignment>
 </assignment>
 </what-to-do>

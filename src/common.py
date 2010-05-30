@@ -111,22 +111,29 @@ class Action:
     Ausführen von/ direkte weitergabe an die devices
     """
     # dev:command=1
-    def __init__(self, args, final):
-        if "=" in args and ":" in args:
+    def __init__(self, args, final, assignment):
+        self.value = None
+        self.device_id = None
+        self.command = None
+        self.next_id = None
+
+        if "a#=" in args:
+            self.next_id = int(args.split("=")[1])
+        elif "=" in args and ":" in args:
             args = args.split("=", 2)
             self.value = args[1]
             args = args[0].split(":", 2)
             self.device_id = args[0]
             self.command = args[1]
-        else:
-            self.value = None
-            self.device_id = None
-            self.command = None
+
         self.final = (final == "true")
+        self.assignment = assignment
 
     def execute(self, states):
         if states.devices.has_key(self.device_id):
             states.devices[self.device_id].write(self.command + "=" + self.value)
+        elif self.next_id and self.assignment and self.assignment.parent:
+            self.assignment.parent.startSubAssignment(self.next_id)
         return not self.final
 
     def toXml(self, value_only=False):
@@ -143,15 +150,19 @@ class Assignment:
     Ein Assignment beginnt in der Regel mit einem Event (start_event) ohne
     Bedingung und löst durch z.B. Bewegung weitere Events aus.
     Das Assignment wird durch ein Event beendet.
+    Ein Assignment kann Sub-Assignemnts haben, die sich untereinander aufrufen, bis ein
+    finales Event im Main-Assignment zum Stop führt.
     Abschließend wird, wenn belegt, stop_event verarbeitet.
     """
 
-    def __init__(self, id, startAction, stopAction):
+    def __init__(self, id, startAction, stopAction, parent=None):
         self.id = id
         self.active = False
         self.startAction = startAction
         self.stopAction = stopAction
         self.events = []
+        self.subAssignments = []
+        self.parentAssignment = parent
         self.lastprocessing = 0
         self.starttime = None
 
@@ -161,6 +172,14 @@ class Assignment:
         self.starttime = time.time()
         if self.startAction <> None:
             self.startAction.execute(states)
+        if len(self.subAssignments):
+            self.subAssignments[0].start(states)
+
+    def startSubAssignment(self, id, states):
+        sub = next((sub for sub in self.subAssignments if sub.id == id), None)
+        if sub:
+            sub.start(states)
+        return (sub <> None)
 
     def toXml(self):
         cReturn = "<assignment id='" + str(self.id) + "'"
@@ -171,8 +190,13 @@ class Assignment:
             cReturn += " end='" + self.stopAction.toXml(value_only=True) + "'"
 
         cReturn += ">"
+
         for event in self.events:
             cReturn += event.toXml()
+
+        for sub in self.subAssignments:
+            cReturn += sub.toXml()
+
         cReturn += "</assignment>"
 
         return cReturn
@@ -182,10 +206,13 @@ class Assignment:
         if not self.active:
             return 0
 
-        goon = (len(self.events) > 0)
+        goon = len(self.events) or len(self.subAssignments)
 
         for event in self.events:
             goon = goon and event.check(states)
+
+        for sub in self.subAssignments:
+            goon = goon and sub.process(states)
 
         if not goon:
             self.stop(states)
@@ -194,9 +221,13 @@ class Assignment:
 
     def stop(self, states):
         """ deaktiviert das Assignment """
+        for sub in self.subAssignments:
+            if sub.active:
+                sub.stop(states)
         if self.stopAction <> None:
             self.stopAction.execute(states)
         self.active = False
+
 
 class Argument:
     """
