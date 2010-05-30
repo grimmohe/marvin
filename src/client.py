@@ -20,7 +20,6 @@ class State:
     def __init__(self, cb_process):
         self.actionlog = Actionlog()
         self.dict = {}
-        self.current_action_id = None
         self.cb_anyAction = cb_process
         self.devices = \
             { "engine": device.Device('engine',
@@ -74,8 +73,7 @@ class State:
     def update(self, key, value, process=True):
         """ Erstellt/Aktualisiert einen Wert """
         self.dict[key] = value
-        if self.current_action_id:
-            self.actionlog.update(self.current_action_id, key, value)
+        self.actionlog.update(key, value)
         if process and self.cb_anyAction:
             self.cb_anyAction()
 

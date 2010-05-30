@@ -9,6 +9,13 @@ class Actionlog:
     """
     Eine Aufzeichnung der letzten Aktivitäten seit Rückmeldung an den Server.
     """
+
+    """ Aktionsupdates, die für die Log ignoriert werden """
+    IGNORE = ("running")
+
+    """ fortlaufendes update """
+    SERIAL = ("engine:distance")
+
     def __init__(self):
         self.clear()
 
@@ -18,25 +25,52 @@ class Actionlog:
     def clear(self):
         self.actions = []
 
+    def getActionValue(self, action):
+        for entry in self.actions:
+            if entry.action == action:
+                return entry.value
+        return None
+
     def readXml(self, xml):
         xml.sax.parseString(xml, ActionlogXmlHandler(self))
         return 1
 
     def toXml(self):
         cReturn = '<?xml version="1.0" encoding="UTF-8"?><what-have-i-done>'
+        # reverse(), damit die Aktionen in der Reihenfolge des Geschehens ausgegeben werden
+        self.actions.reverse()
         for action in self.actions:
             cReturn += action.toXml()
+        # und wieder zurück verdrehen
+        self.actions.reverse()
         cReturn += "</what-have-i-done>"
         return cReturn
 
-    def update(self, id, action, value):
-        set = 0
-        for entry in self.actions:
-            if entry.id == id and entry.action == action:
-                entry.value = value
-                set = 1
-        if not set:
-            self.actions.insert(0, ActionlogEntry(id, action, value))
+    """
+    Das Log bekommt hier jede Veränderung mitgeteilt.
+    Engine-Events und die Laufzeit verändern sich ständig und sollten nicht jedes mal neu
+    eingetragen werden.
+    Als Ergebnis wird eine Liste self.actions produziert, die z.B. folgendes aussagt:
+    1 Meter gefahren, Sensor vorne auf 0.5, 90° gedreht, 2 Meter gefahren
+    """
+    def update(self, action, value):
+        if not (action in self.IGNORE):
+            if len(self.actions) and self.actions[0].action == action:
+                self.actions[0].value = value
+            else:
+                start_value = 0.0
+                last_value = self.getActionValue(action)
+                if action in self.SERIAL:
+                    # Wenn der letzte Wert von engine:distance < dem aktuellen Update, hat die
+                    # Engine nicht angehalten. Es kamen nur andere Events dazwischen. Damit die
+                    # Distanz ab der Sensoränderung dokumentiert ist, wird der erste Wert als
+                    # Startwert übernommen.
+                    if last_value and last_value <= value:
+                        start_value = last_value
+                elif last_value == value:
+                    return 1
+
+                self.actions.insert(0, ActionlogEntry(action, value, start_value))
         return 1
 
 
@@ -44,15 +78,15 @@ class ActionlogEntry:
     """
     Eintrag im Actionlog beschreibt einen Zustand während eines Vorganges (id)
     """
-    def __init__(self, id, action, value):
-        self.id = id
+
+    def __init__(self, action, value, start_value = 0.0):
         self.action = action
         self.value = value
+        self.start_value = start_value
 
     def toXml(self):
         return "<" + self.action \
-            + " id='" + str(self.id) + "'" \
-            + " value='" + str(int(self.value * 100)) + "'" \
+            + " value='" + str(int((self.value - self.start_value) * 100)) + "'" \
             + "/>"
 
 class ActionlogXmlHandler(xml.sax.ContentHandler):
@@ -64,14 +98,11 @@ class ActionlogXmlHandler(xml.sax.ContentHandler):
 
     def startElement(self,name,attrs):
         val = 0.0
-        id = None
         for attr,val in attrs:
             if attr == "value":
                 value = float(val) / 100
-            elif attr == "id":
-                id = int(val)
-        if name <> "what-have-i-done" and id:
-            self.actionlog.actions.append(ActionlogEntry(id, name, value))
+        if name <> "what-have-i-done":
+            self.actionlog.actions.append(ActionlogEntry(name, value))
         return 0
 
 
@@ -128,7 +159,6 @@ class Assignment:
         """ aktiviert das Assignment """
         self.active = True
         self.starttime = time.time()
-        states.current_action_id = self.id
         if self.startAction <> None:
             self.startAction.execute(states)
 
@@ -166,7 +196,6 @@ class Assignment:
         """ deaktiviert das Assignment """
         if self.stopAction <> None:
             self.stopAction.execute(states)
-        states.current_action_id = None
         self.active = False
 
 class Argument:
