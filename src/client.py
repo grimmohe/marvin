@@ -287,8 +287,11 @@ class Client:
 
     def process(self):
         if self.assignment:
-            self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
-            self.assignment.process(self.stateholder)
+            try:
+                self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
+                self.assignment.process(self.stateholder)
+            except:
+                pass # this happens only while debugging
 
 if __name__ == '__main__':
     print "init client"
