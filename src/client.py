@@ -224,6 +224,7 @@ class Client:
     connection      = None
 
     def __init__(self):
+        self.process_active = False
         self.stateholder = State(self.process)
         self.connection = Connector('127.0.0.1',29875)
 
@@ -290,12 +291,14 @@ class Client:
             self.connection.disconnect()
 
     def process(self):
-        if self.assignment:
+        if not self.process_active and self.assignment:
+            self.process_active = True
             try:
                 self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
                 self.assignment.process(self.stateholder)
             except:
                 pass # this happens only while debugging
+            self.process_active = False
 
 if __name__ == '__main__':
     print "init client"
