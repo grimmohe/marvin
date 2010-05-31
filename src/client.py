@@ -247,19 +247,11 @@ class Client:
         if not activated:
             for a in self.assignments:
                 if self.assignment == None or self.assignment.id < a.id:
-                    activated = self.startAssignment(a.id)
+                    self.assignment = a
+                    self.assignment.start(self.stateholder)
+                    activated = True
                     break
         return activated
-
-    def startAssignment(self, id):
-        """ Startet ein Assignment und setzt entsprechend lokale Variablen """
-        found = False
-        a = next((a for a in self.assignments if a.id == id), None)
-        if a <> None:
-            found = True
-            self.assignment = a
-            self.assignment.start(self.stateholder)
-        return found
 
     def sendActionlog(self):
         """ unterrichtet den Server """
