@@ -167,7 +167,7 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
                 elif key == "id":
                     id = int(value)
             if self.openAssignment:
-                parent = self.openAssignment.parentAssignment
+                parent = self.openAssignment
             else:
                 parent = None
 

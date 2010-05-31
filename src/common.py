@@ -132,8 +132,8 @@ class Action:
     def execute(self, states):
         if states.devices.has_key(self.device_id):
             states.devices[self.device_id].write(self.command + "=" + self.value)
-        elif self.next_id and self.assignment and self.assignment.parent:
-            self.assignment.parent.startSubAssignment(self.next_id)
+        elif self.next_id and self.assignment and self.assignment.parentAssignment:
+            self.assignment.parentAssignment.startSubAssignment(self.next_id, states)
         return not self.final
 
     def toXml(self, value_only=False):
