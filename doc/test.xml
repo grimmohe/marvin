@@ -1,5 +1,8 @@
 <what-to-do>
-<assignment id="1">
+<assignment id="1" start="head:move=down">
+	<event ifarg1="head:move" ifcompare="e" ifarg2="100" then="" final="true"/>
+</assignment>
+<assignment id="2">
 	<assignment id="1" start="engine:drive=1" end="engine:drive=0">
 		<!-- wenn vorne oder links angestoßen ist endgültig Schluss -->
 		<event ifarg1="front:distance" ifcompare="l" ifarg2="50" then="" final="true"/>
