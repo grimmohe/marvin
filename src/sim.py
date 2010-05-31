@@ -312,10 +312,11 @@ class Simulator:
     """
 
     def __init__(self):
-        self.gui_height     = 1
+        self.gui_size_x     = 1
         self.gui_y_offset   = 0
-        self.gui_width      = 1
+        self.gui_size_y     = 1
         self.gui_x_offset   = 0
+        self.gui_factor     = 1
         self.gui_window     = None
 
         self.runit          = False
@@ -413,10 +414,10 @@ class Simulator:
         pos_neu = self.client.get_cur_position(current_time)
 
         room_size = self.room.get_size()
-        screen_size_x, screen_size_y = self.gui_window.get_size()
-        screen_size_x -= 1
-        screen_size_y -= 1
-        factor = min(float(screen_size_x) / room_size["x"], float(screen_size_y) / room_size["y"])
+        self.gui_size_x, self.gui_size_y = self.gui_window.get_size()
+        self.gui_size_x -= 1
+        self.gui_size_y -= 1
+        self.gui_factor = min(float(self.gui_size_x) / room_size["x"], float(self.gui_size_y) / room_size["y"])
 
         # Hintergrund füllen
         self.gui_window.fill((0, 0, 0))
@@ -425,46 +426,43 @@ class Simulator:
             pygame.draw.line \
                 ( self.gui_window,
                   (0, 0, 255),
-                  ((line[0]["x"] + self.gui_x_offset) * factor,
-                   (line[0]["y"] + self.gui_y_offset) * factor),
-                  ((line[1]["x"] + self.gui_x_offset) * factor,
-                   (line[1]["y"] + self.gui_y_offset) * factor),
+                  self.point(line[0]["x"], line[0]["y"]),
+                  self.point(line[1]["x"], line[1]["y"]),
                   1 )
         # die alte Position vor Beginn der Bewegung
         pygame.draw.circle \
             ( self.gui_window,
               (100, 100, 100),
-              (int((pos_alt["x"] + self.gui_x_offset) * factor),
-               int((pos_alt["y"] + self.gui_y_offset) * factor)),
-              int(self.client.RADIUS * factor),
+              self.point(pos_alt["x"],pos_alt["y"]),
+              int(self.client.RADIUS * self.gui_factor),
               1 )
         pygame.draw.line \
             ( self.gui_window,
               (100, 100, 100),
-              ((pos_alt["x"] + self.gui_x_offset) * factor,
-               (pos_alt["y"] + self.gui_y_offset) * factor),
-              ((pos_neu["x"] + self.gui_x_offset) * factor,
-               (pos_neu["y"] + self.gui_y_offset) * factor),
+              self.point(pos_alt["x"], pos_alt["y"]),
+              self.point(pos_neu["x"], pos_neu["y"]),
               1 )
         # die aktuelle Position
         pygame.draw.circle \
             ( self.gui_window,
               (0, 200, 0),
-              (int((pos_neu["x"] + self.gui_x_offset) * factor),
-               int((pos_neu["y"] + self.gui_y_offset) * factor)),
-              int(self.client.RADIUS * factor),
+              self.point(pos_neu["x"], pos_neu["y"]),
+              int(self.client.RADIUS * self.gui_factor),
               1 )
         # Saugkopf zeichnen
         for line in self.client.get_head_lines(current_time):
             pygame.draw.line \
                 ( self.gui_window,
                   (0, 200, 0),
-                  ((line[0]["x"] + self.gui_x_offset) * factor,
-                   (line[0]["y"] + self.gui_y_offset) * factor),
-                  ((line[1]["x"] + self.gui_x_offset) * factor,
-                   (line[1]["y"] + self.gui_y_offset) * factor),
+                  self.point(line[0]["x"], line[0]["y"]),
+                  self.point(line[1]["x"], line[1]["y"]),
                   1 )
         pygame.display.update()
+
+    def point(self, x, y):
+        x = int((x + self.gui_x_offset) * self.gui_factor)
+        y = self.gui_size_y - int((y + self.gui_y_offset) * self.gui_factor)
+        return (x, y)
 
     def run(self):
         """ Main loop """
