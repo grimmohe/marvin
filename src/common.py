@@ -131,6 +131,7 @@ class Action:
 
     def execute(self, states):
         if states.devices.has_key(self.device_id):
+            print "run device command ",  self.device_id, self.command + "=" + self.value
             states.devices[self.device_id].write(self.command + "=" + self.value)
         elif self.next_id and self.assignment and self.assignment.parentAssignment:
             self.assignment.parentAssignment.startSubAssignment(self.next_id, states)
@@ -166,11 +167,18 @@ class Assignment:
         self.lastprocessing = 0
         self.starttime = None
 
+    def countActiveSub(self):
+        count = 0
+        for sub in self.subAssignments:
+            if sub.active:
+                count += 1
+        return count
+
     def start(self, states):
         """ aktiviert das Assignment """
         self.active = True
         self.starttime = time.time()
-        if self.startAction <> None:
+        if self.startAction:
             self.startAction.execute(states)
         if len(self.subAssignments):
             self.subAssignments[0].start(states)
@@ -204,9 +212,9 @@ class Assignment:
     def process(self, states):
         """ verarbeitet neue Events """
         if not self.active:
-            return 0
+            return 1
 
-        goon = len(self.events) or len(self.subAssignments)
+        goon = len(self.events) or self.countActiveSub()
 
         for event in self.events:
             goon = goon and event.check(states)
@@ -224,7 +232,7 @@ class Assignment:
         for sub in self.subAssignments:
             if sub.active:
                 sub.stop(states)
-        if self.stopAction <> None:
+        if self.stopAction:
             self.stopAction.execute(states)
         self.active = False
 

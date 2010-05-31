@@ -161,9 +161,9 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
             id = 0
             for key,value in attrs.items():
                 if key == "start":
-                    actionStart = Action(value, "false", self.openAssignment)
+                    actionStart = Action(value, "false", None)
                 elif key == "end":
-                    actionEnd = Action(value, "false", self.openAssignment)
+                    actionEnd = Action(value, "false", None)
                 elif key == "id":
                     id = int(value)
             if self.openAssignment:
@@ -172,6 +172,10 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
                 parent = None
 
             self.openAssignment = Assignment(id, actionStart, actionEnd, parent=parent)
+            if actionStart:
+                actionStart.assignment = self.openAssignment
+            if actionEnd:
+                actionEnd.assignment = self.openAssignment
 
             if parent:
                 parent.subAssignments.append(self.openAssignment)
@@ -224,7 +228,7 @@ class Client:
         self.connection = Connector('127.0.0.1',29875)
 
     def __del__(self):
-        if self.connection <> None:
+        if self.connection:
             self.connection.disconnect()
 
     def getNextAssignments(self):
@@ -241,7 +245,7 @@ class Client:
         """ aktiviert das nächste Assignment """
         activated = False
 
-        if self.assignment <> None:
+        if self.assignment:
             activated = self.assignment.active
 
         if not activated:
@@ -282,7 +286,7 @@ class Client:
                 break
 
         # Serververbindung trennen
-        if self.connection <> None:
+        if self.connection:
             self.connection.disconnect()
 
     def process(self):
