@@ -12,7 +12,11 @@ class serverListener(threading.Thread):
     def __init__(self, name, shell, ip, port, cb_read):
         threading.Thread.__init__(self)
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.socket.bind((ip,port))
+        try:
+            self.socket.bind((ip,port))
+        except socket.error:
+            print "socket error"
+            #TODO: Korrektes exception handling
         self.listening  = 0
         self.clients = []
         self.shell = shell
