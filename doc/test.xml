@@ -4,19 +4,16 @@
 </assignment>
 <assignment id="2">
 	<!-- wenn vorne angestößt, ist endgültig Schluss -->
-	<event ifarg1="front:distance" ifcompare="l" ifarg2="50" then="" final="true"/>
+	<event ifarg1="front:distance" ifcompare="l" ifarg2="50" then="engine:drive=0" final="true"/>
 
 	<assignment id="1" start="engine:drive=1" end="a#=2">
 		<event ifarg1="right:distance" ifcompare="g" ifarg2="60" then="engine:drive=0" final="true"/>
 		<event ifarg1="right:distance" ifcompare="l" ifarg2="40" then="engine:drive=0" final="true"/>
 	</assignment>
-	<assignment id="2" end="a#=3">
-		<event ifarg1="right:distance" ifcompare="g" ifarg2="60" then="engine:turn=right" final="true"/>
-		<event ifarg1="right:distance" ifcompare="l" ifarg2="40" then="engine:turn=left" final="true"/>
-	</assignment>
-	<assignment id="3" end="a#=1">
-		<!-- Das hier ist Dreck. Überarbeiten!1!! -->
+	<assignment id="2" start="engine:turn=right" end="a#=3">
 		<event ifarg1="right:distance" ifcompare="l" ifarg2="60" then="engine:turn=stop" final="true"/>
+	</assignment>
+	<assignment id="3" start="engine:turn=left" end="a#=1">
 		<event ifarg1="right:distance" ifcompare="g" ifarg2="40" then="engine:turn=stop" final="true"/>
 	</assignment>
 </assignment>
