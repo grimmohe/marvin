@@ -130,14 +130,14 @@ class Cleaner:
         elif data[0] == "turn":
             self.set_position(time.time())
             if data[1] == "left":
-                self.action = ((self.action | self.ACTION_TURN_LEFT)
-                               & ~self.ACTION_TURN_RIGHT)
+                print "turn left"
+                self.action = self.ACTION_TURN_LEFT
             elif data[1] == "right":
-                self.action = ((self.action | self.ACTION_TURN_RIGHT)
-                               & ~self.ACTION_TURN_LEFT)
+                print "turn right"
+                self.action = self.ACTION_TURN_RIGHT
             else:
-                self.action = self.action & \
-                              ~(self.ACTION_TURN_RIGHT | self.ACTION_TURN_LEFT)
+                print "turn stop"
+                self.action = self.ACTION_HALTED
         elif data[0] == "reset":
             self.reset()
 
