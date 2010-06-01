@@ -234,11 +234,11 @@ class Cleaner:
             self.engine.write("distance=%f" % (self.SPEED * (current_time
                                                              - self.starttime)))
         if self.action & self.ACTION_TURN_RIGHT:
-            self.engine.write("turn=%f" % (self.SPEED * (current_time
-                                                         - self.starttime)))
+            self.engine.write("turned=%f" % (self.SPEED * (current_time
+                                                           - self.starttime)))
         if self.action & self.ACTION_TURN_LEFT:
-            self.engine.write("turn=%f" % (self.SPEED * (current_time
-                                                         - self.starttime) * -1))
+            self.engine.write("turned=%f" % (self.SPEED * (current_time
+                                                           - self.starttime) * -1))
 
 class Room:
     """
