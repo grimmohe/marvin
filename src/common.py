@@ -225,14 +225,17 @@ class Assignment:
         if not goon:
             self.stop(states)
 
-        return goon
+        return goon or (self.parentAssignment and self.parentAssignment.countActiveSub())
 
-    def stop(self, states):
-        """ deaktiviert das Assignment """
+    def stop(self, states, superior=False):
+        """
+        Deaktiviert das Assignment und seine Subs. Superior wird hier nur von stop() selbst gesetzt,
+        um die stopAction nur auf oberster Ebene auszuführen.
+        """
         for sub in self.subAssignments:
             if sub.active:
-                sub.stop(states)
-        if self.stopAction:
+                sub.stop(states, True)
+        if self.stopAction and (not superior):
             self.stopAction.execute(states)
         self.active = False
 

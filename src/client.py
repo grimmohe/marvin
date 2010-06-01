@@ -35,7 +35,7 @@ class State:
         self.devices["engine"].write("reset=1")
 
         self.update("engine:drive", 0.0)
-        self.update("engine:turn", 0.0)
+        self.update("engine:turned", 0.0)
         self.update("head:move", 0.0)
         self.update("front:distance", 1.0)
         self.update("left:distance", 1.0)
@@ -251,7 +251,7 @@ class Client:
 
         if not activated:
             for a in self.assignments:
-                if self.assignment == None or self.assignment.id < a.id:
+                if self.assignment == None or a.id > self.assignment.id:
                     self.assignment = a
                     self.assignment.start(self.stateholder)
                     activated = True
@@ -291,7 +291,7 @@ class Client:
             self.connection.disconnect()
 
     def process(self):
-        if not self.process_active and self.assignment:
+        if (not self.process_active) and self.assignment:
             self.process_active = True
             try:
                 self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
