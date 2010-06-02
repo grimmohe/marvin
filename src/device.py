@@ -2,7 +2,7 @@
 #coding=utf8
 
 import pyinotify
-from client import Connector
+from common import Connector
 
 class Device:
     """
@@ -38,7 +38,10 @@ class Device:
 
     def close(self):
         if self.con:
+            self.con.stop = True
             self.con.disconnect()
+            self.con.quit()
+            self.con = None
 
 class FileEvent(pyinotify.ProcessEvent):
 

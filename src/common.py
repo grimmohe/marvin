@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #coding=utf8
 
+import socket
+import threading
 import time
 import re
 import xml.sax
@@ -20,7 +22,7 @@ class Actionlog:
         self.clear()
 
     def __del__(self):
-        self.actions = None
+        self.quit()
 
     def clear(self):
         self.actions = []
@@ -30,6 +32,9 @@ class Actionlog:
             if entry.action == action:
                 return entry.value
         return None
+
+    def quit(self):
+        self.actions = None
 
     def readXml(self, xml):
         xml.sax.parseString(xml, ActionlogXmlHandler(self))
@@ -137,6 +142,9 @@ class Action:
             self.assignment.parentAssignment.startSubAssignment(self.next_id, states)
         return not self.final
 
+    def quit(self):
+        self.assignment = None
+
     def toXml(self, value_only=False):
         cReturn = self.device_id + ":" + self.command + "=" + self.value
         if not value_only:
@@ -173,6 +181,20 @@ class Assignment:
             if sub.active:
                 count += 1
         return count
+
+    def quit(self):
+        for event in self.events:
+            event.quit()
+        self.events = None
+        for sub in self.subAssignments:
+            sub.quit()
+        if self.startAction:
+            self.startAction.quit()
+            self.startAction = None
+        if self.stopAction:
+            self.stopAction.quit()
+            self.stopAction = None
+        self.parentAssignment = None
 
     def start(self, states):
         """ aktiviert das Assignment """
@@ -239,6 +261,74 @@ class Assignment:
             self.stopAction.execute(states)
         self.active = False
 
+class AssignmentXmlHandler(xml.sax.ContentHandler):
+    """
+    Handles XML.SAX events
+    """
+    def __init__(self, client):
+        self.client = client
+        self.openAssignment = None
+
+    def startElement(self,name,attrs):
+
+        if name == "assignment":
+            actionStart = None
+            actionEnd = None
+            id = 0
+            for key,value in attrs.items():
+                if key == "start":
+                    actionStart = Action(value, "false", None)
+                elif key == "end":
+                    actionEnd = Action(value, "false", None)
+                elif key == "id":
+                    id = int(value)
+            if self.openAssignment:
+                parent = self.openAssignment
+            else:
+                parent = None
+
+            self.openAssignment = Assignment(id, actionStart, actionEnd, parent=parent)
+            if actionStart:
+                actionStart.assignment = self.openAssignment
+            if actionEnd:
+                actionEnd.assignment = self.openAssignment
+
+            if parent:
+                parent.subAssignments.append(self.openAssignment)
+            else:
+                self.client.assignments.append(self.openAssignment)
+
+        elif name == "event":
+            arg1 = None
+            arg2 = None
+            compare = None
+            action = None
+            then = None
+            final = None
+
+            for key,value in attrs.items():
+                if key == "ifarg1":
+                    arg1 = Argument(value)
+
+                elif key == "ifarg2":
+                    arg2 = Argument(value)
+
+                elif key == "ifcompare":
+                    compare = value
+
+                elif key == "then":
+                    then = value
+
+                elif key == "final":
+                    final = value
+
+            action = Action(then, final, self.openAssignment)
+            self.openAssignment.events.append(Event(arg1, arg2, compare, action))
+
+    def endElement(self, name):
+        if name == "assignment" and self.openAssignment:
+            self.openAssignment = self.openAssignment.parentAssignment
+
 
 class Argument:
     """
@@ -265,6 +355,9 @@ class Argument:
         elif self.typ == self.ARG_STATE:
             ret_val = states.getValue(self.key)
         return ret_val
+
+    def quit(self):
+        pass
 
     def toXml(self):
         cReturn = ""
@@ -306,6 +399,17 @@ class Event:
             goon = self.action.execute(states)
         return goon
 
+    def quit(self):
+        if self.arg1:
+            self.arg1.quit()
+            self.arg1 = None
+        if self.arg2:
+            self.arg2.quit()
+            self.arg2 = None
+        if self.action:
+            self.action.quit()
+            self.action = None
+
     def toXml(self):
         cReturn = "<event" \
                 + " ifarg1='" + self.arg1.toXml() + "'" \
@@ -314,3 +418,69 @@ class Event:
                 + self.action.toXml() \
                 + "/>"
         return cReturn
+
+
+class Connector(threading.Thread):
+    """
+    Stellt die Verbindung zum Server her
+    """
+    def __init__(self, ip, port):
+        threading.Thread.__init__(self)
+        self.host = ip
+        self.port = port
+        self.connected = False
+        self.socket = None
+        self.data = ''
+        self.stop = False
+        self.cb_incoming = None
+        self.start()
+
+    def connect(self):
+        if not self.connected:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((self.host, self.port))
+            self.connected = True
+
+    def disconnect(self):
+        if self.connected:
+            print "disconnecting..."
+            self.write("DISCO")
+            self.socket.close()
+            self.connected = False
+
+    def quit(self):
+        self.cb_incoming = None
+        self.socket = None
+
+    def run(self):
+        self.connect()
+        self.read()
+        self.disconnect()
+
+    def read(self):
+        truedata=''
+        while (not self.stop) and self.connected:
+            data = self.socket.recv(4096)
+            if not data:
+                self.stop = True
+                break
+            truedata += data
+            if "\n\n" == truedata[-2:]:
+                self.data=truedata.strip("\n")
+                if self.cb_incoming:
+                    self.cb_incoming(self)
+                truedata=''
+
+            if self.data == "DISCO":
+                self.stop = True
+
+    def write(self,data):
+        self.socket.send(data)
+
+    def getData(self):
+        data = self.data
+        self.data = ''
+        return data
+
+    def setDataIncomingCb(self,cb):
+        self.cb_incoming = cb

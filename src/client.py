@@ -2,11 +2,9 @@
 #coding=utf8
 
 import time
-import socket
 import xml.sax
 import device
-import threading
-from common import Action, Actionlog, Argument, Assignment, Event
+from common import Actionlog, AssignmentXmlHandler, Connector
 
 class State:
     """
@@ -59,13 +57,7 @@ class State:
             self.update(key, float(value))
 
     def __del__(self):
-        self.devices["engine"].close()
-        self.devices["head"].close()
-        self.devices["left"].close()
-        self.devices["front"].close()
-        self.devices["right"].close()
-        self.devices = None
-        self.actionlog = None
+        self.quit()
 
     def getValue(self, key):
         """ Gibt den value zu key """
@@ -77,6 +69,15 @@ class State:
     def getActionlogXml(self):
         return self.actionlog.toXml()
 
+    def quit(self):
+        if self.devices:
+            for dev in self.devices.values():
+                dev.close()
+            self.devices = None
+        if self.actionlog:
+            self.actionlog.quit()
+            self.actionlog = None
+
     def update(self, key, value, process=True):
         """ Erstellt/Aktualisiert einen Wert """
         self.dict[key] = value
@@ -84,147 +85,15 @@ class State:
         if process and self.cb_anyAction:
             self.cb_anyAction()
 
-class Connector(threading.Thread):
-    """
-    Stellt die Verbindung zum Server her
-    """
-    def __init__(self, ip, port):
-        threading.Thread.__init__(self)
-        self.host = ip
-        self.port = port
-        self.connected = False
-        self.socket = None
-        self.data = ''
-        self.stop = False
-        self.cb_incoming = None
-        self.start()
-
-    def connect(self):
-        if not self.connected:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((self.host, self.port))
-            self.connected = True
-
-    def disconnect(self):
-        if self.connected:
-            print "disconnecting..."
-            self.write("DISCO")
-            self.socket.close()
-            self.connected = False
-
-    def run(self):
-        self.connect()
-        self.read()
-        self.disconnect()
-
-    def read(self):
-        truedata=''
-        while not self.stop and self.connected:
-            data = self.socket.recv(4096)
-            if not data:
-                self.stop = True
-                break
-            truedata += data
-            if "\n\n" == truedata[-2:]:
-                self.data=truedata.strip("\n")
-                if self.cb_incoming:
-                    self.cb_incoming(self)
-                truedata=''
-
-            if self.data == "DISCO":
-                self.stop = True
-
-    def write(self,data):
-        self.socket.send(data)
-
-    def getData(self):
-        data = self.data
-        self.data = ''
-        return data
-
-    def setDataIncomingCb(self,cb):
-        self.cb_incoming = cb
-
-class AssignmentXmlHandler(xml.sax.ContentHandler):
-    """
-    Handles XML.SAX events
-    """
-    def __init__(self, client):
-        self.client = client
-        self.openAssignment = None
-
-    def startElement(self,name,attrs):
-
-        if name == "assignment":
-            actionStart = None
-            actionEnd = None
-            id = 0
-            for key,value in attrs.items():
-                if key == "start":
-                    actionStart = Action(value, "false", None)
-                elif key == "end":
-                    actionEnd = Action(value, "false", None)
-                elif key == "id":
-                    id = int(value)
-            if self.openAssignment:
-                parent = self.openAssignment
-            else:
-                parent = None
-
-            self.openAssignment = Assignment(id, actionStart, actionEnd, parent=parent)
-            if actionStart:
-                actionStart.assignment = self.openAssignment
-            if actionEnd:
-                actionEnd.assignment = self.openAssignment
-
-            if parent:
-                parent.subAssignments.append(self.openAssignment)
-            else:
-                self.client.assignments.append(self.openAssignment)
-
-        elif name == "event":
-            arg1 = None
-            arg2 = None
-            compare = None
-            action = None
-            then = None
-            final = None
-
-            for key,value in attrs.items():
-                if key == "ifarg1":
-                    arg1 = Argument(value)
-
-                elif key == "ifarg2":
-                    arg2 = Argument(value)
-
-                elif key == "ifcompare":
-                    compare = value
-
-                elif key == "then":
-                    then = value
-
-                elif key == "final":
-                    final = value
-
-            action = Action(then, final, self.openAssignment)
-            self.openAssignment.events.append(Event(arg1, arg2, compare, action))
-
-    def endElement(self, name):
-        if name == "assignment" and self.openAssignment:
-            self.openAssignment = self.openAssignment.parentAssignment
-
 class Client:
     """
     Die Zusammenfassung aller Instrumente und Main-Klasse.
     """
-    transmission_id = None            # Identifikation der letzten Kommunikation
-    assignment      = None            # Letztes ausgeführtes Assignment
-    assignments     = []
-    stateholder     = None
-    connection      = None
 
     def __init__(self):
         self.process_active = False
+        self.assignment      = None            # Letztes ausgeführtes Assignment
+        self.assignments     = []
         self.stateholder = State(self.process)
         self.connection = Connector('127.0.0.1',29875)
 
@@ -300,11 +169,25 @@ class Client:
                 pass # this happens only while debugging
             self.process_active = False
 
+    def quit(self):
+        self.assignment = None
+        for a in self.assignments:
+            a.quit()
+        self.assignments = None
+
+        self.connection.quit()
+        self.connection = None
+
+        self.stateholder.quit()
+        self.stateholder = None
+
+
 if __name__ == '__main__':
     print "init client"
     client = Client()
     print "run client"
     client.run()
+    client.quit()
     print "done"
     quit()
 
