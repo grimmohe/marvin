@@ -105,7 +105,7 @@ class Cleaner:
         self.engine.close()
         self.engine = None
         for point in self.head_form:
-            if point["sensor"] <> None:
+            if point["sensor"]:
                 point["sensor"].close()
                 point["sensor"] = None
 
@@ -466,17 +466,19 @@ class Simulator:
 
     def run(self):
         """ Main loop """
-        self.init_gui()
-        self.runit = True
-        while self.runit:
-            timestamp = time.time()
-            # Kollisionskontrolle
-            self.check(timestamp)
-            # GUI
-            self.update_gui(timestamp)
-            # warten, aber bitte alle 0.01 aufwachen
-            time.sleep(max(0, 0.01 - (time.time() - timestamp)))
-
+        try:
+            self.init_gui()
+            self.runit = True
+            while self.runit:
+                timestamp = time.time()
+                # Kollisionskontrolle
+                self.check(timestamp)
+                # GUI
+                self.update_gui(timestamp)
+                # warten, aber bitte alle 0.01 aufwachen
+                time.sleep(max(0, 0.01 - (time.time() - timestamp)))
+        except KeyboardInterrupt:
+            pass
         pygame.quit()
         self.client.quit()
         self.room.quit()
