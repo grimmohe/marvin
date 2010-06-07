@@ -104,10 +104,10 @@ class ActionlogXmlHandler(xml.sax.ContentHandler):
 
     def startElement(self,name,attrs):
         value = 0.0
-        for attr,val in attrs:
-            if attr == "value":
-                value = float(val) / 100
         if name <> "what-have-i-done":
+            for attr,val in attrs.items():
+                if attr == "value":
+                    value = float(val) / 100
             self.actionlog.actions.append(ActionlogEntry(name, value))
         return 0
 
