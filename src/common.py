@@ -16,7 +16,7 @@ class Actionlog:
     IGNORE = ("running")
 
     """ fortlaufendes update """
-    SERIAL = ("engine:distance")
+    SERIAL = ("engine:distance", "engine:turned")
 
     def __init__(self):
         self.clear()
@@ -37,6 +37,7 @@ class Actionlog:
         self.actions = None
 
     def readXml(self, xml):
+        self.actions = []
         xml.sax.parseString(xml, ActionlogXmlHandler(self))
         return 1
 
@@ -70,7 +71,7 @@ class Actionlog:
                     # Engine nicht angehalten. Es kamen nur andere Events dazwischen. Damit die
                     # Distanz ab der Sensoränderung dokumentiert ist, wird der erste Wert als
                     # Startwert übernommen.
-                    if last_value and last_value <= value:
+                    if last_value and ((last_value > 0 and last_value <= value) or (last_value < 0 and last_value >= value)):
                         start_value = last_value
                 elif last_value == value:
                     return 1
