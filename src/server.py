@@ -4,7 +4,9 @@
 import os
 import socket
 import threading
+import common
 import map
+from map import Vector
 
 BUFSIZE = 4096
 
@@ -199,7 +201,7 @@ class shell:
         cmd = cmd.replace("  "," ").strip().split(" ")
         if "sft" == cmd[0]:
             self.processCommand("sf ../doc/test.xml")
-        if "sf" == cmd[0]:
+        elif "sf" == cmd[0]:
             print "sending file: ", cmd[1]
             if self.dustsrv.srvlis.sendFile(cmd[1]) == 0:
                 print "send ok"
@@ -245,7 +247,6 @@ class Server:
 
     def __init__(self,name,shell,ip,port,cb_read):
         self.srvlis = serverListener(name, shell,ip,port,cb_read)
-        self.map = map.Map()
 
     def __del__(self):
         self.srvlis = None
@@ -254,13 +255,38 @@ class Server:
         for client in self.srvlis.clients:
             client.send(data)
 
+class ClientContainer:
+
+    def __init__(self):
+        self.orientation = 0.0
+        self.map = map.Map()
+        self.vSensorLeft = map.Vector(-20.0, 0.0, 0.0, -20.0)
+        self.vSensorFront = map.Vector(-20.0, 20.0, -40.0, -0.0)
+        self.vSensorRight = map.Vector(20.0, 0.0, 0.0, -20.0)
+        self.connection = None
+        self.actionlog = common.Actionlog()
+
 class DustServer(Server):
 
     def __init__(self,shell):
         Server.__init__(self,"DustSrv",shell,'',29875, self.CliendReceiving)
+        self.clients = []
 
-    def CliendReceiving(self, client, data):
-        client.shellEcho(" received: " + data)
+    def CliendReceiving(self, client_con, data):
+        client_con.shellEcho(" received: " + data)
+        client = None
+        for c in self.clients:
+            if c.connection == client_con:
+                client = c
+        if not client:
+            client = ClientContainer()
+            client.connection = client_con
+            self.clients.append(client)
+        client.actionlog.readXml(data)
+
+    def Actionlog2Vector(self, cc):
+        """ cc = ClientConnector() """
+
 
 class DeviceServer(Server):
 
