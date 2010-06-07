@@ -136,7 +136,6 @@ class Action:
 
     def execute(self, states):
         if states.devices.has_key(self.device_id):
-            print "run device command ",  self.device_id, self.command + "=" + self.value
             states.devices[self.device_id].write(self.command + "=" + self.value)
         elif self.next_id and self.assignment and self.assignment.parentAssignment:
             self.assignment.parentAssignment.startSubAssignment(self.next_id, states)

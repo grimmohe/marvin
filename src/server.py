@@ -4,6 +4,7 @@
 import os
 import socket
 import threading
+import map
 
 BUFSIZE = 4096
 
@@ -244,6 +245,7 @@ class Server:
 
     def __init__(self,name,shell,ip,port,cb_read):
         self.srvlis = serverListener(name, shell,ip,port,cb_read)
+        self.map = map.Map()
 
     def __del__(self):
         self.srvlis = None
