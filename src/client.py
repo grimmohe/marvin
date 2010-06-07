@@ -130,8 +130,8 @@ class Client:
     def sendActionlog(self):
         """ unterrichtet den Server """
         xml = self.stateholder.getActionlogXml()
-        if xml <> '<?xml version="1.0" encoding="UTF-8"?><what-have-i-done></what-have-i-done>':
-            print xml
+        if xml:
+            self.connection.write(xml)
         self.stateholder.clearActionlog()
         return 1
 
