@@ -36,9 +36,9 @@ class Actionlog:
     def quit(self):
         self.actions = None
 
-    def readXml(self, xml):
-        self.actions = []
-        xml.sax.parseString(xml, ActionlogXmlHandler(self))
+    def readXml(self, data):
+        self.clear()
+        xml.sax.parseString(data, ActionlogXmlHandler(self))
         return 1
 
     def toXml(self):
@@ -103,7 +103,7 @@ class ActionlogXmlHandler(xml.sax.ContentHandler):
         self.actionlog = actionlog
 
     def startElement(self,name,attrs):
-        val = 0.0
+        value = 0.0
         for attr,val in attrs:
             if attr == "value":
                 value = float(val) / 100
