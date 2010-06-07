@@ -129,7 +129,7 @@ class clientConnection(threading.Thread):
     def receive(self,data):
         if data == "DISCO" and self.reader:
             self.reader.stop = True
-        self.cb_read(data)
+        self.cb_read(self, data)
 
     def getClientString(self):
         if self.clientInfo:
@@ -257,15 +257,15 @@ class DustServer(Server):
     def __init__(self,shell):
         Server.__init__(self,"DustSrv",shell,'',29875, self.CliendReceiving)
 
-    def CliendReceiving(self, data):
-        pass
+    def CliendReceiving(self, client, data):
+        client.shellEcho(" received: " + data)
 
 class DeviceServer(Server):
 
     def __init__(self,shell):
         Server.__init__(self,"DevSrv",shell,'',29874, self.CliendReceiving)
 
-    def CliendReceiving(self, data):
+    def CliendReceiving(self, client, data):
         self.broadcast(data)
 
 
