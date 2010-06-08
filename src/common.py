@@ -118,35 +118,46 @@ class Action:
     """
     # dev:command=1
     def __init__(self, args, final, assignment):
-        self.value = None
-        self.device_id = None
-        self.command = None
-        self.next_id = None
-
-        if "a#=" in args:
-            self.next_id = int(args.split("=")[1])
-        elif "=" in args and ":" in args:
-            args = args.split("=", 2)
-            self.value = args[1]
-            args = args[0].split(":", 2)
-            self.device_id = args[0]
-            self.command = args[1]
-
+        self.actions = []
+        for arg in args.split(";"):
+            a = {"value": None, "device_id": None, "command": None, "next_id": None}
+            if "a#=" in arg:
+                a["next_id"] = int(arg.split("=")[1])
+            elif "=" in arg and ":" in arg:
+                arg = arg.split("=", 2)
+                a["value"] = arg[1]
+                arg = arg[0].split(":", 2)
+                a["device_id"] = arg[0]
+                a["command"] = arg[1]
+            self.actions.append(a)
         self.final = (final == "true")
         self.assignment = assignment
 
+    def add(self, action_item):
+        self.actions.append(action_item)
+
     def execute(self, states):
-        if states.devices.has_key(self.device_id):
-            states.devices[self.device_id].write(self.command + "=" + self.value)
-        elif self.next_id and self.assignment and self.assignment.parentAssignment:
-            self.assignment.parentAssignment.startSubAssignment(self.next_id, states)
+        for a in self.actions:
+            if states.devices.has_key(a["device_id"]):
+                states.devices[a["device_id"]].write(a["command"] + "=" + a["value"])
+            elif a["next_id"] and self.assignment and self.assignment.parentAssignment:
+                if self.final:
+                    self.assignment.stopAction.add(a)
+                else:
+                    self.assignment.parentAssignment.startSubAssignment(a["next_id"], states)
         return not self.final
 
     def quit(self):
         self.assignment = None
 
     def toXml(self, value_only=False):
-        cReturn = self.device_id + ":" + self.command + "=" + self.value
+        cReturn = ""
+        for a in self.actions:
+            if a["next_id"]:
+                cReturn += ";a#=" + str(a["next_id"])
+            else:
+                cReturn += ";" + self.device_id + ":" + self.command + "=" + self.value
+        cReturn = cReturn.strip(";")
         if not value_only:
             cReturn = "then='" + cReturn + "' final='" + ["false", "true"][self.final] + "'"
         return cReturn
