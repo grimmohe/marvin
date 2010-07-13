@@ -6,15 +6,15 @@
 	<!-- wenn vorne angestößt, ist endgültig Schluss -->
 	<event ifarg1="front:distance" ifcompare="l" ifarg2="50" then="engine:drive=0" final="true"/>
 
-	<assignment id="1" start="engine:drive=1" end="a#=2">
-		<event ifarg1="right:distance" ifcompare="g" ifarg2="60" then="engine:drive=0" final="true"/>
-		<event ifarg1="right:distance" ifcompare="l" ifarg2="40" then="engine:drive=0" final="true"/>
+	<assignment id="1" start="engine:drive=1" end="engine:drive=0">
+		<event ifarg1="right:distance" ifcompare="g" ifarg2="60" then="a#=2" final="true"/>
+		<event ifarg1="right:distance" ifcompare="l" ifarg2="40" then="a#=3" final="true"/>
 	</assignment>
-	<assignment id="2" start="engine:turn=right" end="a#=3">
-		<event ifarg1="right:distance" ifcompare="l" ifarg2="60" then="engine:turn=stop" final="true"/>
+	<assignment id="2" start="engine:turn=right" end="engine:turn=stop">
+		<event ifarg1="right:distance" ifcompare="l" ifarg2="60" then="a#=1" final="true"/>
 	</assignment>
-	<assignment id="3" start="engine:turn=left" end="a#=1">
-		<event ifarg1="right:distance" ifcompare="g" ifarg2="40" then="engine:turn=stop" final="true"/>
+	<assignment id="3" start="engine:turn=left" end="engine:turn=stop">
+		<event ifarg1="right:distance" ifcompare="g" ifarg2="40" then="a#=1" final="true"/>
 	</assignment>
 </assignment>
 </what-to-do>
