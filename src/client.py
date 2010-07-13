@@ -5,6 +5,7 @@ import time
 import xml.sax
 import device
 from common import Actionlog, AssignmentXmlHandler, Connector
+import ConfigParser
 
 class State:
     """
@@ -19,45 +20,21 @@ class State:
         self.actionlog = Actionlog()
         self.dict = {}
         self.cb_anyAction = cb_process
-        self.devices = \
-            { "engine": device.Device('engine',
-                                      lambda data: self.debugstep("engine:"+data.split("=")[0], data)),
-              "head":   device.Device('head',
-                                      lambda data: self.debugstep("head:move", data)),
-              "left":   device.Device('left',
-                                      lambda data: self.debugstep("left:distance", data)),
-              "front":  device.Device('front',
-                                      lambda data: self.debugstep("front:distance", data)),
-              "right":  device.Device('right',
-                                      lambda data: self.debugstep("right:distance", data)) }
-        self.devices["engine"].write("reset=1")
-
-        self.update("engine:drive", 0.0)
-        self.update("engine:turned", 0.0)
-        self.update("head:move", 0.0)
-        self.update("front:distance", 1.0)
-        self.update("left:distance", 1.0)
-        self.update("right:distance", 1.0)
-
-    def clearActionlog(self):
-        self.actionlog.clear()
-
-    #TODO: do it right
-    def debugstep(self, key, value):
-        value = value.split("=")[1]
-
-        if key == "head:move":
-            self.update(key, float(value == "down"))
-        elif key == "engine:turn":
-            if value == "left":
-                self.update(key, -1.0)
-            else:
-                self.update(key, float(value == "right"))
-        else:
-            self.update(key, float(value))
+        self.devices = {}
 
     def __del__(self):
         self.quit()
+
+    def addDevice(self, name, default=0.0):
+        """ Hinzufügen eines Devices """
+        if self.devices.has_key(name):
+            dev = self.devices.pop(name)
+            if dev:
+                dev.close()
+        self.devices[name] = device.Device(name, lambda data: self.preUpdate(name, data))
+
+    def clearActionlog(self):
+        self.actionlog.clear()
 
     def getValue(self, key):
         """ Gibt den value zu key """
@@ -78,6 +55,31 @@ class State:
             self.actionlog.quit()
             self.actionlog = None
 
+    def preUpdate(self, name, value):
+        """ die Informationen von Device in brauchbare Key=Value umwandeln """
+        # name = "engine"
+        # value = "turn=left"
+
+        value = value.split("=")
+        if len(value) > 1:
+            name += ":" + value[0]
+            value = value[1]
+
+            if value == "down":
+                value = 1.0
+            elif value == "right":
+                value = 1.0
+            elif value == "left":
+                value = -1.0
+            else:
+                try:
+                    value = float(value)
+                except ValueError:
+                    value = 0.0
+
+            self.update(name, value)
+        return 0
+
     def update(self, key, value, process=True):
         """ Erstellt/Aktualisiert einen Wert """
         self.dict[key] = value
@@ -92,10 +94,10 @@ class Client:
 
     def __init__(self):
         self.process_active = False
-        self.assignment      = None            # Letztes ausgeführtes Assignment
-        self.assignments     = []
-        self.stateholder = State(self.process)
-        self.connection = Connector('127.0.0.1',29875)
+        self.assignment = None            # Letztes ausgeführtes Assignment
+        self.assignments = []
+        self.stateholder = None
+        self.connection = None
 
     def __del__(self):
         if self.connection:
@@ -108,8 +110,53 @@ class Client:
         data = self.connection.getData()
         if data:
             xml.sax.parseString(data, AssignmentXmlHandler(self))
-
         return 0
+
+    def initialize (self):
+        """ Lädt Konfiguration und initialisiert Stateholder, Connection """
+        self.stateholder = State(self.process)
+
+        config = ConfigParser.RawConfigParser()
+        try:
+            try:
+                config.read("/etc/marvin.conf")
+
+                self.stateholder.update("Ident", config.get("client", "ident"), process=False)
+                self.stateholder.update("Stamp", str(time.time()), process=False)
+                self.stateholder.update("Tolerance", config.getfloat("client", "tolerance"), process=False)
+                self.stateholder.update("Radius", config.getfloat("client", "radius"), process=False)
+
+                ServerIP = config.get("client", "ServerIP")
+                ServerPort = config.getint("client", "ServerPort")
+
+                for section in ("SensorDevices", "EngineDevices", "HeadDevices"):
+                    devlist = config.get("client", section)
+                    for devname in devlist.split(","):
+                        if config.has_option(devname, "dimension"):
+                            self.stateholder.update("dev:" + devname + ":dimension", \
+                                                    config.get(devname, "dimension"), \
+                                                    process=False)
+                        if config.has_option(devname, "orientation"):
+                            self.stateholder.update("dev:" + devname + ":orientation", \
+                                                    config.get(devname, "orientation"), \
+                                                    process=False)
+                        self.stateholder.addDevice(devname)
+
+            except Exception, e:
+                print "ERROR: Configuration missing or incomplete."
+                print e.message
+                return 0
+
+            try:
+                self.connection = Connector(ServerIP, ServerPort)
+            except Exception, e:
+                print "ERROR: Connection failed."
+                print e.message
+                return 0
+
+            return 1
+        finally:
+            config = None
 
     def runNextAssignment(self):
         """ aktiviert das nächste Assignment """
@@ -137,6 +184,9 @@ class Client:
 
     def run(self):
         """ Main loop """
+        if not self.initialize():
+            return 0
+
         active = 0
         while 1:
             try:
@@ -159,6 +209,8 @@ class Client:
         if self.connection:
             self.connection.disconnect()
 
+        self.quit()
+
     def process(self):
         if (not self.process_active) and self.assignment:
             self.process_active = True
@@ -170,10 +222,11 @@ class Client:
             self.process_active = False
 
     def quit(self):
+        self.process_active = False
         self.assignment = None
         for a in self.assignments:
             a.quit()
-        self.assignments = None
+        self.assignments = []
 
         self.connection.quit()
         self.connection = None
@@ -187,7 +240,6 @@ if __name__ == '__main__':
     client = Client()
     print "run client"
     client.run()
-    client.quit()
     print "done"
     quit()
 

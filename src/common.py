@@ -91,9 +91,11 @@ class ActionlogEntry:
         self.start_value = start_value
 
     def toXml(self):
-        return "<" + self.action \
-            + " value='" + str(int((self.value - self.start_value) * 100)) + "'" \
-            + "/>"
+        if type(self.value) in ("int", "float"):
+            value = str(int((self.value - self.start_value) * 100))
+        else:
+            value = str(self.value)
+        return "<" + self.action + " value='" + value + "'" + "/>"
 
 class ActionlogXmlHandler(xml.sax.ContentHandler):
     """
@@ -107,7 +109,10 @@ class ActionlogXmlHandler(xml.sax.ContentHandler):
         if name <> "what-have-i-done":
             for attr,val in attrs.items():
                 if attr == "value":
-                    value = float(val) / 100
+                    try:
+                        value = float(val) / 100
+                    except ValueError:
+                        value = val
             self.actionlog.actions.append(ActionlogEntry(name, value))
         return 0
 

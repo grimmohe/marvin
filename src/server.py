@@ -197,8 +197,11 @@ class shell:
     def awaitingCommands(self):
         self.exit = False
         while not self.exit:
-            cmd = raw_input("cmd#>: ")
-            self.processCommand(cmd)
+            try:
+                cmd = raw_input("cmd#>: ")
+                self.processCommand(cmd)
+            except KeyboardInterrupt:
+                pass
         self.processCommand("stop")
 
     def processCommand(self,cmd):
