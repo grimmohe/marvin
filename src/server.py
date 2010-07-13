@@ -25,6 +25,7 @@ class serverListener(threading.Thread):
         self.shell = shell
         self.cb_read = cb_read
         self.name = name
+        self.cb_newcli=None
         self.start()
 
     def __del__(self):
@@ -43,7 +44,10 @@ class serverListener(threading.Thread):
         self.socket.listen(1)
         if self.socket:
             cli = self.socket.accept()
-            self.clients.append(clientConnection(self,cli,self.cb_read))
+            cli = clientConnection(self,cli,self.cb_read)
+            self.clients.append(cli)
+            if self.cb_newcli:
+                self.cb_newcli(cli)
 
     def serverCmd(self, cmd):
         cmd = cmd.strip()
@@ -99,6 +103,7 @@ class clientConnection(threading.Thread):
         threading.Thread.__init__(self)
         self.server = server
         self.client = client[0]
+        self.clientContainer = None
         self.clientInfo = client[1]
         self.clientStuff = client
         self.reader = None
@@ -255,9 +260,10 @@ class Server:
         for client in self.srvlis.clients:
             client.send(data)
 
-class ClientContainer:
+class ClientContainer(threading.Thread):
 
     def __init__(self):
+        threading.Thread.__init__(self)
         self.orientation = 0.0
         self.map = map.Map()
         self.vSensorLeft = map.Vector(-20.0, 0.0, 0.0, -20.0)
@@ -265,35 +271,60 @@ class ClientContainer:
         self.vSensorRight = map.Vector(20.0, 0.0, 0.0, -20.0)
         self.connection = None
         self.actionlog = common.Actionlog()
+        self.actionlogData = ""
+        self.actionlogNew = threading.Event()
+        self.start()
+        
+    def run(self):
+        while True:
+            self.actionlogNew.clear()
+            self.actionlogNew.wait()
+            self.actionlog.readXml(self.actionlogData)
+            self.connection.shellEcho("actionlog parsed")
+            
+    def shutdown(self):
+        pass
 
 class DustServer(Server):
 
     def __init__(self,shell):
-        Server.__init__(self,"DustSrv",shell,'',29875, self.CliendReceiving)
+        Server.__init__(self,"DustSrv",shell,'',29875, self.ClientReceiving)
+        self.srvlis.cb_newcli=self.addClient
         self.clients = []
 
-    def CliendReceiving(self, client_con, data):
+    def ClientReceiving(self, client_con, data):
         client_con.shellEcho(" received: " + data)
         client = None
         for c in self.clients:
             if c.connection == client_con:
                 client = c
-        if not client:
-            client = ClientContainer()
-            client.connection = client_con
-            self.clients.append(client)
-        client.actionlog.readXml(data)
+        if client:        
+            client.actionlogData=data
+            client.actionlogNew.set()
+        else:
+            client_con.shellEcho("no suitable client found")
 
     def Actionlog2Vector(self, cc):
         """ cc = ClientConnector() """
 
-
+    def addClient(self, con):
+        con.clientContainer=ClientContainer()
+        con.clientContainer.connection = con
+        self.clients.append(con.clientContainer)
+        self.srvlis.shellEcho("client added")
+        
+    def shutdown(self):
+        for client in self.clients:
+            client.shutdown()
+            client=None
+        self.clients=None
+        
 class DeviceServer(Server):
 
     def __init__(self,shell):
-        Server.__init__(self,"DevSrv",shell,'',29874, self.CliendReceiving)
+        Server.__init__(self,"DevSrv",shell,'',29874, self.ClientReceiving)
 
-    def CliendReceiving(self, client, data):
+    def ClientReceiving(self, client, data):
         self.broadcast(data)
 
 
