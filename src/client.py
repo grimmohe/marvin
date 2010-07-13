@@ -92,10 +92,10 @@ class Client:
 
     def __init__(self):
         self.process_active = False
-        self.assignment      = None            # Letztes ausgeführtes Assignment
-        self.assignments     = []
-        self.stateholder = State(self.process)
-        self.connection = Connector('127.0.0.1',29875)
+        self.assignment = None            # Letztes ausgeführtes Assignment
+        self.assignments = []
+        self.stateholder = None
+        self.connection = None
 
     def __del__(self):
         if self.connection:
@@ -137,6 +137,9 @@ class Client:
 
     def run(self):
         """ Main loop """
+        self.stateholder = State(self.process)
+        self.connection = Connector('127.0.0.1',29875)
+
         active = 0
         while 1:
             try:
