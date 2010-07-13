@@ -165,13 +165,15 @@ class clientConnectionReader(threading.Thread):
         data = "" # in case of an exception, data would be unreferenced
         while not self.stop:
             try:
-                data = self.clientCon.client.recv(BUFSIZE).strip("\n")
+                data += self.clientCon.client.recv(BUFSIZE)
             except socket.error:
                 print "Unfriendly connection reset"
             if not data:
                 self.clientCon.shellEcho("client disconnected")
                 break
-            self.clientCon.receive(data)
+            if "\n\n" == data[-2:]:    
+                self.clientCon.receive(data.strip("\n"))
+                data=""
         self.clientCon.server.clients.remove(self.clientCon)
         self.clientCon = None
 
