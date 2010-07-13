@@ -486,7 +486,7 @@ class Connector(threading.Thread):
                 self.stop = True
 
     def write(self,data):
-        self.socket.send(data)
+        self.socket.send(data + "\n\n")
 
     def getData(self):
         data = self.data
