@@ -219,11 +219,8 @@ class Client:
     def process(self):
         if (not self.process_active) and self.assignment:
             self.process_active = True
-            try:
-                self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
-                self.assignment.process(self.stateholder)
-            except:
-                pass # this happens only while debugging
+            self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
+            self.assignment.process(self.stateholder)
             self.process_active = False
 
     def quit(self):
