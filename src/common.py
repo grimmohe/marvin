@@ -145,6 +145,7 @@ class Action:
     def execute(self, states):
         for a in self.actions:
             if states.devices.has_key(a["device_id"]):
+                print "Action.execute", a["device_id"], a["command"] + "=" + a["value"]
                 states.devices[a["device_id"]].write(a["command"] + "=" + a["value"])
             elif a["next_id"] and self.assignment and self.assignment.parentAssignment:
                 if self.final:
@@ -217,6 +218,7 @@ class Assignment:
         """ aktiviert das Assignment """
         self.active = True
         self.starttime = time.time()
+        print "Assignment.start", self.id, "Count Subs:", len(self.subAssignments)
         if self.startAction:
             self.startAction.execute(states)
         if len(self.subAssignments):
@@ -271,6 +273,7 @@ class Assignment:
         Deaktiviert das Assignment und seine Subs. Superior wird hier nur von stop() selbst gesetzt,
         um die stopAction nur auf oberster Ebene auszuführen.
         """
+        print "Assignment.stop", self.id
         for sub in self.subAssignments:
             if sub.active:
                 sub.stop(states, True)
@@ -448,6 +451,8 @@ class Connector(network.networkConnection):
         self.connected = False
         self.connect()
         self.start()
+        while not self.connected:
+            time.sleep(.001)
 
     def connect(self):
         if not self.connected:
