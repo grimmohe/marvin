@@ -1,6 +1,6 @@
 <what-to-do>
 <assignment id="1" start="head:move=down">
-	<event ifarg1="head:move" ifcompare="e" ifarg2="100" then="" final="true"/>
+	<event ifarg1="head:position" ifcompare="e" ifarg2="100" then="" final="true"/>
 </assignment>
 <assignment id="2">
 	<!-- wenn vorne angestößt, ist endgültig Schluss -->

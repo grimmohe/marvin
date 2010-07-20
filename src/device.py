@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 #coding=utf8
 
-import pyinotify
 from common import Connector
 
 class Device:
@@ -42,15 +41,3 @@ class Device:
             self.con.disconnect()
             self.con.quit()
             self.con = None
-
-class FileEvent(pyinotify.ProcessEvent):
-
-    cb_modify = None
-    lastevent = None
-
-    def process_IN_MODIFY(self, event):
-        if self.lastevent <> event:
-            self.lastevent = event
-            self.cb_modify()
-
-

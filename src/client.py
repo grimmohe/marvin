@@ -32,6 +32,7 @@ class State:
             if dev:
                 dev.close()
         self.devices[name] = device.Device(name, lambda data: self.preUpdate(name, data))
+        self.devices[name].write("reset=1")
 
     def clearActionlog(self):
         self.actionlog.clear()
@@ -55,7 +56,7 @@ class State:
             self.actionlog.quit()
             self.actionlog = None
 
-    def preUpdate(self, name, value):
+    def preUpdate(self, name, value, process=True):
         """ die Informationen von Device in brauchbare Key=Value umwandeln """
         # name = "engine"
         # value = "turn=left"
@@ -77,7 +78,7 @@ class State:
                 except ValueError:
                     value = 0.0
 
-            self.update(name, value)
+            self.update(name, value, process)
         return 0
 
     def update(self, key, value, process=True):
@@ -133,15 +134,19 @@ class Client:
                     devlist = config.get("client", section)
                     for devname in devlist.split(","):
                         if config.has_option(devname, "dimension"):
-                            self.stateholder.update("dev:" + devname + ":dimension", \
+                            self.stateholder.update(devname + ":dimension", \
                                                     config.get(devname, "dimension"), \
                                                     process=False)
                         if config.has_option(devname, "orientation"):
-                            self.stateholder.update("dev:" + devname + ":orientation", \
+                            self.stateholder.update(devname + ":orientation", \
                                                     config.get(devname, "orientation"), \
                                                     process=False)
+                        if config.has_option(devname, "output"):
+                            for output in config.get(devname, "output").split(";"):
+                                self.stateholder.update(devname + ":" + output.split("=")[0], \
+                                                        output.split("=")[1], \
+                                                        process=False)
                         self.stateholder.addDevice(devname)
-
             except Exception, e:
                 print "ERROR: Configuration missing or incomplete."
                 print e.message
