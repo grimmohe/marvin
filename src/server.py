@@ -260,9 +260,10 @@ class Server:
     def __del__(self):
         self.srvlis = None
 
-    def broadcast(self,data):
+    def broadcast(self,data,exceptClients):
         for client in self.srvlis.clients:
-            client.send(data)
+            if not client in exceptClients:
+                client.send(data)
 
 class ClientContainer(threading.Thread):
 
@@ -329,7 +330,7 @@ class DeviceServer(Server):
         Server.__init__(self,"DevSrv",shell,'',29874, self.ClientReceiving)
 
     def ClientReceiving(self, client, data):
-        self.broadcast(data)
+        self.broadcast(data, [client])
 
 
 if __name__ == '__main__':
