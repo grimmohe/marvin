@@ -6,7 +6,6 @@ import socket
 import threading
 import common
 import map
-from map import Vector
 
 BUFSIZE = 4096
 
@@ -171,7 +170,7 @@ class clientConnectionReader(threading.Thread):
             if not data:
                 self.clientCon.shellEcho("client disconnected")
                 break
-            if "\n\n" == data[-2:]:    
+            if "\n\n" == data[-2:]:
                 self.clientCon.receive(data.strip("\n"))
                 data=""
         self.clientCon.server.clients.remove(self.clientCon)
@@ -196,12 +195,12 @@ class shell:
 
     def awaitingCommands(self):
         self.exit = False
-        while not self.exit:
-            try:
+        try:
+            while not self.exit:
                 cmd = raw_input("cmd#>: ")
                 self.processCommand(cmd)
-            except KeyboardInterrupt:
-                pass
+        except KeyboardInterrupt:
+            self.exit = True
         self.processCommand("stop")
 
     def processCommand(self,cmd):
@@ -279,14 +278,14 @@ class ClientContainer(threading.Thread):
         self.actionlogData = ""
         self.actionlogNew = threading.Event()
         self.start()
-        
+
     def run(self):
         while True:
             self.actionlogNew.clear()
             self.actionlogNew.wait()
             self.actionlog.readXml(self.actionlogData)
             self.connection.shellEcho("actionlog parsed")
-            
+
     def shutdown(self):
         pass
 
@@ -303,7 +302,7 @@ class DustServer(Server):
         for c in self.clients:
             if c.connection == client_con:
                 client = c
-        if client:        
+        if client:
             client.actionlogData=data
             client.actionlogNew.set()
         else:
@@ -317,13 +316,13 @@ class DustServer(Server):
         con.clientContainer.connection = con
         self.clients.append(con.clientContainer)
         self.srvlis.shellEcho("client added")
-        
+
     def shutdown(self):
         for client in self.clients:
             client.shutdown()
             client=None
         self.clients=None
-        
+
 class DeviceServer(Server):
 
     def __init__(self,shell):
