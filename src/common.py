@@ -5,6 +5,7 @@ import socket
 import threading
 import time
 import re
+import network
 import xml.sax
 
 class Actionlog:
@@ -436,19 +437,16 @@ class Event:
         return cReturn
 
 
-class Connector(threading.Thread):
+class Connector(network.networkConnection):
     """
     Stellt die Verbindung zum Server her
     """
     def __init__(self, ip, port):
-        threading.Thread.__init__(self)
+        network.networkConnection.__init__(self)
         self.host = ip
         self.port = port
         self.connected = False
-        self.socket = None
-        self.data = ''
-        self.stop = False
-        self.cb_incoming = None
+        self.connect()
         self.start()
 
     def connect(self):
@@ -460,43 +458,9 @@ class Connector(threading.Thread):
     def disconnect(self):
         if self.connected:
             print "disconnecting..."
-            self.write("DISCO")
-            self.socket.close()
+            network.networkConnection.disconnect(self)
             self.connected = False
 
-    def quit(self):
-        self.cb_incoming = None
-        self.socket = None
-
-    def run(self):
-        self.connect()
-        self.read()
-        self.disconnect()
-
-    def read(self):
-        truedata=''
-        while (not self.stop) and self.connected:
-            data = self.socket.recv(4096)
-            if not data:
-                self.stop = True
-                break
-            truedata += data
-            if "\n\n" == truedata[-2:]:
-                self.data=truedata.strip("\n")
-                if self.cb_incoming:
-                    self.cb_incoming(self)
-                truedata=''
-
-            if self.data == "DISCO":
-                self.stop = True
-
-    def write(self,data):
-        self.socket.send(data + "\n\n")
-
-    def getData(self):
-        data = self.data
-        self.data = ''
-        return data
-
     def setDataIncomingCb(self,cb):
-        self.cb_incoming = cb
+        self.cbDataIncome = cb
+

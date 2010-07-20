@@ -4,14 +4,15 @@
 import os
 import socket
 import threading
-import common
+import network
 import map
+import common
 
-BUFSIZE = 4096
+shellInstance = None
 
 class serverListener(threading.Thread):
 
-    def __init__(self, name, shell, ip, port, cb_read):
+    def __init__(self, server, ip, port, cb_read):
         threading.Thread.__init__(self)
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         try:
@@ -21,10 +22,9 @@ class serverListener(threading.Thread):
             #TODO: Korrektes exception handling
         self.listening  = 0
         self.clients = []
-        self.shell = shell
         self.cb_read = cb_read
-        self.name = name
-        self.cb_newcli=None
+        self.cb_newClient = None
+        self.serverInstance=server
         self.start()
 
     def __del__(self):
@@ -34,19 +34,23 @@ class serverListener(threading.Thread):
     def run(self):
         self.listening = 1
         while self.listening and self.socket:
-            self.listen()
+            self.listenForConnectionRequests()
         self.shellEcho("server shutdown")
         self.shutdown()
 
-    def listen(self):
+    def listenForConnectionRequests(self):
         self.shellEcho("server is listening")
         self.socket.listen(1)
         if self.socket:
-            cli = self.socket.accept()
-            cli = clientConnection(self,cli,self.cb_read)
-            self.clients.append(cli)
-            if self.cb_newcli:
-                self.cb_newcli(cli)
+            try:
+                newClient = self.socket.accept()
+                newClient = clientConnection(self,newClient,self.cb_read)
+                self.clients.append(newClient)
+                if self.cb_newClient:
+                    self.cb_newClient(newClient)
+            except socket.error:
+                self.listening = False
+                return
 
     def serverCmd(self, cmd):
         cmd = cmd.strip()
@@ -70,7 +74,7 @@ class serverListener(threading.Thread):
                     break
             os.close(ofile)
             if len(stream) > 0:
-                    self.clients[0].send(stream)
+                    self.clients[0].write(stream)
             return rc
         else:
             self.shellEcho("no client available")
@@ -89,54 +93,38 @@ class serverListener(threading.Thread):
 
     def socketClose(self):
         if self.socket:
-            self.socket.shutdown(socket.SHUT_RDWR)
-            self.socket.close()
+            try:
+                self.socket.shutdown(socket.SHUT_RDWR)
+                self.socket.close()
+            except socket.error:
+                print "socketClose failed"
+                return
 
     def shellEcho(self, msg):
-        self.shell.processCommand("echo [" + self.name + "] " + msg)
+        global shellInstance
+        shellInstance.processCommand("echo [" + self.serverInstance.name + "] " + msg)
 
 
-class clientConnection(threading.Thread):
+class clientConnection(network.networkConnection):
 
-    def __init__(self, server, client, cb_read):
-        threading.Thread.__init__(self)
+    def __init__(self, server, client, cbRead):
+        network.networkConnection.__init__(self)
         self.server = server
-        self.client = client[0]
         self.clientContainer = None
         self.clientInfo = client[1]
         self.clientStuff = client
-        self.reader = None
-        self.cb_read = cb_read
+        self.cbRead = cbRead
+        self.socket = client[0]
         self.start()
 
     def __del__(self):
         self.disconnect()
 
-    def run(self):
-        self.reader = clientConnectionReader(self)
-        self.shellEcho("connected")
-
     def disconnect(self):
-        self.shellEcho("disconnecting...")
-        self.reader.stop = True
-        if self.client:
-            self.client.shutdown(socket.SHUT_RDWR)
-            self.client.close()
-        self.reader = None
-        self.client = None
+        self.server.shellEcho("disconnecting...")
+        network.networkConnection.disconnect(self)
         self.clientInfo = None
         self.shellEcho(".. done")
-
-    def send(self, data):
-        try:
-            self.client.send(data + "\n\n")
-        except socket.error:
-            self.shellEcho("Connection disbanded")
-
-    def receive(self,data):
-        if data == "DISCO" and self.reader:
-            self.reader.stop = True
-        self.cb_read(self, data)
 
     def getClientString(self):
         if self.clientInfo:
@@ -146,42 +134,13 @@ class clientConnection(threading.Thread):
     def shellEcho(self, msg):
         self.server.shellEcho(self.getClientString() + " " + msg)
 
-class clientConnectionReader(threading.Thread):
-
-    def __init__(self, clientCon):
-        threading.Thread.__init__(self)
-        self.clientCon = clientCon
-        self.stop = False
-        self.start()
-
-    def __del__(self):
-        self.clientCon = None
-
-    def run(self):
-        self.awaitIncoming()
-
-    def awaitIncoming(self):
-        data = "" # in case of an exception, data would be unreferenced
-        while not self.stop:
-            try:
-                data += self.clientCon.client.recv(BUFSIZE)
-            except socket.error:
-                print "Unfriendly connection reset"
-            if not data:
-                self.clientCon.shellEcho("client disconnected")
-                break
-            if "\n\n" == data[-2:]:
-                self.clientCon.receive(data.strip("\n"))
-                data=""
-        self.clientCon.server.clients.remove(self.clientCon)
-        self.clientCon = None
-
-
 class shell:
 
     def __init__(self):
-        self.dustsrv = DustServer(self)
-        self.devsrv = DeviceServer(self)
+        global shellInstance
+        shellInstance = self
+        self.marvinsrv = MarvinServer()
+        self.devsrv = DeviceServer()
         self.exit = False
         self.run()
 
@@ -212,7 +171,7 @@ class shell:
             self.processCommand("sf ../doc/test.xml")
         elif "sf" == cmd[0]:
             print "sending file: ", cmd[1]
-            if self.dustsrv.srvlis.sendFile(cmd[1]) == 0:
+            if self.marvinsrv.srvlis.sendFile(cmd[1]) == 0:
                 print "send ok"
             else:
                 print "send failed"
@@ -221,15 +180,15 @@ class shell:
         elif "exit" == cmd[0]:
             self.exit = True
         elif "start" == cmd[0]:
-            if not self.dustsrv:
-                self.dustsrv = DustServer(self)
+            if not self.marvinsrv:
+                self.marvinsrv = DustServer(self)
             if not self.devsrv:
                 self.devsrv = DeviceServer(self)
         elif "stop" == cmd[0]:
             self.destroyServers()
         elif "srv" == cmd[0]:
-            if self.dustsrv:
-                self.dustsrv.srvlis.serverCmd(cmd[1])
+            if self.marvinsrv:
+                self.marvinsrv.srvlis.serverCmd(cmd[1])
         elif "dev" == cmd[0]:
             if self.devsrv:
                 self.devsrv.srvlis.serverCmd(cmd[1])
@@ -245,17 +204,18 @@ class shell:
         self.processCommand("echo close shell")
 
     def destroyServers(self):
-        if self.dustsrv:
-            self.dustsrv.srvlis.shutdown()
-            self.dustsrv = None
+        if self.marvinsrv:
+            self.marvinsrv.srvlis.shutdown()
+            self.marvin = None
         if self.devsrv:
             self.devsrv.srvlis.shutdown()
             self.devsrv = None
 
 class Server:
 
-    def __init__(self,name,shell,ip,port,cb_read):
-        self.srvlis = serverListener(name, shell,ip,port,cb_read)
+    def __init__(self, name, ip, port, cb_read):
+        self.name = name
+        self.srvlis = serverListener(self, ip, port, cb_read)
 
     def __del__(self):
         self.srvlis = None
@@ -290,11 +250,11 @@ class ClientContainer(threading.Thread):
     def shutdown(self):
         pass
 
-class DustServer(Server):
+class MarvinServer(Server):
 
-    def __init__(self,shell):
-        Server.__init__(self,"DustSrv",shell,'',29875, self.ClientReceiving)
-        self.srvlis.cb_newcli=self.addClient
+    def __init__(self):
+        Server.__init__(self, "MarvinServer",'127.0.0.1',29875, self.ClientReceiving)
+        self.srvlis.cb_newClient=self.addClient
         self.clients = []
 
     def ClientReceiving(self, client_con, data):
@@ -326,13 +286,13 @@ class DustServer(Server):
 
 class DeviceServer(Server):
 
-    def __init__(self,shell):
-        Server.__init__(self,"DevSrv",shell,'',29874, self.ClientReceiving)
+    def __init__(self):
+        Server.__init__(self, "DeviceServer",'127.0.0.1',29874, self.ClientReceiving)
 
     def ClientReceiving(self, client, data):
         self.broadcast(data, [client])
 
 
 if __name__ == '__main__':
-    shell = shell()
+    shell()
     print "system exit"
