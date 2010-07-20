@@ -40,7 +40,6 @@ class Device:
         if self.con:
             self.con.stop = True
             self.con.disconnect()
-            self.con.quit()
             self.con = None
 
 class FileEvent(pyinotify.ProcessEvent):

@@ -228,7 +228,7 @@ class Client:
             a.quit()
         self.assignments = []
 
-        self.connection.quit()
+        self.connection.disconnect()
         self.connection = None
 
         self.stateholder.quit()
