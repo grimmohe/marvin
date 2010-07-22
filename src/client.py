@@ -102,13 +102,13 @@ class Client:
 
     def __del__(self):
         if self.connection:
-            self.connection.disconnect()
+            self.connection.disconnect(True)
 
     def getNextAssignments(self):
         """ holt neue Aufgaben vom Server """
         self.assignment    = None
         self.assignments   = []
-        data = self.connection.getData()
+        data = self.connection.read()
         if data:
             xml.sax.parseString(data, AssignmentXmlHandler(self))
         return 0
@@ -212,7 +212,7 @@ class Client:
 
         # Serververbindung trennen
         if self.connection:
-            self.connection.disconnect()
+            self.connection.disconnect(True)
 
         self.quit()
 
@@ -233,7 +233,7 @@ class Client:
             a.quit()
         self.assignments = []
 
-        self.connection.disconnect()
+        self.connection.disconnect(True)
         self.connection = None
 
         self.stateholder.quit()

@@ -451,8 +451,6 @@ class Connector(network.networkConnection):
         self.connected = False
         self.connect()
         self.start()
-        while not self.connected:
-            time.sleep(.001)
 
     def connect(self):
         if not self.connected:
@@ -460,10 +458,10 @@ class Connector(network.networkConnection):
             self.socket.connect((self.host, self.port))
             self.connected = True
 
-    def disconnect(self):
+    def disconnect(self, withDisco):
         if self.connected:
             print "disconnecting..."
-            network.networkConnection.disconnect(self)
+            network.networkConnection.disconnect(self, withDisco)
             self.connected = False
 
     def setDataIncomingCb(self,cb):
