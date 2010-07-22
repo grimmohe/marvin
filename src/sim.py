@@ -115,6 +115,8 @@ class Cleaner:
         self.starttime     = 0.0
         self.action        = 0
         self.orientation   = 0.0
+        for sensor in self.head_form:
+            sensor["status"] = 1.0
 
     def cb_engine(self, data):
         """ Callback für die Motorsteuerung """
