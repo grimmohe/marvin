@@ -249,6 +249,7 @@ class ClientContainer(threading.Thread):
         self.actionlog = common.Actionlog()
         self.actionlogData = ""
         self.actionlogNew = threading.Event()
+        self.stop = False
         self.start()
 
     def __del__(self):
@@ -256,10 +257,11 @@ class ClientContainer(threading.Thread):
 
     def run(self):
         print "run cliCont <" + self.name + ">\n"
-        while True:
+        while not self.stop:
             self.actionlogNew.clear()
             self.actionlogNew.wait()
-            self.actionlog.readXml(self.actionlogData)
+            if self.actionlogData and self.actionlog:
+                self.actionlog.readXml(self.actionlogData)
             #self.connection.shellEcho("actionlog parsed")
 
     def shutdown(self):
@@ -267,6 +269,10 @@ class ClientContainer(threading.Thread):
             self.connection.clientContainer = None
         self.connection = None
         self.actionlog = None
+        # semi fire event to come out of wait state, but set stop flag before, so thread
+        # is killed
+        self.stop = True
+        self.actionlogNew.set()
         self.actionlogNew = None
         self.map = None
         print "Clientcontainer shutdown"
