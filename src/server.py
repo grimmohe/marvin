@@ -87,13 +87,13 @@ class serverListener(threading.Thread):
         self.clients = []
 
     def shutdown(self):
-        self.shellEcho("shutdown")
+        #self.shellEcho("shutdown")
         self.listening = 0
-        self.shellEcho("disconnect clients")
+        #self.shellEcho("disconnect clients")
         self.disconnectClients()
-        self.shellEcho("close socket")
+        #self.shellEcho("close socket")
         self.socketClose()
-        self.shellEcho("done")
+        self.shellEcho("shutdown done")
 
     def socketClose(self):
         if self.socket:
@@ -212,13 +212,10 @@ class shell:
         self.processCommand("echo close shell")
 
     def destroyServers(self):
-        print "destroy Servers"
         if self.marvinsrv:
-            print "try destroy Marvin Server"
             self.marvinsrv.shutdown()
         self.marvinsrv = None
         if self.devsrv:
-            print "try destroy Device Server"
             self.devsrv.srvlis.shutdown()
         self.devsrv = None
 
@@ -252,11 +249,7 @@ class ClientContainer(threading.Thread):
         self.stop = False
         self.start()
 
-    def __del__(self):
-        print "__del__ cliCont <" + self.name + ">\n"
-
     def run(self):
-        print "run cliCont <" + self.name + ">\n"
         while not self.stop:
             self.actionlogNew.clear()
             self.actionlogNew.wait()
@@ -275,7 +268,6 @@ class ClientContainer(threading.Thread):
         self.actionlogNew.set()
         self.actionlogNew = None
         self.map = None
-        print "Clientcontainer shutdown"
 
 class MarvinServer(Server):
 
@@ -285,7 +277,6 @@ class MarvinServer(Server):
         self.clients = []
 
     def __del__(self):
-        print "__del__ Marvinserver"
         self.shutdown()
 
     def ClientReceiving(self, connection, data):
