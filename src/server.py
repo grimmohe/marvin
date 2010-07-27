@@ -237,7 +237,7 @@ class shell:
             if srv.run():
                 return True
             curTry += 1
-            time.sleep(1.0)
+            time.sleep(5.0)
         return False
 
 class Server:
