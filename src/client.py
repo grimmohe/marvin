@@ -110,7 +110,10 @@ class Client:
         self.assignments   = []
         data = self.connection.read(flushData=True)
         if data:
-            xml.sax.parseString(data, AssignmentXmlHandler(self))
+            try:
+                xml.sax.parseString(data, AssignmentXmlHandler(self))
+            except:
+                print "no valid xml?"
         return 0
 
     def initialize (self):

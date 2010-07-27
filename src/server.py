@@ -282,7 +282,11 @@ class ClientContainer(threading.Thread):
             self.actionlogNew.clear()
             self.actionlogNew.wait()
             if self.actionlogData and self.actionlog:
-                self.actionlog.readXml(self.actionlogData)
+                try:
+                    print self.actionlogData
+                    self.actionlog.readXml(self.actionlogData)
+                except:
+                    print "no valid xml data?"
             #self.connection.shellEcho("actionlog parsed")
 
     def shutdown(self):
