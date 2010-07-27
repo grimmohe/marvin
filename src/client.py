@@ -169,6 +169,7 @@ class Client:
     def runNextAssignment(self):
         """ aktiviert das nächste Assignment """
         activated = False
+        self.process_active = True
 
         if self.assignment:
             activated = self.assignment.active
@@ -180,6 +181,7 @@ class Client:
                     self.assignment.start(self.stateholder)
                     activated = True
                     break
+        self.process_active = False
         return activated
 
     def sendActionlog(self):
