@@ -78,7 +78,9 @@ class serverListener(threading.Thread):
                     break
             os.close(ofile)
             if len(stream) > 0:
-                    self.clients[0].write(stream)
+                    if not self.clients[0].write(stream):
+                        self.clients.remove(self.clients[0])
+                        rc = 1
             return rc
         else:
             self.shellEcho("no client available")
