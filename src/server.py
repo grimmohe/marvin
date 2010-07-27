@@ -66,6 +66,7 @@ class serverListener(threading.Thread):
             self.shutdown()
 
     def sendFile(self, file):
+        """ sending file content to first available client """
         if self.clients and self.clients[0]:
             ofile = os.open(file, os.O_RDONLY)
             rc=1
@@ -79,9 +80,10 @@ class serverListener(threading.Thread):
                     break
             os.close(ofile)
             if len(stream) > 0:
-                    if not self.clients[0].write(stream):
-                        self.clients.remove(self.clients[0])
-                        rc = 1
+                if not self.clients[0].write(stream):
+                    self.clients.remove(self.clients[0])
+                    rc = 1
+                    self.sendFile(file)
             return rc
         else:
             self.shellEcho("no client available")
