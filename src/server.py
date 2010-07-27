@@ -14,25 +14,27 @@ shellInstance = None
 
 class serverListener(threading.Thread):
 
-    def __init__(self, server, ip, port, cb_read):
+    def __init__(self, server, cb_read):
         threading.Thread.__init__(self)
-        self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        try:
-            self.socket.bind((ip,port))
-        except socket.error:
-            print "socket error"
-            #TODO: Korrektes exception handling
         self.listening  = 0
         self.clients = []
         self.cb_read = cb_read
         self.cb_newClient = None
         self.serverInstance=server
-        self.start()
 
     def __del__(self):
         self.shellEcho("destroy serverListener")
         self.serverInstance = None
         self.socket = None
+
+    def bind(self, ip, port):
+        self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        try:
+            self.socket.bind((ip,port))
+        except socket.error:
+            return False
+        self.start()
+        return True
 
     def run(self):
         self.listening = 1
@@ -147,10 +149,9 @@ class shell:
     def __init__(self):
         global shellInstance
         shellInstance = self
-        self.marvinsrv = MarvinServer()
-        self.devsrv = DeviceServer()
+        self.marvinsrv = None
+        self.devsrv = None
         self.exit = False
-        self.run()
 
     def __del__(self):
         print "destroy shell"
@@ -158,6 +159,8 @@ class shell:
 
 
     def run(self):
+        self.processCommand("start")
+        print "run Shell"
         self.awaitingCommands()
 
     def awaitingCommands(self):
@@ -188,10 +191,7 @@ class shell:
         elif "exit" == cmd[0]:
             self.exit = True
         elif "start" == cmd[0]:
-            if not self.marvinsrv:
-                self.marvinsrv = MarvinServer(self)
-            if not self.devsrv:
-                self.devsrv = DeviceServer(self)
+            self.runServers()
         elif "stop" == cmd[0]:
             self.destroyServers()
         elif "srv" == cmd[0]:
@@ -219,11 +219,31 @@ class shell:
             self.devsrv.srvlis.shutdown()
         self.devsrv = None
 
+    def runServers(self):
+        if not self.marvinsrv:
+            self.marvinsrv = MarvinServer()
+            self.runServer(self.marvinsrv, 50)
+        if not self.devsrv:
+            self.devsrv = DeviceServer()
+            self.runServer(self.devsrv, 50)
+
+    def runServer(self, srv, maxTries):
+        curTry = 0
+        while curTry <= maxTries:
+            print "try to run " + srv.name + " (" + str(curTry) + "/" + str(maxTries) + ")"
+            if srv.run():
+                return True
+            tries += 1
+            time.sleep(1.0)
+        return False
+
 class Server:
 
     def __init__(self, name, ip, port, cb_read):
         self.name = name
-        self.srvlis = serverListener(self, ip, port, cb_read)
+        self.ip = ip
+        self.port = port
+        self.srvlis = serverListener(self, cb_read)
 
     def __del__(self):
         self.srvlis = None
@@ -232,6 +252,11 @@ class Server:
         for client in self.srvlis.clients:
             if not client in exceptConnections:
                 client.write(data)
+
+    def run(self):
+        if self.srvlis:
+            return self.srvlis.bind(self.ip, self.port)
+        return False
 
 class ClientContainer(threading.Thread):
 
@@ -320,7 +345,5 @@ class DeviceServer(Server):
 
 
 if __name__ == '__main__':
-    gc.set_debug(gc.DEBUG_OBJECTS)
     shell()
-    shellInstance = None
-    print "system exit"
+    shellInstance.run()
