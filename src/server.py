@@ -8,6 +8,7 @@ import network
 import map
 import common
 import gc
+import time
 from pprint import pprint
 
 shellInstance = None
@@ -235,7 +236,7 @@ class shell:
             print "try to run " + srv.name + " (" + str(curTry) + "/" + str(maxTries) + ")"
             if srv.run():
                 return True
-            tries += 1
+            curTry += 1
             time.sleep(1.0)
         return False
 
