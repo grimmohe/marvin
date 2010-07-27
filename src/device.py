@@ -26,7 +26,7 @@ class Device:
             if data[0] == self.name:
                 if len(data) < 2:
                     # here once raised an index error exception and this should show why
-                    print "item:", item
+                    print "item:", data
                 self.cb_readevent(data[1])
         return 1
 
