@@ -108,7 +108,7 @@ class Client:
         """ holt neue Aufgaben vom Server """
         self.assignment    = None
         self.assignments   = []
-        data = self.connection.read()
+        data = self.connection.read(flushData=True)
         if data:
             xml.sax.parseString(data, AssignmentXmlHandler(self))
         return 0
