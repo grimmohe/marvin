@@ -2,11 +2,11 @@
 #coding=utf8
 
 import socket
-import threading
 import time
 import re
 import network
 import xml.sax
+from copy import copy
 
 class Actionlog:
     """
@@ -126,7 +126,7 @@ class Action:
     def __init__(self, args, final, assignment):
         self.actions = []
         for arg in args.split(";"):
-            a = {"value": None, "device_id": None, "command": None, "next_id": None}
+            a = {"value": None, "device_id": None, "command": None, "next_id": None, "suicide": False}
             if "a#=" in arg:
                 a["next_id"] = int(arg.split("=")[1])
             elif "=" in arg and ":" in arg:
@@ -149,9 +149,13 @@ class Action:
                 states.devices[a["device_id"]].write(a["command"] + "=" + a["value"])
             elif a["next_id"] and self.assignment and self.assignment.parentAssignment:
                 if self.final:
-                    self.assignment.stopAction.add(a)
+                    new_action = copy(a)
+                    new_action["suicide"] = True
+                    self.assignment.stopAction.add(new_action)
                 else:
                     self.assignment.parentAssignment.startSubAssignment(a["next_id"], states)
+            if a["suicide"]:
+                self.actions.remove(a)
         return not self.final
 
     def quit(self):
