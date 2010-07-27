@@ -22,13 +22,17 @@ class Device:
 
     def read(self, connection, data):
         if len(data):
-            data = data.split("#")
-            if data[0] == self.name:
-                if len(data) < 2:
-                    # here once raised an index error exception and this should show why
-                    print "item:", data
-                self.cb_readevent(data[1])
-        return 1
+            lines= data.split('\n')
+            for line in lines:
+                if len(line):
+                    items = line.split("#")
+                    if items[0] == self.name:
+                        if len(items) < 2:
+                            # here once raised an index error exception and this should show why
+                            print "item:", line
+                        self.cb_readevent(items[1])
+            return True
+        return False
 
     def write(self, data):
         self.con.write(self.name + "#" + data)
