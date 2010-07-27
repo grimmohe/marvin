@@ -251,7 +251,10 @@ class Server:
     def broadcast(self,data,exceptConnections):
         for client in self.srvlis.clients:
             if not client in exceptConnections:
-                client.write(data)
+                if not client.write(data):
+                    # clientconnection is invalid, removeit
+                    self.srvlis.clients.remove(client)
+                    client = None
 
     def run(self):
         if self.srvlis:
