@@ -3,6 +3,7 @@
 
 import math
 from numpy.ma.core import max
+from mathix import turn_point
 
 """ global statics """
 MERGE_RANGE = 1
@@ -11,11 +12,16 @@ class Vector:
     """
     point (X;Y) with size (X;Y)
     """
-    def __init__(self, x, y, size_x, size_y):
-        self.x = x
-        self.y = y
-        self.size_x = size_x
-        self.size_y = size_y
+    def __init__(self, x=0, y=0, size_x=0, size_y=0):
+        self.x = float(x)
+        self.y = float(y)
+        self.size_x = float(size_x)
+        self.size_y = float(size_y)
+
+    def copy(self, position=(0, 0), orientation=0):
+        """ create a new Vector with position added and orientation applied to size """
+        new_size = turn_point({"x": self.size_x, "y": self.size_y}, orientation)
+        return Vector(self.x + position[0], self.y + position[1], new_size["x"], new_size["y"])
 
     def getStartPoint(self):
         return (self.x, self.y)
