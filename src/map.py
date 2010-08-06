@@ -9,6 +9,10 @@ from mathix import turn_point
 MERGE_RANGE = 1
 
 class Vector:
+
+    START_POINT = 0
+    END_POINT = 1
+
     """
     point (X;Y) with size (X;Y)
     """
@@ -18,10 +22,25 @@ class Vector:
         self.size_x = float(size_x)
         self.size_y = float(size_y)
 
+    def combine(self, vector1, vector2, point):
+        """ create a new vector between vector1 and vector2 """
+        if point == Vector.START_POINT:
+            p1x = vector1.x
+            p1y = vector1.y
+            p2x = vector2.x
+            p2y = vector2.y
+        elif point == Vector.END_POINT:
+            p1x = vector1.x + vector1.size_x
+            p1y = vector1.y + vector1.size_y
+            p2x = vector2.x + vector2.size_x
+            p2y = vector2.y + vector2.size_y
+        return Vector(p1x, p1y, p2x - p1x, p2y - p1y)
+
     def copy(self, position=(0, 0), orientation=0):
-        """ create a new Vector with position added and orientation applied to size """
+        """ create a new vector with position added and orientation applied to size """
+        new_pos = turn_point({"x": self.x, "y": self.y}, orientation)
         new_size = turn_point({"x": self.size_x, "y": self.size_y}, orientation)
-        return Vector(self.x + position[0], self.y + position[1], new_size["x"], new_size["y"])
+        return Vector(new_pos["x"] + position[0], new_pos["y"] + position[1], new_size["x"], new_size["y"])
 
     def getStartPoint(self):
         return (self.x, self.y)
@@ -90,6 +109,7 @@ class Map:
     def __init__(self):
         self.areas = None
         self.vectors = []
+        self.processIteration = 0
 
     def addVector(self, v):
         """ adding/merging a point to the map """
@@ -127,7 +147,8 @@ class Map:
                     self.vectors.pop(aa)
                     max_len -= 1
 
-
+    def incIteration(self):
+        self.processIteration += 1
 
 
 
