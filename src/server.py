@@ -293,7 +293,20 @@ class ClientContainer(threading.Thread):
                     new_y = self.y + math.cos(math.radians(self.orientation)) * action.value
                     for dev in self.devs:
                         if dev.has_key("touch") and dev["touch"]:
-                            pass
+                            # sensor at start position
+                            self.map.addVector(self.devs[dev]["dimension"].copy((self.position.x, self.position.y), self.orientation))
+                            # sensor on end position
+                            self.map.addVector(self.devs[dev]["dimension"].copy((new_x, new_y), self.orientation))
+                            # point 1 start to end
+                            self.map.addVector(map.Vector().combine(
+                                self.devs[dev]["dimension"].copy((self.position.x, self.position.y), self.orientation),
+                                self.devs[dev]["dimension"].copy((new_x, new_y), self.orientation),
+                                map.Vector.START_POINT))
+                            # point 2 start to end
+                            self.map.addVector(map.Vector().combine(
+                                self.devs[dev]["dimension"].copy((self.position.x, self.position.y), self.orientation),
+                                self.devs[dev]["dimension"].copy((new_x, new_y), self.orientation),
+                                map.Vector.END_POINT))
             else:
                 if not self.devs.has_key(dev):
                     self.devs[dev] = {"touch": False}
@@ -355,9 +368,6 @@ class MarvinServer(Server):
             client.actionlogNew.set()
         else:
             client.shellEcho("no suitable client found")
-
-    def Actionlog2Vector(self, cc):
-        """ cc = ClientConnector() """
 
     def addClient(self, con):
         con.clientContainer=ClientContainer()
