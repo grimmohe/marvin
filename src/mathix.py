@@ -53,3 +53,25 @@ def getVectorIntersectionRatioSim(v1, v2, v3):
                  / (-v1["y"]*v2["x"] + v1["x"]*v2["y"]) )
     except ZeroDivisionError:
         return None # parallel
+
+def getVectorIntersectionRatio(v1, v2, v3):
+    """
+    v1, v2, v3 = map.Point()
+
+    dp1 = -by3*bx2 + bx3*by2
+    dp2 = -by1*bx2 + bx1*by2
+
+    rat = dp1/dp2
+    """
+    try:
+        return ( (-v3.y*v2.x + v3.x*v2.y)
+                 / (-v1.y*v2.x + v1.x*v2.y) )
+    except ZeroDivisionError:
+        return None # parallel
+
+def roundup(n):
+    """ round up, always! """
+    down = math.trunc(n)
+    if n - down > 0:
+        down += 1
+    return down

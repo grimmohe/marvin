@@ -269,7 +269,7 @@ class ClientContainer(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.orientation = 0.0
-        self.position = map.Vector(0, 0)
+        self.position = map.Point(0, 0)
         self.map = map.Map()
         self.devs = {}
         self.connection = None
@@ -279,6 +279,7 @@ class ClientContainer(threading.Thread):
         self.start()
 
     def assimilateActions(self, actionlog):
+
         for action in actionlog.actions:
             # contains action and value
             dev, key = action.action.split(":")
@@ -291,35 +292,36 @@ class ClientContainer(threading.Thread):
                 elif key == "distance":
                     new_x = self.x + math.sin(math.radians(self.orientation)) * action.value
                     new_y = self.y + math.cos(math.radians(self.orientation)) * action.value
+                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.x, self.position.y), self.orientation)
+                    v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.orientation)
                     for dev in self.devs:
                         if dev.has_key("touch") and dev["touch"]:
                             # sensor at start position
-                            self.map.addVector(self.devs[dev]["dimension"].copy((self.position.x, self.position.y), self.orientation))
+                            self.map.addVector(v_start)
                             # sensor on end position
-                            self.map.addVector(self.devs[dev]["dimension"].copy((new_x, new_y), self.orientation))
+                            self.map.addVector(v_end)
                             # point 1 start to end
-                            self.map.addVector(map.Vector().combine(
-                                self.devs[dev]["dimension"].copy((self.position.x, self.position.y), self.orientation),
-                                self.devs[dev]["dimension"].copy((new_x, new_y), self.orientation),
-                                map.Vector.START_POINT))
+                            self.map.addVector(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
                             # point 2 start to end
-                            self.map.addVector(map.Vector().combine(
-                                self.devs[dev]["dimension"].copy((self.position.x, self.position.y), self.orientation),
-                                self.devs[dev]["dimension"].copy((new_x, new_y), self.orientation),
-                                map.Vector.END_POINT))
+                            self.map.addVector(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
+                        if dev.has_key("position") and dev["position"]:
+                            self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
             else:
                 if not self.devs.has_key(dev):
-                    self.devs[dev] = {"touch": False}
+                    self.devs[dev] = {}
                 self.devs[dev][key] = action.value
                 if key == "distance":
                     self.devs[dev]["touch"] = (action.value < 1.0)
-                    self.map.addVector(self.devs[dev]["dimension"].copy((self.position.x, self.position.y), self.orientation))
+                    self.map.addVector(self.devs[dev]["dimension"].copy(map.Point(self.position.x, self.position.y), self.orientation))
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
-                    self.devs[dev][key] = map.Vector(x, y, size_x, size_y)
+                    self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
                 elif key == "orientation":
                     size_x, size_y = action.value.split(";")
-                    self.devs[dev][key] = map.Vector(0, 0, size_x, size_y)
+                    self.devs[dev][key] = map.Vector(map.Point(0, 0), map.Point(size_x, size_y))
+                elif key == "position":
+                    self.devs[dev][key] = float(action.value)
+        self.map.merge()
 
 
     def run(self):
