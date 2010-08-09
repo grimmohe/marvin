@@ -7,10 +7,9 @@ import threading
 import network
 import map
 import common
-import gc
 import time
 import xmltemplate
-from pprint import pprint
+import math
 
 shellInstance = None
 
@@ -45,7 +44,6 @@ class serverListener(threading.Thread):
         self.shellEcho("server listening stopped")
 
     def listenForConnectionRequests(self):
-        #self.shellEcho("server is listening")
         self.socket.listen(1)
         if self.socket:
             try:
@@ -286,26 +284,73 @@ class ClientContainer(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.orientation = 0.0
+        self.position = map.Point(0, 0)
         self.map = map.Map()
-        self.vSensorLeft = map.Vector(-20.0, 0.0, 0.0, -20.0)
-        self.vSensorFront = map.Vector(-20.0, 20.0, -40.0, -0.0)
-        self.vSensorRight = map.Vector(20.0, 0.0, 0.0, -20.0)
+        self.devs = {}
         self.connection = None
-        self.actionlog = common.Actionlog()
         self.actionlogData = ""
         self.actionlogNew = threading.Event()
         self.stop = False
         self.start()
+
+    def assimilateActions(self, actionlog):
+
+        for action in actionlog.actions:
+            # contains action and value
+            dev, key = action.action.split(":")
+            if dev == "engine":
+                if key == "turned":
+                    self.orientation += action.value
+                    for dev in self.devs:
+                        if dev.has_key("touch"):
+                            dev["touch"] = False
+                elif key == "distance":
+                    new_x = self.x + math.sin(math.radians(self.orientation)) * action.value
+                    new_y = self.y + math.cos(math.radians(self.orientation)) * action.value
+                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.x, self.position.y), self.orientation)
+                    v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.orientation)
+                    for dev in self.devs:
+                        if dev.has_key("touch") and dev["touch"]:
+                            # sensor at start position
+                            self.map.addVector(v_start)
+                            # sensor on end position
+                            self.map.addVector(v_end)
+                            # point 1 start to end
+                            self.map.addVector(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
+                            # point 2 start to end
+                            self.map.addVector(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
+                        if dev.has_key("position") and dev["position"]:
+                            self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
+            else:
+                if not self.devs.has_key(dev):
+                    self.devs[dev] = {}
+                self.devs[dev][key] = action.value
+                if key == "distance":
+                    self.devs[dev]["touch"] = (action.value < 1.0)
+                    self.map.addVector(self.devs[dev]["dimension"].copy(map.Point(self.position.x, self.position.y), self.orientation))
+                elif key == "dimension":
+                    x, y, size_x, size_y = action.value.split(";")
+                    self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
+                elif key == "orientation":
+                    size_x, size_y = action.value.split(";")
+                    self.devs[dev][key] = map.Vector(map.Point(0, 0), map.Point(size_x, size_y))
+                elif key == "position":
+                    self.devs[dev][key] = float(action.value)
+        self.map.merge()
+
 
     def run(self):
         while not self.stop:
             self.actionlogNew.clear()
             self.actionlogNew.wait()
             if self.actionlogData and self.actionlog:
+                actionlog = common.Actionlog()
                 try:
-                    self.actionlog.readXml(self.actionlogData)
+                    actionlog.readXml(self.actionlogData)
                 except:
                     print "no valid xml data?"
+                self.assimilateActions(actionlog)
+
 
     def shutdown(self):
         if self.connection:
@@ -341,9 +386,6 @@ class MarvinServer(Server):
             client.actionlogNew.set()
         else:
             client.shellEcho("no suitable client found")
-
-    def Actionlog2Vector(self, cc):
-        """ cc = ClientConnector() """
 
     def addClient(self, con):
         con.clientContainer=ClientContainer()
