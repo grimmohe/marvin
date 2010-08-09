@@ -37,7 +37,7 @@ def turn_pointr(point, rad):
     return { "x": round(math.sin(alpha) * factor, 5),
              "y": round(math.cos(alpha) * factor, 5) }
 
-def getVectorIntersectionRatio(v1, v2, v3):
+def getVectorIntersectionRatioSim(v1, v2, v3):
     """
     v1 = (bx1;by1)
     v2 = (bx2;by2)

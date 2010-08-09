@@ -6,7 +6,7 @@ import string
 import math
 import pygame
 import device
-from mathix import get_angle, turn_point, turn_pointr, getVectorIntersectionRatio
+from mathix import get_angle, turn_point, turn_pointr, getVectorIntersectionRatioSim
 
 class Cleaner:
     """
@@ -319,8 +319,8 @@ class Simulator:
                           "y": line[0]["y"] - sensor[0]["y"]}
                     v2 = {"x": sensor[0]["x"] - line[0]["x"],
                           "y": sensor[0]["y"] - line[0]["y"]}
-                    ratio1 = getVectorIntersectionRatio(sensor[2], line[2], v1)
-                    ratio2 = getVectorIntersectionRatio(line[2], sensor[2], v2)
+                    ratio1 = getVectorIntersectionRatioSim(sensor[2], line[2], v1)
+                    ratio2 = getVectorIntersectionRatioSim(line[2], sensor[2], v2)
                     if ratio1 and ratio2:
                         if (0 <= ratio1 <= 1) and (0 <= ratio2 <= 1):
                             # direkter Schnitt
