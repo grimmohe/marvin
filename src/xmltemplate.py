@@ -6,7 +6,7 @@ import os
 class TemplateList:
     
     def __init__(self):
-        self.basepath='./templates/*'
+        self.basepath='../templates/*'
         self.templates=[]
         self.load()
         
@@ -15,6 +15,12 @@ class TemplateList:
         for file in res:
             print file
             self.templates.append(Template(file))
+            
+    def lookup(self, xmlfilename):
+        for tmplt in self.templates:
+            if os.path.basename(tmplt.filepath) == xmlfilename:
+                return tmplt
+        return None
         
 class Template:
     

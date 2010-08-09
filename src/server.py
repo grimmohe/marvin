@@ -9,6 +9,7 @@ import map
 import common
 import gc
 import time
+import xmltemplate
 from pprint import pprint
 
 shellInstance = None
@@ -157,6 +158,7 @@ class shell:
         self.marvinsrv = None
         self.devsrv = None
         self.exit = False
+        self.tmplts = None
 
     def __del__(self):
         print "destroy shell"
@@ -185,6 +187,8 @@ class shell:
         cmd = cmd.replace("  "," ").strip().split(" ")
         if "sft" == cmd[0]:
             self.processCommand("sf ../doc/test.xml")
+        if "sfx" == cmd[0]:
+            self.sendXmlTest( cmd[1], cmd[2] )
         elif "sf" == cmd[0]:
             print "sending file: ", cmd[1]
             if self.marvinsrv.srvlis.sendFile(cmd[1]) == 0:
@@ -241,6 +245,17 @@ class shell:
             curTry += 1
             time.sleep(5.0)
         return False
+    
+    def sendXmlTest(self, one, two):
+        if not self.tmplts:
+            self.tmplts = xmltemplate.TemplateList()
+        tmplt = self.tmplts.lookup("erkunde-gerichtet.xml")
+        if tmplt:
+            tmplt.varlist.lookup("$base-sensor").value = one
+            tmplt.varlist.lookup("$opposite-sensor").value = two
+            tmplt.varlist.lookup("$id").value = "1"
+            self.marvinsrv.srvlis.clients[0].write('<what-to-do>' + tmplt.fill() + '</what-to-do>')
+            #print('<what-to-do><assignment id="1" start="head:move=down"><event ifarg1="head:position" ifcompare="e" ifarg2="100" then="" final="true"/></assignment>' + tmplt.fill() + '</what-to-do>')
 
 class Server:
 
@@ -288,14 +303,13 @@ class ClientContainer(threading.Thread):
             self.actionlogNew.wait()
             if self.actionlogData and self.actionlog:
                 try:
-                    print self.actionlogData
                     self.actionlog.readXml(self.actionlogData)
                 except:
                     print "no valid xml data?"
-            #self.connection.shellEcho("actionlog parsed")
 
     def shutdown(self):
         if self.connection:
+            self.connection.disconnect(True)
             self.connection.clientContainer = None
         self.connection = None
         self.actionlog = None
@@ -326,7 +340,7 @@ class MarvinServer(Server):
             client.actionlogData=data
             client.actionlogNew.set()
         else:
-            client_con.shellEcho("no suitable client found")
+            client.shellEcho("no suitable client found")
 
     def Actionlog2Vector(self, cc):
         """ cc = ClientConnector() """

@@ -1,0 +1,11 @@
+
+<assignment id="$id" start="$start-state" end="$end-state">
+
+	<assignment id="1" start="head:move=up">
+		<event ifarg1="head:position" ifcompare="e" ifarg2="0" then="" final="true"/>
+	</assignment>
+	<assignment id="2" start="engine:turn=$direction" end="engine:turn=stop">
+		<event ifarg1="engine:turned" ifcompare="g" ifarg2="$degree" then="" final="true"/>
+	</assignment>
+
+</assignment>
