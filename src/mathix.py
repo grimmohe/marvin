@@ -54,7 +54,7 @@ def getVectorIntersectionRatioSim(v1, v2, v3):
     except ZeroDivisionError:
         return None # parallel
 
-def getVectorIntersectionRatio(v1, v2, v3):
+def getVectorIntersectionRatio(v1, v2):
     """
     v1, v2, v3 = map.Point()
 
@@ -62,10 +62,20 @@ def getVectorIntersectionRatio(v1, v2, v3):
     dp2 = -by1*bx2 + bx1*by2
 
     rat = dp1/dp2
+
+    returns (ratio on v1, ratio on v2)
+    if 0<=ratio<=1 its an intersection
     """
+
+    def getPRatio(p1, p2, mid):
+        return (-mid[1]*p2.x + mid[0]*p2.y) / (-p1.y*p2.x + p1.x*p2.y)
+
+    mid1 = (v1.point.x - v2.point.x, v1.point.y - v2.point.y)
+    mid2 = (v2.point.x - v1.point.x, v2.point.y - v1.point.y)
+
     try:
-        return ( (-v3.y*v2.x + v3.x*v2.y)
-                 / (-v1.y*v2.x + v1.x*v2.y) )
+        return (getPRatio(v1.size, v2.size, mid2),
+                getPRatio(v2.size, v1.size, mid1))
     except ZeroDivisionError:
         return None # parallel
 
