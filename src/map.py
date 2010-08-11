@@ -26,7 +26,7 @@ class Vector:
     """
     point (X;Y) with size (X;Y)
     """
-    def __init__(self, point, size):
+    def __init__(self, point=Point(0, 0), size=Point(0, 0)):
         self.point = point
         self.size = size
 
@@ -46,8 +46,8 @@ class Vector:
 
     def copy(self, position=Point(0, 0), orientation=0):
         """ create a new vector with position added and orientation applied to size """
-        new_pos = turn_point({"x": self.x, "y": self.y}, orientation)
-        new_size = turn_point({"x": self.size_x, "y": self.size_y}, orientation)
+        new_pos = turn_point({"x": self.point.x, "y": self.point.y}, orientation)
+        new_size = turn_point({"x": self.size.x, "y": self.size.y}, orientation)
         return Vector(Point(new_pos["x"] + position.x, new_pos["y"] + position.y),
                       Point(new_size["x"], new_size["y"]))
 
