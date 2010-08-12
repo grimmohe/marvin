@@ -147,10 +147,14 @@ class Area:
 
 class Map:
 
+    ROUTE_STRICT = 1
+    ROUTE_SHORT = 2
+
     def __init__(self):
         self.areas = []
         self.areas_unmerged = []
         self.vectors = []
+        self.route = []
 
     def addVector(self, v):
         """ adding/merging a point to the map """
@@ -196,6 +200,13 @@ class Map:
                                        getTweenPoint(p1, size12, size13, multiplierMin12, multiplierMax13),
                                        getTweenPoint(p1, size12, size13, multiplierMax12, multiplierMin13)))
 
+    def addWaypoint(self, wp=Point(0, 0), option=Map.ROUTE_STRICT):
+        """ add a waypoint to current route """
+
+    def fill(self):
+        """ generetes a route to fill noticeable areas"""
+        return False
+
     def merge(self):
         """ merge vectors that could be one """
         ii = 0
@@ -238,5 +249,6 @@ class Map:
                     ii += 1
             self.areas_unmerged.pop(0)
 
-
+    def routeIsSet(self):
+        return len(self.route)
 
