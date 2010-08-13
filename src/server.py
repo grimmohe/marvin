@@ -283,8 +283,7 @@ class ClientContainer(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        self.orientation = 0.0
-        self.position = map.Point(0, 0)
+        self.position = map.Position()
         self.map = map.Map()
         self.devs = {}
         self.connection = None
@@ -300,15 +299,15 @@ class ClientContainer(threading.Thread):
             dev, key = action.action.split(":")
             if dev == "engine":
                 if key == "turned":
-                    self.orientation += action.value
+                    self.position.orientation += action.value
                     for dev in self.devs:
                         if dev.has_key("touch"):
                             dev["touch"] = False
                 elif key == "distance":
-                    new_x = self.x + math.sin(math.radians(self.orientation)) * action.value
-                    new_y = self.y + math.cos(math.radians(self.orientation)) * action.value
-                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.x, self.position.y), self.orientation)
-                    v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.orientation)
+                    new_x = self.x + math.sin(math.radians(self.position.orientation)) * action.value
+                    new_y = self.y + math.cos(math.radians(self.position.orientation)) * action.value
+                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
+                    v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.position.orientation)
                     for dev in self.devs:
                         if dev.has_key("touch") and dev["touch"]:
                             # sensor at start position
@@ -327,7 +326,7 @@ class ClientContainer(threading.Thread):
                 self.devs[dev][key] = action.value
                 if key == "distance":
                     self.devs[dev]["touch"] = (action.value < 1.0)
-                    self.map.addVector(self.devs[dev]["dimension"].copy(map.Point(self.position.x, self.position.y), self.orientation))
+                    self.map.addVector(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation))
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))

@@ -18,6 +18,12 @@ class Point:
     def getDistanceTo(self, p2):
         return math.sqrt(math.pow(self.x - p2.x, 2) + math.pow(self.y - p2.y, 2))
 
+class Position:
+
+    def __init__(self, point=Point(0, 0), orientation=0.0):
+        self.point = point
+        self.orientation = orientation
+
 class Vector:
 
     START_POINT = 0
