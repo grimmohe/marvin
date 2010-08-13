@@ -206,7 +206,7 @@ class Map:
                                        getTweenPoint(p1, size12, size13, multiplierMin12, multiplierMax13),
                                        getTweenPoint(p1, size12, size13, multiplierMax12, multiplierMin13)))
 
-    def addWaypoint(self, wp=Point(0, 0), option=Map.ROUTE_STRICT):
+    def addWaypoint(self, wp=Point(0, 0), option=ROUTE_STRICT):
         """ add a waypoint to current route """
 
     def fill(self):
