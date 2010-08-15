@@ -218,6 +218,23 @@ class Map:
         """ generetes a route to fill noticeable areas"""
         return False
 
+    def nextCollisionIn(self, position=Position(), sensors=[], min_distance=0):
+        """ calc distance to next collision """
+        nextCollision = 6378137000
+        collisionSensor = None
+        direction = turn_point({"x": 0, "y": 1}, position.orientation)
+        direction = Point(direction["x"], direction["y"])
+
+        for sensor in sensors:
+            for border in self.vectors:
+                for p in (sensor.getStartPoint(), sensor.getEndPoint()):
+                    v = Vector(p, direction)
+                    ratio = getVectorIntersectionRatio(v, border)
+                    if 0 <= ratio[1] <= 1 and ratio[0] >= min_distance:
+                        nextCollision = min(nextCollision, ratio[0])
+                        collisionSensor = sensor
+        return (nextCollision, collisionSensor)
+
     def merge(self):
         """ merge vectors that could be one """
         ii = 0
