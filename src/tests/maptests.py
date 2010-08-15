@@ -54,6 +54,34 @@ class TestAreaIntersections(unittest.TestCase):
         vector = Vector(Point(1, -3), Point(7, -1))
         self.failIf(area.intersects(vector))
 
+class TestMapNextCollisionIn(unittest.TestCase):
+
+    def testNextCollisionInNone(self):
+        map = Map()
+        map.addVector(Vector(Point(0, 50), Point(10, 0)))
+        map.addVector(Vector(Point(50, 0), Point(0, 10)))
+        sensors = [Vector(Point(-5, 5), Point(10, 0))]
+        collision = map.nextCollisionIn(Position(Point(0, 0), 45), sensors)
+        self.failIf(collision[1], "collision where none expected")
+
+    def testNextCollisionInNr1(self):
+        map = Map()
+        map.addVector(Vector(Point(0, 50), Point(10, 0)))
+        map.addVector(Vector(Point(50, 0), Point(0, 10)))
+        sensors = [Vector(Point(-5, 5), Point(10, 0))]
+        collision = map.nextCollisionIn(Position(Point(0, 0), 0), sensors)
+        self.failUnless(collision[1] == sensors[0])
+        self.failUnless(collision[0] == 45)
+
+    def testNextCollisionInNr2(self):
+        map = Map()
+        map.addVector(Vector(Point(0, 50), Point(4, 0)))
+        map.addVector(Vector(Point(50, 0), Point(0, 10)))
+        sensors = [Vector(Point(-5, 5), Point(10, 0))]
+        collision = map.nextCollisionIn(Position(Point(0, 0), 0), sensors)
+        self.failUnless(collision[1] == sensors[0])
+        self.failUnless(collision[0] == 45)
+
 class TestVectorCopy(unittest.TestCase):
 
     def testCopyNone(self):
