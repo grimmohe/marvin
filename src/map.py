@@ -66,7 +66,7 @@ class Vector:
         return Point(self.point.x, self.point.y)
 
     def getEndPoint(self):
-        return Point(self.x + self.size_x, self.y + self.size_y)
+        return Point(self.point.x + self.size.x, self.point.y + self.size.y)
 
     def len(self):
         return math.sqrt(math.pow(abs(self.size.x), 2) + math.pow(abs(self.size.y), 2))
@@ -230,7 +230,7 @@ class Map:
                 for p in (sensor.getStartPoint(), sensor.getEndPoint()):
                     v = Vector(p, direction)
                     ratio = getVectorIntersectionRatio(v, border)
-                    if 0 <= ratio[1] <= 1 and ratio[0] >= min_distance:
+                    if ratio and 0 <= ratio[1] <= 1 and ratio[0] >= min_distance:
                         nextCollision = min(nextCollision, ratio[0])
                         collisionSensor = sensor
         return (nextCollision, collisionSensor)
