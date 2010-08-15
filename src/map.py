@@ -50,10 +50,15 @@ class Vector:
             p2y = vector2.point.y + vector2.size.y
         return Vector(Point(p1x, p1y), Point(p2x - p1x, p2y - p1y))
 
-    def copy(self, position=Point(0, 0), orientation=0):
+    def copy(self, position=Point(0, 0), orientation=0, offset=None):
         """ create a new vector with position added and orientation applied to size """
-        new_pos = turn_point({"x": self.x, "y": self.y}, orientation)
-        new_size = turn_point({"x": self.size_x, "y": self.size_y}, orientation)
+        x = self.point.x
+        y = self.point.y
+        if offset:
+            x += offset.size.x
+            y += offset.size.y
+        new_pos = turn_point({"x": x, "y": y}, orientation)
+        new_size = turn_point({"x": self.size.x, "y": self.size.y}, orientation)
         return Vector(Point(new_pos["x"] + position.x, new_pos["y"] + position.y),
                       Point(new_size["x"], new_size["y"]))
 

@@ -326,7 +326,10 @@ class ClientContainer(threading.Thread):
                 self.devs[dev][key] = action.value
                 if key == "distance":
                     self.devs[dev]["touch"] = (action.value < 1.0)
-                    self.map.addVector(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation))
+                    sensorOffset = None
+                    if self.devs[dev].has_key("orientation"):
+                        sensorOffset = self.devs[dev]["orientation"]
+                    self.map.addVector(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation), sensorOffset)
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
