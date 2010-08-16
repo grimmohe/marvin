@@ -169,10 +169,10 @@ class Map:
     def __init__(self):
         self.areas = []
         self.areas_unmerged = []
-        self.vectors = []
+        self.borders = []
         self.route = []
 
-    def addVector(self, v):
+    def addBorder(self, v):
         """ adding/merging a point to the map """
         if v and v.__class__.__name__ == "Vector":
             distance = v.len()
@@ -181,7 +181,7 @@ class Map:
                 multiplier = run / max
                 point = Point(v.point.x + (v.size.x * multiplier), v.point.y + (v.size.y * multiplier))
                 size = Point(v.size.x / max, v.size.y / max)
-                self.vectors.append(Vector(point, size))
+                self.borders.append(Vector(point, size))
         else:
             raise "Object None or wrong type. Expected Vector()"
 
@@ -233,7 +233,7 @@ class Map:
         for sensor in sensors:
             v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
             v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
-            for border in self.vectors:
+            for border in self.borders:
                 ratio1 = getVectorIntersectionRatio(v1, border)
                 ratio2 = getVectorIntersectionRatio(v2, border)
                 if ratio1 and ratio2 \
@@ -244,14 +244,14 @@ class Map:
         return (nextCollision, collisionSensor)
 
     def merge(self):
-        """ merge vectors that could be one """
+        """ merge borders that could be one """
         ii = 0
         doubleMax = MAX_VECTOR_LENGTH * 2
-        while ii < len(self.vectors):
-            v1 = self.vectors[ii]
+        while ii < len(self.borders):
+            v1 = self.borders[ii]
             aa = ii + 1
-            while aa < len(self.vectors):
-                v2 = self.vectors[aa]
+            while aa < len(self.borders):
+                v2 = self.borders[aa]
                 max_dist = 0.0
                 count_in_range = 0
                 for distance in v1.compare(v2):
@@ -260,27 +260,27 @@ class Map:
                         count_in_range += 1
                 # die Vektoren liegen übereinander
                 if count_in_range == 2:
-                    self.vectors.pop(aa)
+                    self.borders.pop(aa)
                 # die Vektoren bilden eine Linie
                 elif (count_in_range == 1
                       and (v1.len() + v2.len() - max_dist <= MERGE_RANGE)
                       and max_dist < MAX_VECTOR_LENGTH):
                     v1.merge(v2)
-                    self.vectors.pop(aa)
+                    self.borders.pop(aa)
                 else:
                     aa += 1
             ii += 1
-        """ now delete all vectors in conflict with self.areas_unmerged """
+        """ now delete all borders in conflict with self.areas_unmerged """
         while len(self.areas_unmerged):
             area = self.areas_unmerged[0]
             ii = 0
-            while ii < len(self.vectors):
-                vector = self.vectors[ii]
+            while ii < len(self.borders):
+                vector = self.borders[ii]
                 if area.p1.getDistanceTo(vector.point) > doubleMax:
                     ii += 1
                     continue
                 if area.intersects(vector):
-                    self.vectors.pop(ii)
+                    self.borders.pop(ii)
                 else:
                     ii += 1
             self.areas_unmerged.pop(0)

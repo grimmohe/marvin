@@ -58,16 +58,16 @@ class TestMapNextCollisionIn(unittest.TestCase):
 
     def testNextCollisionInNone(self):
         map = Map()
-        map.addVector(Vector(Point(0, 50), Point(10, 0)))
-        map.addVector(Vector(Point(50, 0), Point(0, 10)))
+        map.addBorder(Vector(Point(0, 50), Point(10, 0)))
+        map.addBorder(Vector(Point(50, 0), Point(0, 10)))
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
         collision = map.nextCollisionIn(Position(Point(0, 0), 45), sensors)
         self.failIf(collision[1], "collision where none expected")
 
     def testNextCollisionInNr1(self):
         map = Map()
-        map.addVector(Vector(Point(0, 50), Point(10, 0)))
-        map.addVector(Vector(Point(50, 0), Point(0, 10)))
+        map.addBorder(Vector(Point(0, 50), Point(10, 0)))
+        map.addBorder(Vector(Point(50, 0), Point(0, 10)))
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
         collision = map.nextCollisionIn(Position(Point(0, 0), 0), sensors)
         self.failUnless(collision[1] == sensors[0])
@@ -75,8 +75,8 @@ class TestMapNextCollisionIn(unittest.TestCase):
 
     def testNextCollisionInNr2(self):
         map = Map()
-        map.addVector(Vector(Point(0, 50), Point(4, 0)))
-        map.addVector(Vector(Point(50, 0), Point(0, 10)))
+        map.addBorder(Vector(Point(0, 50), Point(4, 0)))
+        map.addBorder(Vector(Point(50, 0), Point(0, 10)))
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
         collision = map.nextCollisionIn(Position(Point(0, 0), 0), sensors)
         self.failUnless(collision[1] == sensors[0])
