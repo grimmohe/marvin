@@ -18,6 +18,11 @@ class Point:
     def getDistanceTo(self, p2):
         return math.sqrt(math.pow(self.x - p2.x, 2) + math.pow(self.y - p2.y, 2))
 
+    def getTurned(self, angle):
+        p = turn_point({"x": self.x, "y": self.y}, angle)
+        return Point(p["x"], p["y"])
+
+
 class Position:
 
     def __init__(self, point=Point(0, 0), orientation=0.0):
@@ -226,13 +231,16 @@ class Map:
         direction = Point(direction["x"], direction["y"])
 
         for sensor in sensors:
+            v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
+            v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
             for border in self.vectors:
-                for p in (sensor.getStartPoint(), sensor.getEndPoint()):
-                    v = Vector(p, direction)
-                    ratio = getVectorIntersectionRatio(v, border)
-                    if ratio and 0 <= ratio[1] <= 1 and ratio[0] >= min_distance:
-                        nextCollision = min(nextCollision, ratio[0])
-                        collisionSensor = sensor
+                ratio1 = getVectorIntersectionRatio(v1, border)
+                ratio2 = getVectorIntersectionRatio(v2, border)
+                if ratio1 and ratio2 \
+                   and ( 0 <= ratio1[1] <= 1 or 0 <= ratio2[1] <= 1 or ((ratio1[1]>=0) <> (ratio2[1]>=0)) ) \
+                   and min(ratio1[0], ratio2[0]) >= min_distance:
+                    nextCollision = min(nextCollision, min(ratio1[0], ratio2[0]))
+                    collisionSensor = sensor
         return (nextCollision, collisionSensor)
 
     def merge(self):
