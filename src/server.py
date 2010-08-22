@@ -336,9 +336,23 @@ class ClientContainer(threading.Thread):
                 elif key == "orientation":
                     size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(0, 0), map.Point(size_x, size_y))
-                elif key == "position":
+                elif key in ("radius", "position"):
                     self.devs[dev][key] = float(action.value)
         self.map.merge()
+
+    def discover(self):
+        """ discover new borders """
+        loose = self.map.getLooseEnds(self.position)
+        if loose and len(loose):
+            loose = loose[0]
+            vlen = loose.len()
+            bmulti = min(vlen, self.devs["self"]["radius"]) / vlen
+            self.map.addWaypoint(map.WayPoint(loose.point.x + loose.size.x * bmulti,
+                                              loose.point.y + loose.size.y * bmulti,
+                                              map.WayPoint.WP_FAST | map.WayPoint.WP_DISCOVER,
+                                              loose))
+        elif len(self.map.borders) == 0:
+            self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
 
     def handlePanicEvents(self):
         """ in case the batterie is low or other stuff, handle that """

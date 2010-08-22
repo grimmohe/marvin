@@ -26,13 +26,12 @@ class WayPoint(Point):
 
     WP_STRICT = 1           # get there, stay on a direkt way as much as possible
     WP_FAST = 2             # get there on a short way
-    WP_DISCOVER = 11        # discover the loose end you are on
-    WP_TURN_LEFT = 21       # align for a border to hit on your left
-    WP_TURN_RIGHT = 22      # align for a border to hit on your right
+    WP_DISCOVER = 4         # discover the loose end you are on
 
-    def __init__(self, x, y, duty=WP_FAST):
+    def __init__(self, x, y, duty=WP_FAST, attachment=None):
         super(WayPoint, self).__init__(x, y)
         self.duty = duty
+        self.attachment = attachment
 
 class Position:
 
