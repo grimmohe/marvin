@@ -3,6 +3,19 @@ import re
 import glob
 import os
 
+"""
+known template variables:
+$untouched-sensor           # liste der sensoren, die keine berührung haben sollten
+$base-sensor                # sensor mit bewusster berührung
+$direction                  # left|right
+$opposite-direction         # gegenteil von $direction
+$compare                    # g|l|e wird für vergleiche benutzt
+$target-angle               # zu erreichender winkel in grad
+$distance                   # distanz die gefahren werden soll
+$head-movement              # up|down bewegung der sensoren / des saugkopfes
+$head-target                # 0|100 ist ziel der bewegung von $head-movement
+"""
+
 class TemplateList:
 
     def __init__(self):

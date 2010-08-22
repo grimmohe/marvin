@@ -82,6 +82,33 @@ class TestMapNextCollisionIn(unittest.TestCase):
         self.failUnless(collision[1] == sensors[0])
         self.failUnless(collision[0] == 45)
 
+class TestMapGetLooseEnds(unittest.TestCase):
+
+    def testGetLooseEndsNone(self):
+        map = Map()
+        map.addBorder(Vector(Point(0, 0), Point(10, 0)))
+        map.addBorder(Vector(Point(10, 0.9), Point(0, 10)))
+        map.addBorder(Vector(Point(10, 10), Point(-10, 0)))
+        map.addBorder(Vector(Point(0, 10), Point(0, -10)))
+        loose = map.getLooseEnds()
+        self.failUnless(len(loose) == 0, len(loose))
+
+    def testGetLooseEnds2(self):
+        map = Map()
+        map.addBorder(Vector(Point(0, 0), Point(10, 0)))
+        map.addBorder(Vector(Point(10, 0.9), Point(0, 10)))
+        map.addBorder(Vector(Point(10, 10), Point(-10, 0)))
+        loose = map.getLooseEnds()
+        self.failUnless(len(loose) == 2, len(loose))
+        self.failUnless(loose[0].point.x == 10
+                        and loose[0].point.y == 0
+                        and loose[0].size.x == -10
+                        and loose[0].size.y == 0)
+        self.failUnless(loose[1].point.x == 10
+                        and loose[1].point.y == 10
+                        and loose[1].size.x == -10
+                        and loose[1].size.y == 0)
+
 class TestVectorCopy(unittest.TestCase):
 
     def testCopyNone(self):
