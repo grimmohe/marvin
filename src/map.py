@@ -134,7 +134,7 @@ class Vector:
         p1 = self.point
         p2 = self.getEndPoint()
         self.setStartPoint(p2)
-        self.getEndPoint(p1)
+        self.setEndPoint(p1)
 
 class Area:
     """
@@ -242,24 +242,26 @@ class Map:
         """ add a waypoint to current route """
         self.route.append(wp)
 
-    def getLooseEnds(self):
-        """ find loose ends in self.borders """
+    def getLooseEnds(self, position=Position()):
+        """ find loose ends in self.borders, sorted by distace to position  """
         ii = 0
         looseEnds = []
         while ii < len(self.borders):
-            v1 = self.borders[ii]
-            aa = ii + 1
-            loose = (True, True)
+            v = self.borders[ii]
+            aa = 0
+            loose = [True, True]
             while (loose[0] or loose[1]) and aa < len(self.borders):
-                range = v1.inRange(self.borders[aa])
-                loose[0] = loose[0] and not range[0]
-                loose[1] = loose[1] and not range[1]
+                if ii <> aa:
+                    range = v.inRange(self.borders[aa])
+                    loose[0] = loose[0] and not range[0]
+                    loose[1] = loose[1] and not range[1]
                 aa += 1
             if loose[0]:
-                v1.twist()
+                v.twist()
             if loose[0] or loose[1]:
-                looseEnds.append(v1)
+                looseEnds.append(v)
             ii += 1
+        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point) - position.point.getDistanceTo(v2.point)))
         return looseEnds
 
     def nextCollisionIn(self, position=Position(), sensors=[], min_distance=0):
