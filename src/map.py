@@ -9,7 +9,7 @@ from mathix import turn_point, roundup, getVectorIntersectionRatio
 MERGE_RANGE = 1.0
 MAX_VECTOR_LENGTH = 50.0
 
-class Point:
+class Point(object):
 
     def __init__(self, x, y):
         self.x = float(x)
@@ -22,6 +22,17 @@ class Point:
         p = turn_point({"x": self.x, "y": self.y}, angle)
         return Point(p["x"], p["y"])
 
+class WayPoint(Point):
+
+    WP_STRICT = 1           # get there, stay on a direkt way as much as possible
+    WP_FAST = 2             # get there on a short way
+    WP_DISCOVER = 11        # discover the loose end you are on
+    WP_TURN_LEFT = 21       # align for a border to hit on your left
+    WP_TURN_RIGHT = 22      # align for a border to hit on your right
+
+    def __init__(self, x, y, duty=WP_FAST):
+        super(WayPoint, self).__init__(x, y)
+        self.duty = duty
 
 class Position:
 
@@ -87,6 +98,11 @@ class Vector:
         p4 = math.sqrt(math.pow(e1.x - e2.x, 2) + math.pow(e1.y - e2.y, 2))
         return (p1, p2, p3, p4)
 
+    def inRange(self, v):
+        comp = self.compare(v)
+        return (comp[0] <= MERGE_RANGE or comp[1] <= MERGE_RANGE,
+                comp[2] <= MERGE_RANGE or comp[3] <= MERGE_RANGE)
+
     def merge(self, v):
         comp = self.compare(v)
         max_dist = 0.0
@@ -113,6 +129,12 @@ class Vector:
 
     def setEndPoint(self, p):
         self.size = Point(p.x - self.point.x, p.y - self.point.y)
+
+    def twist(self):
+        p1 = self.point
+        p2 = self.getEndPoint()
+        self.setStartPoint(p2)
+        self.getEndPoint(p1)
 
 class Area:
     """
@@ -216,12 +238,29 @@ class Map:
                                        getTweenPoint(p1, size12, size13, multiplierMin12, multiplierMax13),
                                        getTweenPoint(p1, size12, size13, multiplierMax12, multiplierMin13)))
 
-    def addWaypoint(self, wp=Point(0, 0), option=ROUTE_STRICT):
+    def addWaypoint(self, wp=WayPoint(0, 0)):
         """ add a waypoint to current route """
+        self.route.append(wp)
 
-    def fill(self):
-        """ generetes a route to fill noticeable areas"""
-        return False
+    def getLooseEnds(self):
+        """ find loose ends in self.borders """
+        ii = 0
+        looseEnds = []
+        while ii < len(self.borders):
+            v1 = self.borders[ii]
+            aa = ii + 1
+            loose = (True, True)
+            while (loose[0] or loose[1]) and aa < len(self.borders):
+                range = v1.inRange(self.borders[aa])
+                loose[0] = loose[0] and not range[0]
+                loose[1] = loose[1] and not range[1]
+                aa += 1
+            if loose[0]:
+                v1.twist()
+            if loose[0] or loose[1]:
+                looseEnds.append(v1)
+            ii += 1
+        return looseEnds
 
     def nextCollisionIn(self, position=Position(), sensors=[], min_distance=0):
         """ calc distance to next collision """

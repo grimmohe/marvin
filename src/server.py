@@ -356,9 +356,9 @@ class ClientContainer(threading.Thread):
                 self.assimilateActions(actionlog)
                 self.handlePanicEvents()
                 if not self.map.routeIsSet():
-                    self.map.fill()
+                    self.discover()
                 if not self.map.routeIsSet():
-                    self.map.discover()
+                    self.fill()
                 self.sendAssignments()
 
     def sendAssignments(self):
