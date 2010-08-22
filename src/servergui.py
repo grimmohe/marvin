@@ -12,37 +12,34 @@ class ServerTab:
 
     def __init__(self, server, name):
 
-        self.div = gtk.VBox(False, 0)
-        self.widgetTable = gtk.Table(1,2,False)
+        # main table
+        self.mainWidget = gtk.Table(1,1,False)
 
-        self.editor = gtk.TextView()
-        self.textbf = self.editor.get_buffer()
-        self.sw = gtk.ScrolledWindow()
-        self.sw.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
-        self.editor.set_wrap_mode(gtk.WRAP_WORD)
-        self.sw.add(self.editor)
-        self.textbf.insert_at_cursor("narf\ntest")
+        # scollablewindow around text edit
+        self.scrollableWindow = gtk.ScrolledWindow()
+        self.scrollableWindow.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
 
+        # text input
+        self.textView = gtk.TextView()
+        self.textBuffer = self.textView.get_buffer()
+
+        # join text and scrollable window
+        self.textView.set_wrap_mode(gtk.WRAP_WORD)
+        self.scrollableWindow.add(self.textView)
+        self.textBuffer.insert_at_cursor(name + "\nnarf\ntest")
+
+        # start stop buttons
         self.btnstop = gtk.Button("Stop")
         self.btnstart = gtk.Button("Start")
 
         self.tooldiv = gtk.HBox(False, 0)
         self.tooldiv.pack_start(self.btnstart, False, 0)
-        self.tooldiv.pack_start(self.btnstop, False, 0)
+        self.tooldiv.pack_end(self.btnstop, False, 0)
 
-        tooldivalign = gtk.Alignment(1,0,0,0)
-        tooldivalign.add(self.tooldiv)
+        self.mainWidget.attach(self.scrollableWindow, 0,1,0,1)
+        self.mainWidget.attach(self.tooldiv, 0,1,1,2,0,0,0,0)
 
-        self.widgetTable.attach(self.sw, 0,1,0,1)
-        self.widgetTable.attach(tooldivalign, 0,1,1,2)
-
-        self.div.pack_end(self.widgetTable, False, False, 0)
-
-        self.editor.show()
-        self.btnstop.show()
-        self.btnstart.show()
-        self.widgetTable.show()
-        self.sw.show()
+        self.mainWidget.show_all()
         self.server = server
         self.name = name
 
@@ -54,7 +51,7 @@ class ServerTab:
         pass
 
     def getDiv(self):
-        return self.div
+        return self.mainWidget
 
 class TabBox:
 
@@ -63,12 +60,14 @@ class TabBox:
         self.div = gtk.HBox()
         self.lshow = False
 
-    def add(self, name):
+    def add(self, name, evnt):
         btn = gtk.Button(name)
         self.tabs.append(btn)
         self.div.pack_start(btn,False, 0)
+        btn.connect("clicked", evnt)
         if self.lshow:
             btn.lshow()
+        return btn
 
     def show(self):
         self.div.show()
@@ -102,23 +101,12 @@ class MainWindow(threading.Thread):
 
     def run(self):
         self.tablist = TabBox()
+        srv = self.tablist.add("MarvinServer", lambda w: self.showServerTab("MarvinServer"))
+        srv = self.tablist.add("DeviceServer", lambda w: self.showServerTab("DeviceServer"))
 
-        srv = ServerTab(None, "MarvinSrv")
-        self.servers.append(srv)
-        self.ActiveItem = srv.getDiv()
-        #self.container.add(srv.getDiv())
-        #srv = ServerTab(None, "DeviceSrv")
-        #self.servers.append(srv)
-        #self.container.add(srv.getDiv())
-        #self.tablist = TabBox()
-        self.tablist.add("MarvinServer")
-        self.tablist.add("DeviceServer")
         self.mainwindow.connect("delete_event", self.delete_event)
         self.mainwindow.connect("destroy", self.destroy)
-
-
         self.jepp()
-
 
     def jepp(self):
         self.MainBox = gtk.VBox(False,0)
@@ -126,17 +114,8 @@ class MainWindow(threading.Thread):
         self.MainBox.pack_start(self.tablist.getDiv(), False, False, 0)
         self.tablist.show()
 
-        ContentBox = self.ActiveItem
-        self.MainBox.pack_start(ContentBox, False, False, 0)
-        ContentBox.show()
-
         QuitButton = gtk.Button("Quit")
         QuitButton.connect("clicked", lambda w: gtk.main_quit())
-        self.MainBox.pack_end(QuitButton, False, False, 0)
-        QuitButton.show()
-
-        QuitButton = gtk.Button("Test")
-        QuitButton.connect("clicked", self.test)
         self.MainBox.pack_end(QuitButton, False, False, 0)
         QuitButton.show()
 
@@ -144,7 +123,12 @@ class MainWindow(threading.Thread):
         self.MainBox.show()
         self.mainwindow.show_all()
         self.mainwindow.maximize()
+        self.initServerConnections()
         gtk.main()
+
+    def initServerConnections(self):
+        self.servers.append(ServerTab(None, "MarvinServer"))
+        self.servers.append(ServerTab(None, "DeviceServer"))
 
     def show(self):
         for srv in self.servers:
@@ -155,12 +139,18 @@ class MainWindow(threading.Thread):
             self.tablist.show()
         self.mainwindow.show()
 
-    def test(self):
-        QuitButton = gtk.Button("Test1")
-        QuitButton.connect("clicked", self.test)
-        self.MainBox.add(QuitButton)
-        self.MainBox.pack_end(QuitButton, False, False, 0)
-        self.mainwindow.show_all()
+    def showServerTab(self, btn):
+        for srv in self.servers:
+            if srv.name == btn:
+                self.showActiveItem(srv.getDiv())
+
+    def showActiveItem(self, new):
+        if new and new <> self.ActiveItem:
+            if self.ActiveItem:
+                self.MainBox.remove(self.ActiveItem)
+            self.ActiveItem = new
+            self.MainBox.add(self.ActiveItem)
+            self.MainBox.pack_end(self.ActiveItem, False, False, 0)
 
 if __name__ == "__main__":
     win = MainWindow(500,500)
