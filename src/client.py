@@ -125,10 +125,10 @@ class Client:
             try:
                 config.read("/etc/marvin.conf")
 
-                self.stateholder.update("Ident", config.get("client", "ident"), process=False)
-                self.stateholder.update("Stamp", str(time.time()), process=False)
-                self.stateholder.update("Tolerance", config.getfloat("client", "tolerance"), process=False)
-                self.stateholder.update("Radius", config.getfloat("client", "radius"), process=False)
+                self.stateholder.update("self:Ident", config.get("client", "ident"), process=False)
+                self.stateholder.update("self:Stamp", str(time.time()), process=False)
+                self.stateholder.update("self:Tolerance", config.getfloat("client", "tolerance"), process=False)
+                self.stateholder.update("self:Radius", config.getfloat("client", "radius"), process=False)
 
                 ServerIP = config.get("client", "ServerIP")
                 ServerPort = config.getint("client", "ServerPort")
