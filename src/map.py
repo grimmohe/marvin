@@ -102,6 +102,28 @@ class Vector:
         return (comp[0] <= MERGE_RANGE or comp[1] <= MERGE_RANGE,
                 comp[2] <= MERGE_RANGE or comp[3] <= MERGE_RANGE)
 
+    def isConnected(self, v):
+        comp = self.compare(v)
+        if comp[0] <= MERGE_RANGE or comp[1] <= MERGE_RANGE \
+        or comp[2] <= MERGE_RANGE or comp[3] <= MERGE_RANGE :
+            return True
+        ratio = getVectorIntersectionRatio(self, v)
+        if ratio and 0 <= ratio[0] <= 1:
+            p = self.getStartPoint()
+            p.x += self.size.x * ratio[0]
+            p.y += self.size.y * ratio[0]
+            if p.getDistanceTo(v.getStartPoint()) <= MERGE_RANGE \
+            or p.getDistanceTo(v.getEndPoint()) <= MERGE_RANGE:
+                return True
+        if ratio and 0 <= ratio[1] <= 1:
+            p = v.getStartPoint()
+            p.x += v.size.x * ratio[1]
+            p.y += v.size.y * ratio[1]
+            if p.getDistanceTo(self.getStartPoint()) <= MERGE_RANGE \
+            or p.getDistanceTo(self.getEndPoint()) <= MERGE_RANGE:
+                return True
+        return False
+
     def merge(self, v):
         comp = self.compare(v)
         max_dist = 0.0
@@ -240,6 +262,16 @@ class Map:
     def addWaypoint(self, wp=WayPoint(0, 0)):
         """ add a waypoint to current route """
         self.route.append(wp)
+
+    def getConnectedBorders(self, border=Vector()):
+        """ returns borders within MERGE_RANGE """
+        con = []
+        ii = 0
+        while ii < len(self.borders):
+            v = self.borders[ii]
+            if v <> border and border.isConnected(v):
+                con.append(v)
+        return con
 
     def getLooseEnds(self, position=Position()):
         """ find loose ends in self.borders, sorted by distace to position  """
