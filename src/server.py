@@ -243,7 +243,7 @@ class shell:
             curTry += 1
             time.sleep(5.0)
         return False
-    
+
     def sendXmlTest(self, one, two):
         if not self.tmplts:
             self.tmplts = xmltemplate.TemplateList()
@@ -283,8 +283,7 @@ class ClientContainer(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        self.orientation = 0.0
-        self.position = map.Point(0, 0)
+        self.position = map.Position()
         self.map = map.Map()
         self.devs = {}
         self.connection = None
@@ -300,25 +299,25 @@ class ClientContainer(threading.Thread):
             dev, key = action.action.split(":")
             if dev == "engine":
                 if key == "turned":
-                    self.orientation += action.value
+                    self.position.orientation += action.value
                     for dev in self.devs:
                         if dev.has_key("touch"):
                             dev["touch"] = False
                 elif key == "distance":
-                    new_x = self.x + math.sin(math.radians(self.orientation)) * action.value
-                    new_y = self.y + math.cos(math.radians(self.orientation)) * action.value
-                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.x, self.position.y), self.orientation)
-                    v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.orientation)
+                    new_x = self.x + math.sin(math.radians(self.position.orientation)) * action.value
+                    new_y = self.y + math.cos(math.radians(self.position.orientation)) * action.value
+                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
+                    v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.position.orientation)
                     for dev in self.devs:
                         if dev.has_key("touch") and dev["touch"]:
                             # sensor at start position
-                            self.map.addVector(v_start)
+                            self.map.addBorder(v_start)
                             # sensor on end position
-                            self.map.addVector(v_end)
+                            self.map.addBorder(v_end)
                             # point 1 start to end
-                            self.map.addVector(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
+                            self.map.addBorder(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
                             # point 2 start to end
-                            self.map.addVector(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
+                            self.map.addBorder(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
                         if dev.has_key("position") and dev["position"]:
                             self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
             else:
@@ -327,17 +326,36 @@ class ClientContainer(threading.Thread):
                 self.devs[dev][key] = action.value
                 if key == "distance":
                     self.devs[dev]["touch"] = (action.value < 1.0)
-                    self.map.addVector(self.devs[dev]["dimension"].copy(map.Point(self.position.x, self.position.y), self.orientation))
+                    sensorOffset = None
+                    if self.devs[dev].has_key("orientation"):
+                        sensorOffset = self.devs[dev]["orientation"]
+                    self.map.addBorder(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation), sensorOffset)
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
                 elif key == "orientation":
                     size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(0, 0), map.Point(size_x, size_y))
-                elif key == "position":
+                elif key in ("radius", "position"):
                     self.devs[dev][key] = float(action.value)
         self.map.merge()
 
+    def discover(self):
+        """ discover new borders """
+        loose = self.map.getLooseEnds(self.position)
+        if loose and len(loose):
+            loose = loose[0]
+            vlen = loose.len()
+            bmulti = min(vlen, self.devs["self"]["radius"]) / vlen
+            self.map.addWaypoint(map.WayPoint(loose.point.x + loose.size.x * bmulti,
+                                              loose.point.y + loose.size.y * bmulti,
+                                              map.WayPoint.WP_FAST | map.WayPoint.WP_DISCOVER,
+                                              loose))
+        elif len(self.map.borders) == 0:
+            self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
+
+    def handlePanicEvents(self):
+        """ in case the batterie is low or other stuff, handle that """
 
     def run(self):
         while not self.stop:
@@ -350,7 +368,15 @@ class ClientContainer(threading.Thread):
                 except:
                     print "no valid xml data?"
                 self.assimilateActions(actionlog)
+                self.handlePanicEvents()
+                if not self.map.routeIsSet():
+                    self.discover()
+                if not self.map.routeIsSet():
+                    self.fill()
+                self.sendAssignments()
 
+    def sendAssignments(self):
+        """ send assignments, generated by self.map, back to our waiting client """
 
     def shutdown(self):
         if self.connection:

@@ -9,7 +9,7 @@ from mathix import turn_point, roundup, getVectorIntersectionRatio
 MERGE_RANGE = 1.0
 MAX_VECTOR_LENGTH = 50.0
 
-class Point:
+class Point(object):
 
     def __init__(self, x, y):
         self.x = float(x)
@@ -17,6 +17,27 @@ class Point:
 
     def getDistanceTo(self, p2):
         return math.sqrt(math.pow(self.x - p2.x, 2) + math.pow(self.y - p2.y, 2))
+
+    def getTurned(self, angle):
+        p = turn_point({"x": self.x, "y": self.y}, angle)
+        return Point(p["x"], p["y"])
+
+class WayPoint(Point):
+
+    WP_STRICT = 1           # get there, stay on a direkt way as much as possible
+    WP_FAST = 2             # get there on a short way
+    WP_DISCOVER = 4         # discover the loose end you are on
+
+    def __init__(self, x, y, duty=WP_FAST, attachment=None):
+        super(WayPoint, self).__init__(x, y)
+        self.duty = duty
+        self.attachment = attachment
+
+class Position:
+
+    def __init__(self, point=Point(0, 0), orientation=0.0):
+        self.point = point
+        self.orientation = orientation
 
 class Vector:
 
@@ -44,9 +65,14 @@ class Vector:
             p2y = vector2.point.y + vector2.size.y
         return Vector(Point(p1x, p1y), Point(p2x - p1x, p2y - p1y))
 
-    def copy(self, position=Point(0, 0), orientation=0):
+    def copy(self, position=Point(0, 0), orientation=0, offset=None):
         """ create a new vector with position added and orientation applied to size """
-        new_pos = turn_point({"x": self.point.x, "y": self.point.y}, orientation)
+        x = self.point.x
+        y = self.point.y
+        if offset:
+            x += offset.size.x
+            y += offset.size.y
+        new_pos = turn_point({"x": x, "y": y}, orientation)
         new_size = turn_point({"x": self.size.x, "y": self.size.y}, orientation)
         return Vector(Point(new_pos["x"] + position.x, new_pos["y"] + position.y),
                       Point(new_size["x"], new_size["y"]))
@@ -55,7 +81,7 @@ class Vector:
         return Point(self.point.x, self.point.y)
 
     def getEndPoint(self):
-        return Point(self.x + self.size_x, self.y + self.size_y)
+        return Point(self.point.x + self.size.x, self.point.y + self.size.y)
 
     def len(self):
         return math.sqrt(math.pow(abs(self.size.x), 2) + math.pow(abs(self.size.y), 2))
@@ -70,6 +96,11 @@ class Vector:
         p3 = math.sqrt(math.pow(e1.x - s2.x, 2) + math.pow(e1.y - s2.y, 2))
         p4 = math.sqrt(math.pow(e1.x - e2.x, 2) + math.pow(e1.y - e2.y, 2))
         return (p1, p2, p3, p4)
+
+    def inRange(self, v):
+        comp = self.compare(v)
+        return (comp[0] <= MERGE_RANGE or comp[1] <= MERGE_RANGE,
+                comp[2] <= MERGE_RANGE or comp[3] <= MERGE_RANGE)
 
     def merge(self, v):
         comp = self.compare(v)
@@ -97,6 +128,12 @@ class Vector:
 
     def setEndPoint(self, p):
         self.size = Point(p.x - self.point.x, p.y - self.point.y)
+
+    def twist(self):
+        p1 = self.point
+        p2 = self.getEndPoint()
+        self.setStartPoint(p2)
+        self.setEndPoint(p1)
 
 class Area:
     """
@@ -147,12 +184,16 @@ class Area:
 
 class Map:
 
+    ROUTE_STRICT = 1
+    ROUTE_SHORT = 2
+
     def __init__(self):
         self.areas = []
         self.areas_unmerged = []
-        self.vectors = []
+        self.borders = []
+        self.route = []
 
-    def addVector(self, v):
+    def addBorder(self, v):
         """ adding/merging a point to the map """
         if v and v.__class__.__name__ == "Vector":
             distance = v.len()
@@ -161,7 +202,7 @@ class Map:
                 multiplier = run / max
                 point = Point(v.point.x + (v.size.x * multiplier), v.point.y + (v.size.y * multiplier))
                 size = Point(v.size.x / max, v.size.y / max)
-                self.vectors.append(Vector(point, size))
+                self.borders.append(Vector(point, size))
         else:
             raise "Object None or wrong type. Expected Vector()"
 
@@ -196,15 +237,61 @@ class Map:
                                        getTweenPoint(p1, size12, size13, multiplierMin12, multiplierMax13),
                                        getTweenPoint(p1, size12, size13, multiplierMax12, multiplierMin13)))
 
+    def addWaypoint(self, wp=WayPoint(0, 0)):
+        """ add a waypoint to current route """
+        self.route.append(wp)
+
+    def getLooseEnds(self, position=Position()):
+        """ find loose ends in self.borders, sorted by distace to position  """
+        ii = 0
+        looseEnds = []
+        while ii < len(self.borders):
+            v = self.borders[ii]
+            aa = 0
+            loose = [True, True]
+            while (loose[0] or loose[1]) and aa < len(self.borders):
+                if ii <> aa:
+                    range = v.inRange(self.borders[aa])
+                    loose[0] = loose[0] and not range[0]
+                    loose[1] = loose[1] and not range[1]
+                aa += 1
+            if loose[0]:
+                v.twist()
+            if loose[0] or loose[1]:
+                looseEnds.append(v)
+            ii += 1
+        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point) - position.point.getDistanceTo(v2.point)))
+        return looseEnds
+
+    def nextCollisionIn(self, position=Position(), sensors=[], min_distance=0):
+        """ calc distance to next collision """
+        nextCollision = 6378137000
+        collisionSensor = None
+        direction = turn_point({"x": 0, "y": 1}, position.orientation)
+        direction = Point(direction["x"], direction["y"])
+
+        for sensor in sensors:
+            v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
+            v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
+            for border in self.borders:
+                ratio1 = getVectorIntersectionRatio(v1, border)
+                ratio2 = getVectorIntersectionRatio(v2, border)
+                if ratio1 and ratio2 \
+                   and ( 0 <= ratio1[1] <= 1 or 0 <= ratio2[1] <= 1 or ((ratio1[1]>=0) <> (ratio2[1]>=0)) ) \
+                   and min(ratio1[0], ratio2[0]) >= min_distance:
+                    nextCollision = min(nextCollision, min(ratio1[0], ratio2[0]))
+                    collisionSensor = sensor
+        return (nextCollision, collisionSensor)
+
     def merge(self):
-        """ merge vectors that could be one """
+        """ merge borders that could be one """
         ii = 0
         doubleMax = MAX_VECTOR_LENGTH * 2
-        while ii < len(self.vectors):
-            v1 = self.vectors[ii]
+        while ii < len(self.borders):
+            v1 = self.borders[ii]
             aa = ii + 1
-            while aa < len(self.vectors):
-                v2 = self.vectors[aa]
+            while aa < len(self.borders):
+                v2 = self.borders[aa]
                 max_dist = 0.0
                 count_in_range = 0
                 for distance in v1.compare(v2):
@@ -213,30 +300,31 @@ class Map:
                         count_in_range += 1
                 # die Vektoren liegen übereinander
                 if count_in_range == 2:
-                    self.vectors.pop(aa)
+                    self.borders.pop(aa)
                 # die Vektoren bilden eine Linie
                 elif (count_in_range == 1
                       and (v1.len() + v2.len() - max_dist <= MERGE_RANGE)
                       and max_dist < MAX_VECTOR_LENGTH):
                     v1.merge(v2)
-                    self.vectors.pop(aa)
+                    self.borders.pop(aa)
                 else:
                     aa += 1
             ii += 1
-        """ now delete all vectors in conflict with self.areas_unmerged """
+        """ now delete all borders in conflict with self.areas_unmerged """
         while len(self.areas_unmerged):
             area = self.areas_unmerged[0]
             ii = 0
-            while ii < len(self.vectors):
-                vector = self.vectors[ii]
+            while ii < len(self.borders):
+                vector = self.borders[ii]
                 if area.p1.getDistanceTo(vector.point) > doubleMax:
                     ii += 1
                     continue
                 if area.intersects(vector):
-                    self.vectors.pop(ii)
+                    self.borders.pop(ii)
                 else:
                     ii += 1
             self.areas_unmerged.pop(0)
 
-
+    def routeIsSet(self):
+        return len(self.route)
 
