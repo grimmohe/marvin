@@ -14,6 +14,9 @@ $target-angle               # zu erreichender winkel in grad
 $distance                   # distanz die gefahren werden soll
 $head-movement              # up|down bewegung der sensoren / des saugkopfes
 $head-target                # 0|100 ist ziel der bewegung von $head-movement
+
+If a varaible contains a comma seperated list, the tag in which it is used will be repeated for
+each entry.
 """
 
 class TemplateList:
@@ -67,15 +70,15 @@ class Template:
         """ replaces all variables with its values """
         res=self.content
         for var in self.varlist.varlist:
-            res=res.replace(var.name, var.value)
+            res=res.replace("$" + var.name, var.value)
         return res
 
 
 class TemplateVariable:
 
-    def __init__(self,varname):
-        self.name=varname
-        self.value=''
+    def __init__(self, varname, value=""):
+        self.name = varname
+        self.value = value
 
 class TemplateVariableList:
 
