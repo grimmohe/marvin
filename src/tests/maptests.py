@@ -169,6 +169,23 @@ class TestVectorCombine(unittest.TestCase):
                         and combination.size.x == 0
                         and combination.size.y == 1, combination)
 
+class TestVectorIsConnected(unittest.TestCase):
+
+    def testIsConnectedNone(self):
+        vector1 = Vector(Point(0, 0), Point(10, 0))
+        vector2 = Vector(Point(2, 2), Point(10, 0))
+        self.failIf(vector1.isConnected(vector2))
+
+    def testIsConnectedEnd(self):
+        vector1 = Vector(Point(0, 0), Point(10, 0))
+        vector2 = Vector(Point(0.5, 0.5), Point(10, 10))
+        self.failUnless(vector1.isConnected(vector2))
+
+    def testIsConnectedBetween(self):
+        vector1 = Vector(Point(0, 0), Point(10, 0))
+        vector2 = Vector(Point(4, 0.5), Point(10, 10))
+        self.failUnless(vector1.isConnected(vector2))
+
 
 if __name__ == "__main__":
     unittest.main()
