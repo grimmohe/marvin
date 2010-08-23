@@ -206,9 +206,6 @@ class Area:
 
 class Map:
 
-    ROUTE_STRICT = 1
-    ROUTE_SHORT = 2
-
     def __init__(self):
         self.areas = []
         self.areas_unmerged = []
