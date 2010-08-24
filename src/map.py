@@ -210,7 +210,7 @@ class Map:
         self.areas = []
         self.areas_unmerged = []
         self.borders = []
-        self.route = []
+        self.waypoints = []
 
     def addBorder(self, v):
         """ adding/merging a point to the map """
@@ -257,8 +257,8 @@ class Map:
                                        getTweenPoint(p1, size12, size13, multiplierMax12, multiplierMin13)))
 
     def addWaypoint(self, wp=WayPoint(0, 0)):
-        """ add a waypoint to current route """
-        self.route.append(wp)
+        """ add a waypoint to current waypoints """
+        self.waypoints.append(wp)
 
     def getConnectedBorders(self, border=Vector()):
         """ returns borders within MERGE_RANGE """
@@ -355,5 +355,5 @@ class Map:
             self.areas_unmerged.pop(0)
 
     def routeIsSet(self):
-        return len(self.route)
+        return len(self.waypoints)
 

@@ -381,7 +381,7 @@ class ClientContainer(threading.Thread):
         there, xml-templates will be filled and executed.
         """
         pos = map.Position(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
-        for wp in self.map.route:
+        for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
                 pass
             if wp.duty & map.WayPoint.WP_STRICT:
