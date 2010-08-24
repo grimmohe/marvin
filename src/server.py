@@ -10,6 +10,7 @@ import common
 import time
 import xmltemplate
 import math
+import logger
 
 shellInstance = None
 
@@ -22,6 +23,8 @@ class serverListener(threading.Thread):
         self.cb_read = cb_read
         self.cb_newClient = None
         self.serverInstance=server
+        self.logger = None
+        self.loggerbuf = []
 
     def __del__(self):
         self.shellEcho("destroy serverListener")
@@ -49,6 +52,8 @@ class serverListener(threading.Thread):
             try:
                 newClient = self.socket.accept()
                 newClient = clientConnection(self,newClient,self.cb_read)
+                if self.logger:
+                    newClient.setLogger(self.logger)
                 self.clients.append(newClient)
                 if self.cb_newClient:
                     self.cb_newClient(newClient)
@@ -111,8 +116,20 @@ class serverListener(threading.Thread):
                 return
 
     def shellEcho(self, msg):
-        print("echo [" + self.serverInstance.name + "] " + msg)
+        msg = "[" + self.serverInstance.name + "] " + msg
+        if self.logger:
+            self.logger.log(msg)
+        else:
+            self.loggerbuf.append(msg)
+            print "buff msg: " + msg
 
+    def setLogger(self, logger):
+        self.logger = logger
+        for msg in self.loggerbuf:
+            logger.log(msg)
+        self.loggerbuf = []
+        for cli in self.clients:
+            cli.setLogger(logger)
 
 class clientConnection(network.networkConnection):
 
@@ -125,6 +142,8 @@ class clientConnection(network.networkConnection):
         self.cbDataIncome = cb_read
         self.socket = client[0]
         self.start()
+        self.logger = None
+        self.loggerbuf = []
 
     def __del__(self):
         self.disconnect(True)
@@ -145,8 +164,18 @@ class clientConnection(network.networkConnection):
             return "[" + self.clientInfo[0] + "]"
         return "[<unknown>]"
 
+
     def shellEcho(self, msg):
-        self.server.shellEcho(self.getClientString() + " " + msg)
+        msg = self.getClientString() + " " + msg
+        if self.logger:
+            self.logger.log(msg)
+        else:
+            self.loggerbuf.append(msg)
+
+    def setLogger(self, logger):
+        self.logger = logger
+        for msg in self.loggerbuf:
+            logger.log(msg)
 
 class shell:
 
@@ -157,6 +186,7 @@ class shell:
         self.devsrv = None
         self.exit = False
         self.tmplts = None
+        self.logger = logger.logger()
 
     def __del__(self):
         print "destroy shell"
@@ -236,6 +266,7 @@ class shell:
 
     def runServer(self, srv, maxTries):
         curTry = 0
+        srv.srvlis.setLogger(self.logger)
         while curTry <= maxTries:
             print "try to run " + srv.name + " (" + str(curTry) + "/" + str(maxTries) + ")"
             if srv.run():

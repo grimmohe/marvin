@@ -7,10 +7,13 @@ pygtk.require('2.0')
 import gtk
 import pango
 import threading
+import server
+import logger
+import time
 
 class ServerTab:
 
-    def __init__(self, server, name):
+    def __init__(self, name):
 
         # main table
         self.mainWidget = gtk.Table(1,1,False)
@@ -26,11 +29,12 @@ class ServerTab:
         # join text and scrollable window
         self.textView.set_wrap_mode(gtk.WRAP_WORD)
         self.scrollableWindow.add(self.textView)
-        self.textBuffer.insert_at_cursor(name + "\nnarf\ntest")
 
         # start stop buttons
         self.btnstop = gtk.Button("Stop")
+        self.btnstop.connect("clicked", lambda w: self.ServerStop())
         self.btnstart = gtk.Button("Start")
+        self.btnstart.connect("clicked", lambda w: self.ServerStart())
 
         self.tooldiv = gtk.HBox(False, 0)
         self.tooldiv.pack_start(self.btnstart, False, 0)
@@ -40,15 +44,37 @@ class ServerTab:
         self.mainWidget.attach(self.tooldiv, 0,1,1,2,0,0,0,0)
 
         self.mainWidget.show_all()
-        self.server = server
+        self.logger = logger.loggerTextBuffer(self.textBuffer)
+        self.server = None
         self.name = name
 
     def ServerStop(self):
-        self.server.shutdown()
+        self.logger.log("stop server")
+        self.server.srvlis.shutdown()
         self.server=None
 
     def ServerStart(self):
-        pass
+        self.logger.log("start server")
+        if not self.server:
+            if self.name == "MarvinServer":
+                self.server = server.MarvinServer()
+            if self.name == "DeviceServer":
+                self.server = server.DeviceServer()
+            self.server.srvlis.setLogger(self.logger)
+            self.ServerRun(50)
+            self.logger.log("done")
+
+    def ServerRun(self, maxTries):
+        curTry = 0
+        self.server.srvlis.setLogger(self.logger)
+        while curTry <= maxTries:
+            self.logger.log( "try to run " + self.server.name + " (" + str(curTry) + "/" + str(maxTries) + ")")
+            if self.server.run():
+                return True
+            curTry += 1
+            time.sleep(5.0)
+        return False
+
 
     def getDiv(self):
         return self.mainWidget
@@ -127,8 +153,8 @@ class MainWindow(threading.Thread):
         gtk.main()
 
     def initServerConnections(self):
-        self.servers.append(ServerTab(None, "MarvinServer"))
-        self.servers.append(ServerTab(None, "DeviceServer"))
+        self.servers.append(ServerTab("MarvinServer"))
+        self.servers.append(ServerTab("DeviceServer"))
 
     def show(self):
         for srv in self.servers:
