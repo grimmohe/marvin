@@ -311,13 +311,13 @@ class ClientContainer(threading.Thread):
                     for dev in self.devs:
                         if dev.has_key("touch") and dev["touch"]:
                             # sensor at start position
-                            self.map.addBorder(v_start)
+                            self.map.borders.add(v_start)
                             # sensor on end position
-                            self.map.addBorder(v_end)
+                            self.map.borders.add(v_end)
                             # point 1 start to end
-                            self.map.addBorder(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
+                            self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
                             # point 2 start to end
-                            self.map.addBorder(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
+                            self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
                         if dev.has_key("position") and dev["position"]:
                             self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
             else:
@@ -329,7 +329,7 @@ class ClientContainer(threading.Thread):
                     sensorOffset = None
                     if self.devs[dev].has_key("orientation"):
                         sensorOffset = self.devs[dev]["orientation"]
-                    self.map.addBorder(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation), sensorOffset)
+                    self.map.borders.add(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation), sensorOffset)
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
@@ -342,7 +342,7 @@ class ClientContainer(threading.Thread):
 
     def discover(self):
         """ discover new borders """
-        loose = self.map.getLooseEnds(self.position)
+        loose = self.map.borders.getLooseEnds(self.position)
         if loose and len(loose):
             loose = loose[0]
             vlen = loose.len()

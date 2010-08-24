@@ -8,6 +8,7 @@ from mathix import turn_point, roundup, getVectorIntersectionRatio
 """ global statics """
 MERGE_RANGE = 1.0
 MAX_VECTOR_LENGTH = 50.0
+MAX_RANGE = 6378137000
 
 class Point(object):
 
@@ -157,6 +158,73 @@ class Vector:
         self.setStartPoint(p2)
         self.setEndPoint(p1)
 
+class BorderList:
+
+    def __init__(self):
+        self.borders = []
+
+    def add(self, v=Vector()):
+        if v and v.__class__.__name__ == "Vector":
+            distance = v.len()
+            max = roundup(distance / MAX_VECTOR_LENGTH)
+            for run in range(max):
+                multiplier = run / max
+                point = Point(v.point.x + (v.size.x * multiplier), v.point.y + (v.size.y * multiplier))
+                size = Point(v.size.x / max, v.size.y / max)
+                self.borders.append(Vector(point, size))
+        else:
+            raise "Object None or wrong type. Expected Vector()"
+
+    def getAllBorders(self):
+        ret = []
+        for b in self.borders:
+            ret.append(b)
+        return ret
+
+    def getBordersInRange(self, x1=-MAX_RANGE, y1=-MAX_RANGE, x2=MAX_RANGE, y2=MAX_RANGE):
+        x1, x2, y1, y2 = sorted([x1, x2]) + sorted([y1, y2])
+        ret = []
+        for border in self.borders:
+            if x1 <= border.point.x <= x2 and y1 <= border.point.y <= y2 \
+            or x1 <= border.point.x + border.size.x <= x2 and y1 <= border.point.y + border.size.y <= y2:
+                ret.append(border)
+        return ret
+
+    def getConnectedBorders(self, border=Vector()):
+        """ returns borders within MERGE_RANGE """
+        con = []
+        ii = 0
+        while ii < len(self.borders):
+            v = self.borders[ii]
+            if v <> border and border.isConnected(v):
+                con.append(v)
+        return con
+
+    def getLooseEnds(self, position=Position()):
+        """ find loose ends in self.borders, sorted by distace to position  """
+        ii = 0
+        looseEnds = []
+        while ii < len(self.borders):
+            v = self.borders[ii]
+            aa = 0
+            loose = [True, True]
+            while (loose[0] or loose[1]) and aa < len(self.borders):
+                if ii <> aa:
+                    range = v.inRange(self.borders[aa])
+                    loose[0] = loose[0] and not range[0]
+                    loose[1] = loose[1] and not range[1]
+                aa += 1
+            if loose[0]:
+                v.twist()
+            if loose[0] or loose[1]:
+                looseEnds.append(v)
+            ii += 1
+        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point) - position.point.getDistanceTo(v2.point)))
+        return looseEnds
+
+    def remove(self, v):
+        self.borders.remove(v)
+
 class Area:
     """
     Triangle of Points
@@ -209,21 +277,8 @@ class Map:
     def __init__(self):
         self.areas = []
         self.areas_unmerged = []
-        self.borders = []
+        self.borders = BorderList()
         self.waypoints = []
-
-    def addBorder(self, v):
-        """ adding/merging a point to the map """
-        if v and v.__class__.__name__ == "Vector":
-            distance = v.len()
-            max = roundup(distance / MAX_VECTOR_LENGTH)
-            for run in range(max):
-                multiplier = run / max
-                point = Point(v.point.x + (v.size.x * multiplier), v.point.y + (v.size.y * multiplier))
-                size = Point(v.size.x / max, v.size.y / max)
-                self.borders.append(Vector(point, size))
-        else:
-            raise "Object None or wrong type. Expected Vector()"
 
     def addArea(self, p1, p2, p3):
         """
@@ -260,41 +315,9 @@ class Map:
         """ add a waypoint to current waypoints """
         self.waypoints.append(wp)
 
-    def getConnectedBorders(self, border=Vector()):
-        """ returns borders within MERGE_RANGE """
-        con = []
-        ii = 0
-        while ii < len(self.borders):
-            v = self.borders[ii]
-            if v <> border and border.isConnected(v):
-                con.append(v)
-        return con
-
-    def getLooseEnds(self, position=Position()):
-        """ find loose ends in self.borders, sorted by distace to position  """
-        ii = 0
-        looseEnds = []
-        while ii < len(self.borders):
-            v = self.borders[ii]
-            aa = 0
-            loose = [True, True]
-            while (loose[0] or loose[1]) and aa < len(self.borders):
-                if ii <> aa:
-                    range = v.inRange(self.borders[aa])
-                    loose[0] = loose[0] and not range[0]
-                    loose[1] = loose[1] and not range[1]
-                aa += 1
-            if loose[0]:
-                v.twist()
-            if loose[0] or loose[1]:
-                looseEnds.append(v)
-            ii += 1
-        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point) - position.point.getDistanceTo(v2.point)))
-        return looseEnds
-
     def nextCollisionIn(self, position=Position(), sensors=[], min_distance=0):
         """ calc distance to next collision """
-        nextCollision = 6378137000
+        nextCollision = MAX_RANGE
         collisionSensor = None
         direction = turn_point({"x": 0, "y": 1}, position.orientation)
         direction = Point(direction["x"], direction["y"])
@@ -302,7 +325,7 @@ class Map:
         for sensor in sensors:
             v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
             v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
-            for border in self.borders:
+            for border in self.borders.getAllBorders():
                 ratio1 = getVectorIntersectionRatio(v1, border)
                 ratio2 = getVectorIntersectionRatio(v2, border)
                 if ratio1 and ratio2 \
@@ -316,11 +339,12 @@ class Map:
         """ merge borders that could be one """
         ii = 0
         doubleMax = MAX_VECTOR_LENGTH * 2
-        while ii < len(self.borders):
-            v1 = self.borders[ii]
+        borders = self.borders.getAllBorders()
+        while ii < len(borders):
+            v1 = borders[ii]
             aa = ii + 1
-            while aa < len(self.borders):
-                v2 = self.borders[aa]
+            while aa < len(borders):
+                v2 = borders[aa]
                 max_dist = 0.0
                 count_in_range = 0
                 for distance in v1.compare(v2):
@@ -329,13 +353,13 @@ class Map:
                         count_in_range += 1
                 # die Vektoren liegen übereinander
                 if count_in_range == 2:
-                    self.borders.pop(aa)
+                    self.borders.remove(borders.pop(aa))
                 # die Vektoren bilden eine Linie
                 elif (count_in_range == 1
                       and (v1.len() + v2.len() - max_dist <= MERGE_RANGE)
                       and max_dist < MAX_VECTOR_LENGTH):
                     v1.merge(v2)
-                    self.borders.pop(aa)
+                    self.borders.remove(borders.pop(aa))
                 else:
                     aa += 1
             ii += 1
@@ -349,7 +373,7 @@ class Map:
                     ii += 1
                     continue
                 if area.intersects(vector):
-                    self.borders.pop(ii)
+                    self.borders.remove(borders.pop(ii))
                 else:
                     ii += 1
             self.areas_unmerged.pop(0)
