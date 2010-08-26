@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 #coding=utf8
 
+import pygtk
+pygtk.require('2.0')
+import gtk.gdk as gdk
+
 class logger:
 
     def log(self, text):
@@ -13,6 +17,7 @@ class loggerTextBuffer(logger):
         self.buffer = buffer
 
     def log(self,text):
+        gdk.threads_enter()
         self.buffer.insert_at_cursor(text+"\n")
-
+        gdk.threads_leave()
 
