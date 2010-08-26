@@ -10,8 +10,67 @@ import threading
 import server
 import logger
 import time
+gtk.gdk.threads_init()
 
-class ServerTab:
+MARSRV = "MarvinServer"
+DEVSRV = "DeviceServer"
+
+guiinstance = None
+
+class ServerControl(threading.Thread):
+
+    def __init__(self, tab):
+        threading.Thread.__init__(self)
+        self.event_SwitchState = threading.Event()
+        self.tab = tab
+        self.stop = False
+
+    def run(self):
+        while not self.stop:
+            self.event_SwitchState.clear()
+            self.event_SwitchState.wait()
+            if self.stop:
+                return
+            if self.tab.server:
+                self.ServerStop()
+            else:
+                self.ServerStart()
+
+    def ServerStop(self):
+        self.tab.logger.log("stop server " + self.tab.name)
+        if self.tab.server:
+            self.tab.server.shutdown()
+        self.server=None
+
+    def ServerStart(self):
+        #self.tab.logger.log("start server " + self.tab.name)
+        if not self.tab.server:
+            if self.tab.name == MARSRV:
+                self.tab.server = server.MarvinServer()
+                self.tab.server.cb_addClient = guiinstance.newClient
+            if self.tab.name == DEVSRV:
+                self.tab.server = server.DeviceServer()
+            self.tab.server.srvlis.setLogger(self.tab.logger)
+            if self.ServerRun(50):
+                self.tab.logger.log("done")
+            else:
+                self.tab.logger.log("failed")
+
+
+    def ServerRun(self, maxTries):
+        curTry = 0
+        while curTry <= maxTries:
+            self.tab.logger.log( "try to run " + self.tab.server.name + " (" + str(curTry) + "/" + str(maxTries) + ")")
+            if self.tab.server.run():
+                return True
+            curTry += 1
+            time.sleep(5.0)
+        return False
+
+    def setStop(self, stop):
+        self.stop = stop
+
+class TabPage:
 
     def __init__(self, name):
 
@@ -30,54 +89,75 @@ class ServerTab:
         self.textView.set_wrap_mode(gtk.WRAP_WORD)
         self.scrollableWindow.add(self.textView)
 
-        # start stop buttons
-        self.btnstop = gtk.Button("Stop")
-        self.btnstop.connect("clicked", lambda w: self.ServerStop())
-        self.btnstart = gtk.Button("Start")
-        self.btnstart.connect("clicked", lambda w: self.ServerStart())
-
-        self.tooldiv = gtk.HBox(False, 0)
-        self.tooldiv.pack_start(self.btnstart, False, 0)
-        self.tooldiv.pack_end(self.btnstop, False, 0)
+        self.toolbar = gtk.HBox(False, 0)
 
         self.mainWidget.attach(self.scrollableWindow, 0,1,0,1)
-        self.mainWidget.attach(self.tooldiv, 0,1,1,2,0,0,0,0)
+        self.mainWidget.attach(self.toolbar, 0,1,1,2,0,0,0,0)
+
+        self.logger = logger.loggerTextBuffer(self.textBuffer)
+        self.name = name
+
+    def getDiv(self):
+        return self.mainWidget
+
+    def close(self):
+        pass
+
+class ServerTabPage(TabPage):
+
+    def __init__(self, name):
+        TabPage.__init__(self, name)
+
+        # start stop buttons for toolbar
+        self.btnstop = gtk.Button("Stop")
+        self.btnstop.connect("clicked", lambda w: self.serverStop())
+        self.btnstart = gtk.Button("Start")
+        self.btnstart.connect("clicked", lambda w: self.serverStart())
+
+        self.toolbar.pack_start(self.btnstart, False, 0)
+        self.toolbar.pack_end(self.btnstop, False, 0)
 
         self.mainWidget.show_all()
         self.logger = logger.loggerTextBuffer(self.textBuffer)
         self.server = None
-        self.name = name
+        self.sc = ServerControl(self)
+        self.sc.start()
 
-    def ServerStop(self):
-        self.logger.log("stop server")
-        self.server.srvlis.shutdown()
-        self.server=None
+    def serverStop(self):
+        if self.server:
+            self.sc.event_SwitchState.set()
 
-    def ServerStart(self):
-        self.logger.log("start server")
+    def serverStart(self):
         if not self.server:
-            if self.name == "MarvinServer":
-                self.server = server.MarvinServer()
-            if self.name == "DeviceServer":
-                self.server = server.DeviceServer()
-            self.server.srvlis.setLogger(self.logger)
-            self.ServerRun(50)
-            self.logger.log("done")
+            self.sc.event_SwitchState.set()
 
-    def ServerRun(self, maxTries):
-        curTry = 0
-        self.server.srvlis.setLogger(self.logger)
-        while curTry <= maxTries:
-            self.logger.log( "try to run " + self.server.name + " (" + str(curTry) + "/" + str(maxTries) + ")")
-            if self.server.run():
-                return True
-            curTry += 1
-            time.sleep(5.0)
-        return False
+    def close(self):
+        if self.server:
+            self.sc.setStop(True)
+            self.sc.event_SwitchState.set()
 
+class ClientTabPage(TabPage):
 
-    def getDiv(self):
-        return self.mainWidget
+    def __init__(self, name, clientConnection):
+        TabPage.__init__(self, name)
+
+        # start stop buttons for toolbar
+        self.btndisco = gtk.Button("Disconnect")
+        self.btndisco.connect("clicked", lambda w: self.disconnect())
+
+        self.toolbar.pack_start(self.btndisco, False, 0)
+
+        self.mainWidget.show_all()
+        self.logger = logger.loggerTextBuffer(self.textBuffer)
+        self.clientConnection = clientConnection
+        self.clientConnection.setLogger(self.logger)
+
+    def disconnect(self):
+        pass
+
+    def close(self):
+        if self.clientConnection:
+            self.clientConnection.clientContainer.shutdown()
 
 class TabBox:
 
@@ -92,7 +172,7 @@ class TabBox:
         self.div.pack_start(btn,False, 0)
         btn.connect("clicked", evnt)
         if self.lshow:
-            btn.lshow()
+            btn.show()
         return btn
 
     def show(self):
@@ -107,6 +187,8 @@ class TabBox:
 class MainWindow(threading.Thread):
 
     def __init__(self, width, height):
+        global guiinstance
+        guiinstance = self
         threading.Thread.__init__(self)
         self.width=width
         self.height=height
@@ -123,12 +205,16 @@ class MainWindow(threading.Thread):
         return False
 
     def destroy(self, widget, data=None):
+        for srv in self.servers:
+            srv.close()
+        for cli in self.clients:
+            cli.close()
         gtk.main_quit()
 
     def run(self):
         self.tablist = TabBox()
-        srv = self.tablist.add("MarvinServer", lambda w: self.showServerTab("MarvinServer"))
-        srv = self.tablist.add("DeviceServer", lambda w: self.showServerTab("DeviceServer"))
+        self.tablist.add(MARSRV, lambda w: self.showServerTab(MARSRV))
+        self.tablist.add(DEVSRV, lambda w: self.showServerTab(DEVSRV))
 
         self.mainwindow.connect("delete_event", self.delete_event)
         self.mainwindow.connect("destroy", self.destroy)
@@ -141,20 +227,20 @@ class MainWindow(threading.Thread):
         self.tablist.show()
 
         QuitButton = gtk.Button("Quit")
-        QuitButton.connect("clicked", lambda w: gtk.main_quit())
+        QuitButton.connect("clicked", lambda w: self.destroy(None))
         self.MainBox.pack_end(QuitButton, False, False, 0)
         QuitButton.show()
 
         self.mainwindow.add(self.MainBox)
         self.MainBox.show()
         self.mainwindow.show_all()
-        self.mainwindow.maximize()
+        #self.mainwindow.maximize()
         self.initServerConnections()
         gtk.main()
 
     def initServerConnections(self):
-        self.servers.append(ServerTab("MarvinServer"))
-        self.servers.append(ServerTab("DeviceServer"))
+        self.servers.append(ServerTabPage(MARSRV))
+        self.servers.append(ServerTabPage(DEVSRV))
 
     def show(self):
         for srv in self.servers:
@@ -170,6 +256,11 @@ class MainWindow(threading.Thread):
             if srv.name == btn:
                 self.showActiveItem(srv.getDiv())
 
+    def showClientTab(self, btn):
+        for cli in self.clients:
+            if cli.name == btn:
+                self.showActiveItem(cli.getDiv())
+
     def showActiveItem(self, new):
         if new and new <> self.ActiveItem:
             if self.ActiveItem:
@@ -177,6 +268,12 @@ class MainWindow(threading.Thread):
             self.ActiveItem = new
             self.MainBox.add(self.ActiveItem)
             self.MainBox.pack_end(self.ActiveItem, False, False, 0)
+
+    def newClient(self, con):
+        print "add client"
+        self.clients.append(ClientTabPage(con.getClientString(), con))
+        self.tablist.add(con.getClientString(), lambda w: self.showClientTab(con.getClientString()))
+        self.tablist.div.show()
 
 if __name__ == "__main__":
     win = MainWindow(500,500)

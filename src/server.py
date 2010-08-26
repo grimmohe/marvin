@@ -52,8 +52,6 @@ class serverListener(threading.Thread):
             try:
                 newClient = self.socket.accept()
                 newClient = clientConnection(self,newClient,self.cb_read)
-                if self.logger:
-                    newClient.setLogger(self.logger)
                 self.clients.append(newClient)
                 if self.cb_newClient:
                     self.cb_newClient(newClient)
@@ -128,8 +126,7 @@ class serverListener(threading.Thread):
         for msg in self.loggerbuf:
             logger.log(msg)
         self.loggerbuf = []
-        for cli in self.clients:
-            cli.setLogger(logger)
+        logger.log("logging enabled")
 
 class clientConnection(network.networkConnection):
 
@@ -176,6 +173,7 @@ class clientConnection(network.networkConnection):
         self.logger = logger
         for msg in self.loggerbuf:
             logger.log(msg)
+        logger.log("loggin enabled")
 
 class shell:
 
@@ -310,6 +308,11 @@ class Server:
             return self.srvlis.bind(self.ip, self.port)
         return False
 
+    def shutdown(self):
+        if self.srvlis:
+            self.srvlis.shutdown()
+            self.srvlis = None
+
 class ClientContainer(threading.Thread):
 
     def __init__(self):
@@ -427,6 +430,7 @@ class MarvinServer(Server):
     def __init__(self):
         Server.__init__(self, "MarvinServer",'127.0.0.1',29875, self.ClientReceiving)
         self.srvlis.cb_newClient=self.addClient
+        self.cb_addClient = None
         self.clients = []
 
     def __del__(self):
@@ -448,6 +452,8 @@ class MarvinServer(Server):
         con.clientContainer=ClientContainer()
         con.clientContainer.connection = con
         self.clients.append(con.clientContainer)
+        if self.cb_addClient:
+            self.cb_addClient(con)
         self.srvlis.shellEcho("client added")
 
     def shutdown(self):
@@ -456,9 +462,7 @@ class MarvinServer(Server):
             del client
             client=None
         self.clients=[]
-        if self.srvlis:
-            self.srvlis.shutdown()
-            self.srvlis = None
+        Server.shutdown(self)
 
 class DeviceServer(Server):
 
