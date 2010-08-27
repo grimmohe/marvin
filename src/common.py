@@ -7,6 +7,7 @@ import re
 import network
 import xml.sax
 from copy import copy
+import bisect
 
 class Actionlog:
     """
@@ -470,4 +471,46 @@ class Connector(network.networkConnection):
 
     def setDataIncomingCb(self,cb):
         self.cbDataIncome = cb
+
+class SortedList:
+
+    def __init__(self, key):
+        self.key = key
+        self.list = []
+
+    def append(self, value):
+        index = self.find(value)
+        self.list.insert(index, value)
+        return value
+
+    def clear(self):
+        self.list = []
+
+    def contains(self, value):
+        index = self.find(value)
+        if index < len(self.list):
+            return value == self.list[index]
+        return False
+
+    def find(self, value):
+        """ returns index of value. if value is not found, index is where it should be inserted """
+        lo = 0
+        hi = len(self.list)
+        while lo < hi:
+            mid = (lo+hi)//2
+            if self.key(value, self.list[mid]) < 0:
+                lo = mid+1
+            else:
+                hi = mid
+        return lo
+
+    def pop(self, index):
+        return self.list.pop(index)
+
+    def remove(self, value):
+        index = self.find(value)
+        if self.list[index] == value:
+            self.list.pop(index)
+            return True
+        return False
 
