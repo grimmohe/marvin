@@ -22,5 +22,28 @@ class TestSortedList(unittest.TestCase):
         list.append(Vector())
         self.failUnless(v == list.pop(list.find(v)))
 
+    def testOrderFind(self):
+        list = SortedList(self._compare)
+        free = []
+        for i in range(20):
+            item = {"item": i}
+            list.append(item)
+            free.append(item)
+        free.sort(self._compare)
+        for item in free:
+            self.failUnless(item == list.pop(list.find(item)))
+
+    def testOrderFirst(self):
+        list = SortedList(self._compare)
+        free = []
+        for i in range(20):
+            item = {"item": i}
+            list.append(item)
+            free.append(item)
+        free.sort(self._compare)
+        for item in free:
+            self.failUnless(item == list.pop(0))
+
+
 if __name__ == "__main__":
     unittest.main()
