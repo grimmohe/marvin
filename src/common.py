@@ -7,7 +7,6 @@ import re
 import network
 import xml.sax
 from copy import copy
-import bisect
 
 class Actionlog:
     """
@@ -472,7 +471,7 @@ class Connector(network.networkConnection):
     def setDataIncomingCb(self,cb):
         self.cbDataIncome = cb
 
-class SortedList:
+class SortedList(object):
 
     def __init__(self, key):
         self.key = key
@@ -498,7 +497,7 @@ class SortedList:
         hi = len(self.list)
         while lo < hi:
             mid = (lo+hi)//2
-            if self.key(value, self.list[mid]) < 0:
+            if self.key(value, self.list[mid]) > 0:
                 lo = mid+1
             else:
                 hi = mid
