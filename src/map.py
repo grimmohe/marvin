@@ -3,7 +3,8 @@
 
 import math
 from numpy.ma.core import max
-from mathix import turn_point, roundup, getVectorIntersectionRatio
+from mathix import turn_point, roundup, getVectorIntersectionRatio, get_angle
+from common import SortedList
 
 """ global statics """
 MERGE_RANGE = 1.0
@@ -78,6 +79,9 @@ class Vector:
         return Vector(Point(new_pos["x"] + position.x, new_pos["y"] + position.y),
                       Point(new_size["x"], new_size["y"]))
 
+    def getAngle(self):
+        return math.degrees(get_angle({"x": self.size.x, "y": self.size.y}))
+
     def getStartPoint(self):
         return Point(self.point.x, self.point.y)
 
@@ -97,6 +101,10 @@ class Vector:
         p3 = math.sqrt(math.pow(e1.x - s2.x, 2) + math.pow(e1.y - s2.y, 2))
         p4 = math.sqrt(math.pow(e1.x - e2.x, 2) + math.pow(e1.y - e2.y, 2))
         return (p1, p2, p3, p4)
+
+    def distance(self, v):
+        c = self.compare(v)
+        return min(c[0], min(c[1], min(c[2], c[3])))
 
     def inRange(self, v):
         comp = self.compare(v)
@@ -147,7 +155,9 @@ class Vector:
             self.setEndPoint(v.getEndPoint())
 
     def setStartPoint(self, p):
+        e = self.getEndPoint()
         self.point = Point(p.x, p.y)
+        self.setEndPoint(e)
 
     def setEndPoint(self, p):
         self.size = Point(p.x - self.point.x, p.y - self.point.y)
@@ -271,6 +281,52 @@ class Area:
                             ((ratio23[1]<0) <> (ratio13[1]>0)))
 
         return intersecting
+
+class Router:
+
+    def __init__(self, objectRadius=0):
+        self.waypoints = SortedList(lambda a, b: id(a) - id(b))
+        self.routes = []
+        self.objectRadius = objectRadius
+
+    def _addWaypoint(self, b1=Vector(), b2=Vector()):
+        ratio = getVectorIntersectionRatio(b1, b2)
+        if ratio:
+            collision = Point(b1.point.x + b1.size.x * ratio[0], b1.point.y + b1.size.y * ratio[0])
+        else:
+            comp = b1.compare(b2)
+            if comp[0] <= MERGE_RANGE or comp[1] <= MERGE_RANGE:
+                collision = b1.getStartPoint()
+            else:
+                collision = b1.getEndPoint()
+        if b1.point.getDistanceTo(collision) > b1.size.getDistanceTo(collision):
+            b1.twist()
+        if b2.point.getDistanceTo(collision) > b2.size.getDistanceTo(collision):
+            b2.twist()
+        ba1 = b1.getAngle()
+        ba2 = b2.getAngle()
+        wa1 = (ba1 + ba2) / 2
+        wa2 = (wa1 + 180) % 360
+        self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa1))
+        self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa2))
+
+    def _getWPPosition(self, ba, wa, collision):
+        angle = ba - wa
+        c = self.objectRadius * math.sin(math.radians(angle))
+        p = turn_point({"x": 0, "y": c}, wa)
+        return Point(collision.x + p["x"], collision["y"] + p["y"])
+
+    def prepare(self, borders=BorderList()):
+        """ generate waypoints """
+        self.waypoints.clear()
+        finishedBorders = SortedList(lambda a, b: id(a) - id(b))
+        for border in borders.getAllBorders():
+            if finishedBorders.contains(border):
+                continue
+            finishedBorders.append(border)
+            for c in border.getConnectedBorders(border):
+                finishedBorders.append(c)
+                self._addWaypoint(border, c)
 
 class Map:
 
