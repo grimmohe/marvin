@@ -232,6 +232,24 @@ class BorderList:
         looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point) - position.point.getDistanceTo(v2.point)))
         return looseEnds
 
+    def getLooseEndPoints(self, border=Vector()):
+        """ identify if start or end point of border is loose """
+        ret = []
+        sp = border.getStartPoint()
+        if len(self.getBordersInRange(sp.x - MERGE_RANGE,
+                                      sp.y - MERGE_RANGE,
+                                      sp.x + MERGE_RANGE,
+                                      sp.y + MERGE_RANGE)) < 2:
+            ret.append(sp)
+        ep = border.getEndPoint()
+        if len(self.getBordersInRange(ep.x - MERGE_RANGE,
+                                      ep.y - MERGE_RANGE,
+                                      ep.x + MERGE_RANGE,
+                                      ep.y + MERGE_RANGE)) < 2:
+            ret.append(border.ep)
+        return ret
+
+
     def remove(self, v):
         self.borders.remove(v)
 
@@ -293,22 +311,18 @@ class Router:
         ratio = getVectorIntersectionRatio(b1, b2)
         if ratio:
             collision = Point(b1.point.x + b1.size.x * ratio[0], b1.point.y + b1.size.y * ratio[0])
-        else:
-            comp = b1.compare(b2)
-            if comp[0] <= MERGE_RANGE or comp[1] <= MERGE_RANGE:
-                collision = b1.getStartPoint()
-            else:
-                collision = b1.getEndPoint()
-        if b1.point.getDistanceTo(collision) > b1.size.getDistanceTo(collision):
-            b1.twist()
-        if b2.point.getDistanceTo(collision) > b2.size.getDistanceTo(collision):
-            b2.twist()
-        ba1 = b1.getAngle()
-        ba2 = b2.getAngle()
-        wa1 = (ba1 + ba2) / 2
-        wa2 = (wa1 + 180) % 360
-        self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa1))
-        self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa2))
+            if b1.point.getDistanceTo(collision) > b1.size.getDistanceTo(collision):
+                b1.twist()
+            if b2.point.getDistanceTo(collision) > b2.size.getDistanceTo(collision):
+                b2.twist()
+            ba1 = b1.getAngle()
+            ba2 = b2.getAngle()
+            wa1 = (ba1 + ba2) / 2
+            wa2 = (wa1 + 180) % 360
+            if wa1 > 0:
+                self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa1))
+            if wa2 > 0:
+                self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa2))
 
     def _getWPPosition(self, ba, wa, collision):
         angle = ba - wa
@@ -324,9 +338,14 @@ class Router:
             if finishedBorders.contains(border):
                 continue
             finishedBorders.append(border)
-            for c in border.getConnectedBorders(border):
-                finishedBorders.append(c)
+            for c in borders.getConnectedBorders(border):
+                if finishedBorders.contains(c):
+                    continue
                 self._addWaypoint(border, c)
+            for p in borders.getLooseEndPoints(border):
+                if border.point.getDistanceTo(p) > 0:
+                    border.twist()
+                self._addWaypoint(border, border)
 
 class Map:
 
