@@ -144,6 +144,8 @@ class ClientTabPage(TabPage):
         # start stop buttons for toolbar
         self.btndisco = gtk.Button("Disconnect")
         self.btndisco.connect("clicked", lambda w: self.disconnect())
+        self.btndisco = gtk.Button("Delete")
+        self.btndisco.connect("clicked", lambda w: self.delete())
 
         self.toolbar.pack_start(self.btndisco, False, 0)
 
@@ -153,32 +155,45 @@ class ClientTabPage(TabPage):
         self.clientConnection.setLogger(self.logger)
 
     def disconnect(self):
-        pass
+        if self.clientConnection:
+            self.clientConnection.disconnect(True)
 
     def close(self):
-        if self.clientConnection:
+        if self.clientConnection and self.clientConnection.clientContainer:
             self.clientConnection.clientContainer.shutdown()
+
+    def delete(self):
+        if not guiinstance.removeClient(self.clientConnection):
+            print "remove of " + self.name + " failed"
+            return False
+        self.disconnect()
+        self.close()
+        return True
 
 class TabBox:
 
     def __init__(self):
-        self.tabs = []
+        self.tabs = {}
         self.div = gtk.HBox()
         self.lshow = False
 
     def add(self, name, evnt):
         btn = gtk.Button(name)
-        self.tabs.append(btn)
+        self.tabs[name] = btn
         self.div.pack_start(btn,False, 0)
         btn.connect("clicked", evnt)
         if self.lshow:
             btn.show()
         return btn
 
+    def remove(self, name):
+        self.div.remove(self.tabs[name])
+        del self.tabs[name]
+        self.div.show_all()
+        return True
+
     def show(self):
-        self.div.show()
-        for btn in self.tabs:
-            btn.show()
+        self.div.show_all()
         self.lshow=True
 
     def getDiv(self):
@@ -205,10 +220,10 @@ class MainWindow(threading.Thread):
         return False
 
     def destroy(self, widget, data=None):
-        for srv in self.servers:
-            srv.close()
         for cli in self.clients:
             cli.close()
+        for srv in self.servers:
+            srv.close()
         gtk.main_quit()
 
     def run(self):
@@ -243,10 +258,10 @@ class MainWindow(threading.Thread):
         self.servers.append(ServerTabPage(DEVSRV))
 
     def show(self):
-        for srv in self.servers:
-            srv.show()
         for cli in self.clients:
             cli.show()
+        for srv in self.servers:
+            srv.show()
         if self.tablist:
             self.tablist.show()
         self.mainwindow.show()
@@ -269,11 +284,29 @@ class MainWindow(threading.Thread):
             self.MainBox.add(self.ActiveItem)
             self.MainBox.pack_end(self.ActiveItem, False, False, 0)
 
+    def showNearestItem(self):
+        if len(self.clients) > 0:
+            self.showActiveItem(self.clients[0])
+        else:
+            self.showActiveItem(self.servers[0])
+
     def newClient(self, con):
         print "add client"
         self.clients.append(ClientTabPage(con.getClientString(), con))
         self.tablist.add(con.getClientString(), lambda w: self.showClientTab(con.getClientString()))
         self.tablist.div.show()
+
+    def removeClient(self, con):
+        print "remove client"
+        cliname = con.getClientString()
+        for cli in self.clients:
+            if cli.name == cliname:
+                self.clients.remove(cli)
+                if self.tablist.remove(cliname):
+                    self.showNearestItem()
+
+        return False
+
 
 if __name__ == "__main__":
     win = MainWindow(500,500)
