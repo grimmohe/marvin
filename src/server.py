@@ -390,6 +390,17 @@ class ClientContainer(threading.Thread):
         elif len(self.map.borders) == 0:
             self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
 
+    def getSensorList(self, extended=False):
+        sensors = []
+        for devname in self.devs:
+            if self.devs[devname].hasKey("dimension") and self.devs[devname].hasKey("distance"):
+                if extended: os = self.devs[devname]["distance"]
+                else: os = 0
+                s = self.devs[devname]["dimension"].copy(offset=os)
+                s.name = devname
+                sensors.append(s)
+        return sensors
+
     def handlePanicEvents(self):
         """ in case the batterie is low or other stuff, handle that """
 
