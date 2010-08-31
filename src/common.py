@@ -491,6 +491,13 @@ class SortedList(object):
             return value == self._list[index]
         return False
 
+    def count(self):
+        return len(self._list)
+
+    def copy(self, sl):
+        for o in sl._list:
+            self.append(o)
+
     def find(self, value):
         """ returns index of value. if value is not found, index is where it should be inserted """
         lo = 0
@@ -502,6 +509,9 @@ class SortedList(object):
             else:
                 hi = mid
         return lo
+
+    def get(self, index):
+        return self._list[index]
 
     def pop(self, index):
         return self._list.pop(index)
