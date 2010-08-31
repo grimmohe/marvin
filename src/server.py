@@ -327,18 +327,19 @@ class ClientContainer(threading.Thread):
         self.x = 0
         self.y = 0
         self.start()
+
     def assimilateActions(self, actionlog):
 
         for action in actionlog.actions:
             # contains action and value
             dev, key = action.action.split(":")
-            if dev == "engine":
+            if dev == "engine" and self.devs.has_key(dev):
                 if key == "turned":
                     self.position.orientation += action.value
-                    for dev in self.devs:
+                    for dev in self.devs.values():
                         if dev.has_key("touch"):
                             dev["touch"] = False
-                elif key == "distance":
+                elif key == "distance" and self.devs[dev].has_key(key):
                     new_x = self.x + math.sin(math.radians(self.position.orientation)) * action.value
                     new_y = self.y + math.cos(math.radians(self.position.orientation)) * action.value
                     v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
@@ -377,17 +378,20 @@ class ClientContainer(threading.Thread):
 
     def discover(self):
         """ discover new borders """
-        loose = self.map.borders.getLooseEnds(self.position)
-        if loose and len(loose):
-            loose = loose[0]
-            vlen = loose.len()
-            bmulti = min(vlen, self.devs["self"]["radius"]) / vlen
-            self.map.addWaypoint(map.WayPoint(loose.point.x + loose.size.x * bmulti,
-                                              loose.point.y + loose.size.y * bmulti,
-                                              map.WayPoint.WP_FAST | map.WayPoint.WP_DISCOVER,
-                                              loose))
-        elif len(self.map.borders) == 0:
-            self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
+        if self.devs.has_key("self") and self.devs["self"].has_key("radius"):
+            loose = self.map.borders.getLooseEnds(self.position)
+            if loose and len(loose):
+                loose = loose[0]
+                vlen = loose.len()
+                bmulti = min(vlen, self.devs["self"]["radius"]) / vlen
+                self.map.addWaypoint(map.WayPoint(loose.point.x + loose.size.x * bmulti,
+                                                  loose.point.y + loose.size.y * bmulti,
+                                                  map.WayPoint.WP_FAST | map.WayPoint.WP_DISCOVER,
+                                                  loose))
+            elif len(self.map.borders) == 0:
+                self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
+        else:
+            self.connection.logger.log("try to discover, but no \"radius\" item found" )
 
     def handlePanicEvents(self):
         """ in case the batterie is low or other stuff, handle that """
@@ -409,6 +413,10 @@ class ClientContainer(threading.Thread):
                 if not self.map.routeIsSet():
                     self.fill()
                 self.sendAssignments()
+
+    def fill(self):
+        """ yea... grimm, what to do here? self.map has no route, now FILLLLLL it! """
+        pass
 
     def sendAssignments(self):
         """
