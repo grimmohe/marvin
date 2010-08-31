@@ -324,8 +324,9 @@ class ClientContainer(threading.Thread):
         self.actionlogData = ""
         self.actionlogNew = threading.Event()
         self.stop = False
+        self.x = 0
+        self.y = 0
         self.start()
-
     def assimilateActions(self, actionlog):
 
         for action in actionlog.actions:
