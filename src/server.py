@@ -14,7 +14,7 @@ import logger
 
 shellInstance = None
 
-class serverListener(threading.Thread):
+class ServerListener(threading.Thread):
 
     def __init__(self, server, cb_read):
         threading.Thread.__init__(self)
@@ -27,7 +27,7 @@ class serverListener(threading.Thread):
         self.loggerbuf = []
 
     def __del__(self):
-        self.shellEcho("destroy serverListener")
+        self.shellEcho("destroy ServerListener")
         self.serverInstance = None
         self.socket = None
 
@@ -51,7 +51,7 @@ class serverListener(threading.Thread):
         if self.socket:
             try:
                 newClient = self.socket.accept()
-                newClient = clientConnection(self,newClient,self.cb_read)
+                newClient = ClientConnection(self,newClient,self.cb_read)
                 self.clients.append(newClient)
                 if self.cb_newClient:
                     self.cb_newClient(newClient)
@@ -128,7 +128,7 @@ class serverListener(threading.Thread):
         self.loggerbuf = []
         logger.log("logging enabled")
 
-class clientConnection(network.networkConnection):
+class ClientConnection(network.networkConnection):
 
     def __init__(self, server, client, cb_read):
         network.networkConnection.__init__(self)
@@ -175,7 +175,7 @@ class clientConnection(network.networkConnection):
             logger.log(msg)
         logger.log("loggin enabled")
 
-class shell:
+class Shell:
 
     def __init__(self):
         global shellInstance
@@ -187,7 +187,7 @@ class shell:
         self.logger = logger.logger()
 
     def __del__(self):
-        print "destroy shell"
+        print "destroy Shell"
         self.destroyServers()
 
 
@@ -244,7 +244,7 @@ class shell:
             print "help"
 
     def closeCmdLine(self):
-        self.processCommand("echo close shell")
+        self.processCommand("echo close Shell")
 
     def destroyServers(self):
         if self.marvinsrv:
@@ -290,7 +290,7 @@ class Server:
         self.name = name
         self.ip = ip
         self.port = port
-        self.srvlis = serverListener(self, cb_read)
+        self.srvlis = ServerListener(self, cb_read)
 
     def __del__(self):
         self.srvlis = None
@@ -327,6 +327,7 @@ class ClientContainer(threading.Thread):
         self.x = 0
         self.y = 0
         self.start()
+
     def assimilateActions(self, actionlog):
 
         for action in actionlog.actions:
@@ -486,5 +487,5 @@ class DeviceServer(Server):
 
 
 if __name__ == '__main__':
-    shell()
+    Shell()
     shellInstance.run()
