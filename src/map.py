@@ -203,9 +203,7 @@ class BorderList:
     def getConnectedBorders(self, border=Vector()):
         """ returns borders within MERGE_RANGE """
         con = []
-        ii = 0
-        while ii < len(self.borders):
-            v = self.borders[ii]
+        for v in self.borders:
             if v <> border and border.isConnected(v):
                 con.append(v)
         return con
@@ -246,7 +244,7 @@ class BorderList:
                                       ep.y - MERGE_RANGE,
                                       ep.x + MERGE_RANGE,
                                       ep.y + MERGE_RANGE)) < 2:
-            ret.append(border.ep)
+            ret.append(ep)
         return ret
 
 
@@ -307,7 +305,7 @@ class Router:
         self.routes = []
         self.objectRadius = objectRadius
 
-    def _addWaypoint(self, b1=Vector(), b2=Vector()):
+    def _addWaypoint(self, b1=Vector(), b2=Vector(), bigOnly=False):
         ratio = getVectorIntersectionRatio(b1, b2)
         if ratio:
             collision = Point(b1.point.x + b1.size.x * ratio[0], b1.point.y + b1.size.y * ratio[0])
@@ -319,16 +317,19 @@ class Router:
             ba2 = b2.getAngle()
             wa1 = (ba1 + ba2) / 2
             wa2 = (wa1 + 180) % 360
+            if bigOnly:
+                if abs(ba1 - ba2) > 180: wa2 = 0
+                else: wa1 = 0
             if wa1 > 0:
                 self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa1))
             if wa2 > 0:
                 self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa2))
 
-    def _getWPPosition(self, ba, wa, collision):
-        angle = ba - wa
+    def _getWPPosition(self, collision, ba, wa):
+        angle = abs(ba - wa) % 90
         c = self.objectRadius * math.sin(math.radians(angle))
         p = turn_point({"x": 0, "y": c}, wa)
-        return Point(collision.x + p["x"], collision["y"] + p["y"])
+        return Point(collision.x + p["x"], collision.y + p["y"])
 
     def prepare(self, borders=BorderList()):
         """ generate waypoints """
@@ -345,7 +346,8 @@ class Router:
             for p in borders.getLooseEndPoints(border):
                 if border.point.getDistanceTo(p) > 0:
                     border.twist()
-                self._addWaypoint(border, border)
+                self._addWaypoint(border, Vector(p, border.size.getTurned(90)), bigOnly=True)
+                self._addWaypoint(border, Vector(p, border.size.getTurned(-90)), bigOnly=True)
 
 class Map:
 
