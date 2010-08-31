@@ -4,7 +4,8 @@ Created on 10.08.2010
 @author: christoph
 '''
 import unittest
-from map import Area, Map, Point, Position, Vector
+from map import Area, Map, Point, Position, Vector, BorderList, Router
+from common import SortedList
 
 
 class TestAreaIntersections(unittest.TestCase):
@@ -186,6 +187,54 @@ class TestVectorIsConnected(unittest.TestCase):
         vector2 = Vector(Point(4, 0.5), Point(10, 10))
         self.failUnless(vector1.isConnected(vector2))
 
+class TestRouterPrepared(unittest.TestCase):
+
+    def _orderPointByValue(self, p1, p2):
+        ret = p1.x - p2.x
+        if ret == 0:
+            ret = p1.y - p2.y
+        return ret
+
+    def testPrepare1(self):
+        router = Router(20)
+        borders = BorderList()
+        borders.add(Vector(Point(0, 0), Point(50, 0)))
+        borders.add(Vector(Point(50, 0), Point(0, 50)))
+        router.prepare(borders)
+        self.failUnless(router.waypoints.count() == 6)
+        list = SortedList(self._orderPointByValue)
+        list.copy(router.waypoints)
+
+        p = Point(-10, 10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(-10, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, 10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, 60)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, 60)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+
+    def testPrepare2(self):
+        router = Router(20)
+        borders = BorderList()
+        borders.add(Vector(Point(50, 0), Point(0, 50)))
+        router.prepare(borders)
+        self.failUnless(router.waypoints.count() == 4)
+        list = SortedList(self._orderPointByValue)
+        list.copy(router.waypoints)
+
+        p = Point(40, 60)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, 60)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
 
 if __name__ == "__main__":
     unittest.main()
