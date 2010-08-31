@@ -10,6 +10,7 @@ import common
 import time
 import xmltemplate
 import math
+import logger
 
 shellInstance = None
 
@@ -22,6 +23,8 @@ class serverListener(threading.Thread):
         self.cb_read = cb_read
         self.cb_newClient = None
         self.serverInstance=server
+        self.logger = None
+        self.loggerbuf = []
 
     def __del__(self):
         self.shellEcho("destroy serverListener")
@@ -111,8 +114,19 @@ class serverListener(threading.Thread):
                 return
 
     def shellEcho(self, msg):
-        print("echo [" + self.serverInstance.name + "] " + msg)
+        msg = "[" + self.serverInstance.name + "] " + msg
+        if self.logger:
+            self.logger.log(msg)
+        else:
+            self.loggerbuf.append(msg)
+            print "buff msg: " + msg
 
+    def setLogger(self, logger):
+        self.logger = logger
+        for msg in self.loggerbuf:
+            logger.log(msg)
+        self.loggerbuf = []
+        logger.log("logging enabled")
 
 class clientConnection(network.networkConnection):
 
@@ -125,6 +139,8 @@ class clientConnection(network.networkConnection):
         self.cbDataIncome = cb_read
         self.socket = client[0]
         self.start()
+        self.logger = None
+        self.loggerbuf = []
 
     def __del__(self):
         self.disconnect(True)
@@ -145,8 +161,19 @@ class clientConnection(network.networkConnection):
             return "[" + self.clientInfo[0] + "]"
         return "[<unknown>]"
 
+
     def shellEcho(self, msg):
-        self.server.shellEcho(self.getClientString() + " " + msg)
+        msg = self.getClientString() + " " + msg
+        if self.logger:
+            self.logger.log(msg)
+        else:
+            self.loggerbuf.append(msg)
+
+    def setLogger(self, logger):
+        self.logger = logger
+        for msg in self.loggerbuf:
+            logger.log(msg)
+        logger.log("loggin enabled")
 
 class shell:
 
@@ -157,6 +184,7 @@ class shell:
         self.devsrv = None
         self.exit = False
         self.tmplts = None
+        self.logger = logger.logger()
 
     def __del__(self):
         print "destroy shell"
@@ -236,6 +264,7 @@ class shell:
 
     def runServer(self, srv, maxTries):
         curTry = 0
+        srv.srvlis.setLogger(self.logger)
         while curTry <= maxTries:
             print "try to run " + srv.name + " (" + str(curTry) + "/" + str(maxTries) + ")"
             if srv.run():
@@ -278,6 +307,11 @@ class Server:
         if self.srvlis:
             return self.srvlis.bind(self.ip, self.port)
         return False
+
+    def shutdown(self):
+        if self.srvlis:
+            self.srvlis.shutdown()
+            self.srvlis = None
 
 class ClientContainer(threading.Thread):
 
@@ -393,7 +427,6 @@ class ClientContainer(threading.Thread):
     def shutdown(self):
         if self.connection:
             self.connection.disconnect(True)
-            self.connection.clientContainer = None
         self.connection = None
         self.actionlog = None
         # semi fire event to come out of wait state, but set stop flag before, so thread
@@ -408,6 +441,7 @@ class MarvinServer(Server):
     def __init__(self):
         Server.__init__(self, "MarvinServer",'127.0.0.1',29875, self.ClientReceiving)
         self.srvlis.cb_newClient=self.addClient
+        self.cb_addClient = None
         self.clients = []
 
     def __del__(self):
@@ -429,6 +463,8 @@ class MarvinServer(Server):
         con.clientContainer=ClientContainer()
         con.clientContainer.connection = con
         self.clients.append(con.clientContainer)
+        if self.cb_addClient:
+            self.cb_addClient(con)
         self.srvlis.shellEcho("client added")
 
     def shutdown(self):
@@ -437,9 +473,7 @@ class MarvinServer(Server):
             del client
             client=None
         self.clients=[]
-        if self.srvlis:
-            self.srvlis.shutdown()
-            self.srvlis = None
+        Server.shutdown(self)
 
 class DeviceServer(Server):
 
