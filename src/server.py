@@ -415,7 +415,6 @@ class ClientContainer(threading.Thread):
     def shutdown(self):
         if self.connection:
             self.connection.disconnect(True)
-            self.connection.clientContainer = None
         self.connection = None
         self.actionlog = None
         # semi fire event to come out of wait state, but set stop flag before, so thread
