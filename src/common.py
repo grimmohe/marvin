@@ -474,42 +474,42 @@ class Connector(network.networkConnection):
 class SortedList(object):
 
     def __init__(self, key):
-        self.key = key
-        self.list = []
+        self._key = key
+        self._list = []
 
     def append(self, value):
         index = self.find(value)
-        self.list.insert(index, value)
+        self._list.insert(index, value)
         return value
 
     def clear(self):
-        self.list = []
+        self._list = []
 
     def contains(self, value):
         index = self.find(value)
-        if index < len(self.list):
-            return value == self.list[index]
+        if index < len(self._list):
+            return value == self._list[index]
         return False
 
     def find(self, value):
         """ returns index of value. if value is not found, index is where it should be inserted """
         lo = 0
-        hi = len(self.list)
+        hi = len(self._list)
         while lo < hi:
             mid = (lo+hi)//2
-            if self.key(value, self.list[mid]) > 0:
+            if self._key(value, self._list[mid]) > 0:
                 lo = mid+1
             else:
                 hi = mid
         return lo
 
     def pop(self, index):
-        return self.list.pop(index)
+        return self._list.pop(index)
 
     def remove(self, value):
         index = self.find(value)
-        if self.list[index] == value:
-            self.list.pop(index)
+        if self._list[index] == value:
+            self._list.pop(index)
             return True
         return False
 
