@@ -428,13 +428,14 @@ class ClientContainer(threading.Thread):
         there, xml-templates will be filled and executed.
         """
         pos = map.Position(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
+        router = map.Router(self.devs["self"]["radius"])
         for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
-                pass
+                router.route(pos, wp, xmltemplate.addTemplate)
             if wp.duty & map.WayPoint.WP_STRICT:
                 pass
             if wp.duty & map.WayPoint.WP_DISCOVER:
-                pass
+                router.discover(pos, wp.attachment, xmltemplate.addTemplate)
 
 
     def shutdown(self):

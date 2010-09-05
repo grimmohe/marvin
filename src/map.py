@@ -302,7 +302,6 @@ class Router:
 
     def __init__(self, objectRadius=0):
         self.waypoints = SortedList(lambda a, b: id(a) - id(b))
-        self.routes = []
         self.objectRadius = objectRadius
 
     def _addWaypoint(self, b1=Vector(), b2=Vector()):
@@ -328,6 +327,13 @@ class Router:
         p = turn_point({"x": 0, "y": c}, wa)
         return Point(collision.x + p["x"], collision.y + p["y"])
 
+    def discover(self, position, direction, cb_addAction):
+        """
+        direction is a Vector(), the loose end of a border.
+        it has to discover in direction of the start point.
+        """
+        pass
+
     def prepare(self, borders=BorderList()):
         """ generate waypoints """
         self.waypoints.clear()
@@ -345,6 +351,9 @@ class Router:
                     border.twist()
                 self._addWaypoint(border, Vector(p, border.size.getTurned(90)))
                 self._addWaypoint(border, Vector(p, border.size.getTurned(-90)))
+
+    def route(self, position=Position(), destination=WayPoint(), cb_addAction):
+        pass
 
 class Map:
 
