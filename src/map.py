@@ -305,7 +305,7 @@ class Router:
         self.routes = []
         self.objectRadius = objectRadius
 
-    def _addWaypoint(self, b1=Vector(), b2=Vector(), bigOnly=False):
+    def _addWaypoint(self, b1=Vector(), b2=Vector()):
         ratio = getVectorIntersectionRatio(b1, b2)
         if ratio:
             collision = Point(b1.point.x + b1.size.x * ratio[0], b1.point.y + b1.size.y * ratio[0])
@@ -317,9 +317,6 @@ class Router:
             ba2 = b2.getAngle()
             wa1 = (ba1 + ba2) / 2
             wa2 = (wa1 + 180) % 360
-            if bigOnly:
-                if abs(ba1 - ba2) > 180: wa2 = 0
-                else: wa1 = 0
             if wa1 > 0:
                 self.waypoints.append(self._getWPPosition(collision, min(ba1, ba2), wa1))
             if wa2 > 0:
@@ -346,8 +343,8 @@ class Router:
             for p in borders.getLooseEndPoints(border):
                 if border.point.getDistanceTo(p) > 0:
                     border.twist()
-                self._addWaypoint(border, Vector(p, border.size.getTurned(90)), bigOnly=True)
-                self._addWaypoint(border, Vector(p, border.size.getTurned(-90)), bigOnly=True)
+                self._addWaypoint(border, Vector(p, border.size.getTurned(90)))
+                self._addWaypoint(border, Vector(p, border.size.getTurned(-90)))
 
 class Map:
 
