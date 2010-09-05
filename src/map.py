@@ -30,7 +30,7 @@ class WayPoint(Point):
     WP_FAST = 2             # get there on a short way
     WP_DISCOVER = 4         # discover the loose end you are on
 
-    def __init__(self, x, y, duty=WP_FAST, attachment=None):
+    def __init__(self, x=0, y=0, duty=WP_FAST, attachment=None):
         super(WayPoint, self).__init__(x, y)
         self.duty = duty
         self.attachment = attachment
@@ -352,7 +352,7 @@ class Router:
                 self._addWaypoint(border, Vector(p, border.size.getTurned(90)))
                 self._addWaypoint(border, Vector(p, border.size.getTurned(-90)))
 
-    def route(self, position=Position(), destination=WayPoint(), cb_addAction):
+    def route(self, position=Position(), destination=WayPoint(), cb_addAction=None):
         pass
 
 class Map:
@@ -398,25 +398,37 @@ class Map:
         """ add a waypoint to current waypoints """
         self.waypoints.append(wp)
 
-    def nextCollisionIn(self, position=Position(), sensors=[], min_distance=0):
+    def getCollisions(self, position=Position(), sensors=[], min_distance=0):
         """ calc distance to next collision """
-        nextCollision = MAX_RANGE
-        collisionSensor = None
+        def __order(a, b):
+            if a[0] - b[0] > 0:
+                return 1
+            else:
+                return -1
+
+        collisions = []
         direction = turn_point({"x": 0, "y": 1}, position.orientation)
         direction = Point(direction["x"], direction["y"])
 
-        for sensor in sensors:
-            v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
-            v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
-            for border in self.borders.getAllBorders():
+        borders = self.borders.getAllBorders()
+        for border in borders:
+            distance = MAX_RANGE
+            sensedby = None
+            for sensor in sensors:
+                v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
+                v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
                 ratio1 = getVectorIntersectionRatio(v1, border)
                 ratio2 = getVectorIntersectionRatio(v2, border)
                 if ratio1 and ratio2 \
                    and ( 0 <= ratio1[1] <= 1 or 0 <= ratio2[1] <= 1 or ((ratio1[1]>=0) <> (ratio2[1]>=0)) ) \
                    and min(ratio1[0], ratio2[0]) >= min_distance:
-                    nextCollision = min(nextCollision, min(ratio1[0], ratio2[0]))
-                    collisionSensor = sensor
-        return (nextCollision, collisionSensor)
+                    distance = min(distance, min(ratio1[0], ratio2[0]))
+                    sensedby = sensor
+            if sensedby:
+                collisions.append((distance, sensedby))
+
+        collisions.sort(cmp=__order)
+        return collisions
 
     def merge(self):
         """ merge borders that could be one """
