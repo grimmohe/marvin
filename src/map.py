@@ -178,7 +178,7 @@ class BorderList:
             distance = v.len()
             max = roundup(distance / MAX_VECTOR_LENGTH)
             for run in range(max):
-                multiplier = run / max
+                multiplier = float(run) / max
                 point = Point(v.point.x + (v.size.x * multiplier), v.point.y + (v.size.y * multiplier))
                 size = Point(v.size.x / max, v.size.y / max)
                 self.borders.append(Vector(point, size))
