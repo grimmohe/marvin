@@ -432,11 +432,18 @@ class ClientContainer(threading.Thread):
         for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
                 router.route(pos, wp, xmltemplate.addTemplate)
+
             if wp.duty & map.WayPoint.WP_STRICT:
-                pass
+                collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
+                for i in range(len(collisions)):
+                    if pos.point.getDistanceTo(wp) < collisions[i][0]:
+                        break
+                    router.route(pos, collisions[i][2], xmltemplate.addTemplate)
+
             if wp.duty & map.WayPoint.WP_DISCOVER:
                 router.discover(pos, wp.attachment, xmltemplate.addTemplate)
 
+        #TODO: transmit template data
 
     def shutdown(self):
         if self.connection:
