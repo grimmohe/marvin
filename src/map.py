@@ -352,7 +352,7 @@ class Router:
                 self._addWaypoint(border, Vector(p, border.size.getTurned(90)))
                 self._addWaypoint(border, Vector(p, border.size.getTurned(-90)))
 
-    def route(self, position=Position(), destination=WayPoint(), cb_addAction=None):
+    def route(self, position, destination, cb_addAction=None):
         pass
 
 class Map:
@@ -425,7 +425,9 @@ class Map:
                     distance = min(distance, min(ratio1[0], ratio2[0]))
                     sensedby = sensor
             if sensedby:
-                collisions.append((distance, sensedby))
+                p = Point(position.point.x + direction.x * distance,
+                          position.point.y + direction.y * distance)
+                collisions.append((distance, sensedby, p))
 
         collisions.sort(cmp=__order)
         return collisions

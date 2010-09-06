@@ -72,6 +72,7 @@ class TestMapGetCollisions(unittest.TestCase):
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
         collisions = map.getCollisions(Position(Point(0, 0), 0), sensors)
         self.failUnless(len(collisions) == 1)
+        self.failUnless(collisions[0][2].x == 0 and collisions[0][2].y == 45)
         self.failUnless(collisions[0][1] == sensors[0])
         self.failUnless(collisions[0][0] == 45)
 
@@ -82,6 +83,7 @@ class TestMapGetCollisions(unittest.TestCase):
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
         collisions = map.getCollisions(Position(Point(0, 0), 0), sensors)
         self.failUnless(len(collisions) == 1)
+        self.failUnless(collisions[0][2].x == 0 and collisions[0][2].y == 45)
         self.failUnless(collisions[0][1] == sensors[0])
         self.failUnless(collisions[0][0] == 45)
 
@@ -93,8 +95,10 @@ class TestMapGetCollisions(unittest.TestCase):
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
         collisions = map.getCollisions(Position(Point(0, 0), 0), sensors)
         self.failUnless(len(collisions) == 2)
+        self.failUnless(collisions[0][2].x == 0 and collisions[0][2].y == 45)
         self.failUnless(collisions[0][1] == sensors[0])
         self.failUnless(collisions[0][0] == 45)
+        self.failUnless(collisions[1][2].x == 0 and collisions[1][2].y == 90)
         self.failUnless(collisions[1][1] == sensors[0])
         self.failUnless(collisions[1][0] == 90)
 
