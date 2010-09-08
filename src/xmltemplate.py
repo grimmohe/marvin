@@ -20,6 +20,28 @@ If a varaible contains a comma seperated list, the tag in which it is used will 
 each entry.
 """
 
+TEMPLATE_DISCOVER = 1
+TEMPLATE_DRIVE = 2
+TEMPLATE_HEAD = 4
+TEMPLATE_TURN_BLIND = 8
+TEMPLATE_TURN_ANGLE = 16
+TEMPLATE_TURN_HIT = 32
+
+_templateList = []
+
+def addTemplate(typ, baseSensor=None, untouchedSensor=None, direction=None, compare=None,
+                targetAngle=None, distance=None, headMovement=None):
+    pass
+
+def clear():
+    _templateList = []
+
+def getTransmissionData():
+    pass
+
+def readTransmissiondata():
+    pass
+
 class TemplateList:
 
     def __init__(self):
@@ -49,7 +71,7 @@ class Template:
 
     def load(self):
         """ loads the template an read available variables """
-        self.varlist=TemplateVariableList()
+        self.varlist=TemplateKeyInformation("")
         ofile = os.open(self.filepath, os.O_RDONLY)
         rc=1
         stream = ""
@@ -81,18 +103,18 @@ class TemplateVariable:
         self.name = varname
         self.value = value
 
-class TemplateVariableList:
+class TemplateKeyInformation:
 
-    def __init__(self):
-        self.varlist=[]
+    def __init__(self, typ):
+        self.varlist = []
+        self.typ = typ
 
-    def lookup(self,name):
+    def lookup(self, varname):
         for var in self.varlist:
-            if var.name == name:
+            if var.name == varname:
                 return var
         return None
 
-    def add(self,item):
-        if not self.lookup(item.name):
-            self.varlist.append(item)
-
+    def add(self, var):
+        if not self.lookup(var.name):
+            self.varlist.append(var)

@@ -4,7 +4,8 @@ Created on 10.08.2010
 @author: christoph
 '''
 import unittest
-from map import Area, Map, Point, Position, Vector
+from map import Area, Map, Point, Position, Vector, BorderList, Router
+from common import SortedList
 
 
 class TestAreaIntersections(unittest.TestCase):
@@ -54,33 +55,52 @@ class TestAreaIntersections(unittest.TestCase):
         vector = Vector(Point(1, -3), Point(7, -1))
         self.failIf(area.intersects(vector))
 
-class TestMapNextCollisionIn(unittest.TestCase):
+class TestMapGetCollisions(unittest.TestCase):
 
-    def testNextCollisionInNone(self):
+    def testGetCollisionsNone(self):
         map = Map()
         map.borders.add(Vector(Point(0, 50), Point(10, 0)))
         map.borders.add(Vector(Point(50, 0), Point(0, 10)))
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
-        collision = map.nextCollisionIn(Position(Point(0, 0), 45), sensors)
-        self.failIf(collision[1], "collision where none expected")
+        collisions = map.getCollisions(Position(Point(0, 0), 45), sensors)
+        self.failIf(len(collisions), "collision where none expected")
 
-    def testNextCollisionInNr1(self):
+    def testGetCollisionsNr1(self):
         map = Map()
         map.borders.add(Vector(Point(0, 50), Point(10, 0)))
         map.borders.add(Vector(Point(50, 0), Point(0, 10)))
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
-        collision = map.nextCollisionIn(Position(Point(0, 0), 0), sensors)
-        self.failUnless(collision[1] == sensors[0])
-        self.failUnless(collision[0] == 45)
+        collisions = map.getCollisions(Position(Point(0, 0), 0), sensors)
+        self.failUnless(len(collisions) == 1)
+        self.failUnless(collisions[0][2].x == 0 and collisions[0][2].y == 45)
+        self.failUnless(collisions[0][1] == sensors[0])
+        self.failUnless(collisions[0][0] == 45)
 
-    def testNextCollisionInNr2(self):
+    def testGetCollisionsNr2(self):
         map = Map()
         map.borders.add(Vector(Point(0, 50), Point(4, 0)))
         map.borders.add(Vector(Point(50, 0), Point(0, 10)))
         sensors = [Vector(Point(-5, 5), Point(10, 0))]
-        collision = map.nextCollisionIn(Position(Point(0, 0), 0), sensors)
-        self.failUnless(collision[1] == sensors[0])
-        self.failUnless(collision[0] == 45)
+        collisions = map.getCollisions(Position(Point(0, 0), 0), sensors)
+        self.failUnless(len(collisions) == 1)
+        self.failUnless(collisions[0][2].x == 0 and collisions[0][2].y == 45)
+        self.failUnless(collisions[0][1] == sensors[0])
+        self.failUnless(collisions[0][0] == 45)
+
+    def testGetCollisionsMulti(self):
+        map = Map()
+        map.borders.add(Vector(Point(0, 50), Point(4, 0)))
+        map.borders.add(Vector(Point(50, 0), Point(0, 10)))
+        map.borders.add(Vector(Point(-10, 95), Point(100, 0)))
+        sensors = [Vector(Point(-5, 5), Point(10, 0))]
+        collisions = map.getCollisions(Position(Point(0, 0), 0), sensors)
+        self.failUnless(len(collisions) == 2)
+        self.failUnless(collisions[0][2].x == 0 and collisions[0][2].y == 45)
+        self.failUnless(collisions[0][1] == sensors[0])
+        self.failUnless(collisions[0][0] == 45)
+        self.failUnless(collisions[1][2].x == 0 and collisions[1][2].y == 90)
+        self.failUnless(collisions[1][1] == sensors[0])
+        self.failUnless(collisions[1][0] == 90)
 
 class TestMapGetLooseEnds(unittest.TestCase):
 
@@ -186,6 +206,70 @@ class TestVectorIsConnected(unittest.TestCase):
         vector2 = Vector(Point(4, 0.5), Point(10, 10))
         self.failUnless(vector1.isConnected(vector2))
 
+class TestRouterPrepared(unittest.TestCase):
+
+    def _orderPointByValue(self, p1, p2):
+        ret = p1.x - p2.x
+        if ret == 0:
+            ret = p1.y - p2.y
+        return ret
+
+    def testPrepare1(self):
+        router = Router(20)
+        borders = BorderList()
+        borders.add(Vector(Point(0, 0), Point(50, 0)))
+        borders.add(Vector(Point(50, 0), Point(0, 50)))
+        router.prepare(borders)
+        self.failUnless(router.waypoints.count() == 10)
+        list = SortedList(self._orderPointByValue)
+        list.copy(router.waypoints)
+
+        p = Point(-10, 10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(-10, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(10, 10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(10, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, 10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, 40)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, 40)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, 60)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, 60)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+
+    def testPrepare2(self):
+        router = Router(20)
+        borders = BorderList()
+        borders.add(Vector(Point(50, 0), Point(0, 50)))
+        router.prepare(borders)
+        self.failUnless(router.waypoints.count() == 8)
+        list = SortedList(self._orderPointByValue)
+        list.copy(router.waypoints)
+
+        p = Point(40, 60)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, 60)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, 40)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, 40)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, 10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, 10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(40, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
+        p = Point(60, -10)
+        self.failUnless(list.get(list.find(p)).getDistanceTo(p) == 0)
 
 if __name__ == "__main__":
     unittest.main()

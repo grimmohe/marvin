@@ -14,7 +14,7 @@ import logger
 
 shellInstance = None
 
-class serverListener(threading.Thread):
+class ServerListener(threading.Thread):
 
     def __init__(self, server, cb_read):
         threading.Thread.__init__(self)
@@ -27,7 +27,7 @@ class serverListener(threading.Thread):
         self.loggerbuf = []
 
     def __del__(self):
-        self.shellEcho("destroy serverListener")
+        self.shellEcho("destroy ServerListener")
         self.serverInstance = None
         self.socket = None
 
@@ -51,7 +51,7 @@ class serverListener(threading.Thread):
         if self.socket:
             try:
                 newClient = self.socket.accept()
-                newClient = clientConnection(self,newClient,self.cb_read)
+                newClient = ClientConnection(self,newClient,self.cb_read)
                 self.clients.append(newClient)
                 if self.cb_newClient:
                     self.cb_newClient(newClient)
@@ -132,7 +132,7 @@ class serverListener(threading.Thread):
             self.logger = None
 
 
-class clientConnection(network.networkConnection):
+class ClientConnection(network.networkConnection):
 
     def __init__(self, server, client, cb_read):
         network.networkConnection.__init__(self)
@@ -179,7 +179,7 @@ class clientConnection(network.networkConnection):
             logger.log(msg)
         logger.log("loggin enabled")
 
-class shell:
+class Shell:
 
     def __init__(self):
         global shellInstance
@@ -191,7 +191,7 @@ class shell:
         self.logger = logger.logger()
 
     def __del__(self):
-        print "destroy shell"
+        print "destroy Shell"
         self.destroyServers()
 
 
@@ -248,7 +248,7 @@ class shell:
             print "help"
 
     def closeCmdLine(self):
-        self.processCommand("echo close shell")
+        self.processCommand("echo close Shell")
 
     def destroyServers(self):
         if self.marvinsrv:
@@ -294,7 +294,7 @@ class Server:
         self.name = name
         self.ip = ip
         self.port = port
-        self.srvlis = serverListener(self, cb_read)
+        self.srvlis = ServerListener(self, cb_read)
 
     def __del__(self):
         self.srvlis = None
@@ -397,6 +397,17 @@ class ClientContainer(threading.Thread):
         else:
             self.connection.logger.log("try to discover, but no \"radius\" item found" )
 
+    def getSensorList(self, extended=False):
+        sensors = []
+        for devname in self.devs:
+            if self.devs[devname].hasKey("dimension") and self.devs[devname].hasKey("distance"):
+                if extended: os = self.devs[devname]["distance"]
+                else: os = 0
+                s = self.devs[devname]["dimension"].copy(offset=os)
+                s.name = devname
+                sensors.append(s)
+        return sensors
+
     def handlePanicEvents(self):
         """ in case the batterie is low or other stuff, handle that """
 
@@ -428,14 +439,22 @@ class ClientContainer(threading.Thread):
         there, xml-templates will be filled and executed.
         """
         pos = map.Position(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
+        router = map.Router(self.devs["self"]["radius"])
         for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
-                pass
-            if wp.duty & map.WayPoint.WP_STRICT:
-                pass
-            if wp.duty & map.WayPoint.WP_DISCOVER:
-                pass
+                router.route(pos, wp, xmltemplate.addTemplate)
 
+            if wp.duty & map.WayPoint.WP_STRICT:
+                collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
+                for i in range(len(collisions)):
+                    if pos.point.getDistanceTo(wp) < collisions[i][0]:
+                        break
+                    router.route(pos, collisions[i][2], xmltemplate.addTemplate)
+
+            if wp.duty & map.WayPoint.WP_DISCOVER:
+                router.discover(pos, wp.attachment, xmltemplate.addTemplate)
+
+        #TODO: transmit template data
 
     def shutdown(self):
         if self.connection:
@@ -498,5 +517,5 @@ class DeviceServer(Server):
 
 
 if __name__ == '__main__':
-    shell()
+    Shell()
     shellInstance.run()
