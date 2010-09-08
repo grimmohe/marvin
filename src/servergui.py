@@ -164,9 +164,7 @@ class ServerTabPage(TabPage):
         self.sc = None
         self.logger = None
         self.logger = logger.logger()
-
         print "ServerTabPage closed"
-
 
 class ClientTabPage(TabPage):
 
@@ -176,10 +174,11 @@ class ClientTabPage(TabPage):
         # start stop buttons for toolbar
         self.btndisco = gtk.Button("Disconnect")
         self.btndisco.connect("clicked", lambda w: self.disconnect())
-        self.btndisco = gtk.Button("Delete")
-        self.btndisco.connect("clicked", lambda w: self.delete())
+        self.btndel = gtk.Button("Delete")
+        self.btndel.connect("clicked", lambda w: self.delete())
 
         self.toolbar.pack_start(self.btndisco, False, 0)
+        self.toolbar.pack_start(self.btndel, False, 0)
 
         self.mainWidget.show_all()
         self.clientConnection = clientConnection

@@ -157,6 +157,7 @@ class Client:
 
             try:
                 self.connection = Connector(ServerIP, ServerPort)
+                self.connection.setCbDisconnect(self.networkDisconnection)
             except Exception, e:
                 print "ERROR: Connection failed."
                 print e.message
@@ -241,6 +242,9 @@ class Client:
         self.stateholder.quit()
         self.stateholder = None
 
+    def networkDisconnection(self, connection):
+        print "network disconnect"
+        self.quit()
 
 if __name__ == '__main__':
     print "init client"

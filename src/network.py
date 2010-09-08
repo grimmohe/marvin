@@ -11,6 +11,7 @@ class networkConnection(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.cbDataIncome = None
+        self.cbDisconnect = None
         self.reader = None
         self.socket = None
         self.data = ''
@@ -48,10 +49,12 @@ class networkConnection(threading.Thread):
         return False
 
     def receive(self, data):
-        self.data = data
         if data == "DISCO":
             self.disconnect(False)
+            if self.cbDisconnect:
+                self.cbDisconnect(self)
             return
+        self.data = data
         if self.cbDataIncome:
             self.cbDataIncome(self, data)
         else:
@@ -62,6 +65,9 @@ class networkConnection(threading.Thread):
         if flushData:
             self.data = ''
         return data
+
+    def setCbDisconnect(self, cb):
+        self.cbDisconnect = cb
 
 class networkConnectionReader(threading.Thread):
 
