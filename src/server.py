@@ -501,6 +501,12 @@ class MarvinServer(Server):
             self.cb_addClient(clientConnection)
         self.srvlis.shellEcho("client added")
 
+    def removeClient(self, clientConnection):
+        for cli in self.clients:
+            if cli.connection == clientConnection:
+                cli.shutdown()
+                self.clients.remove(cli)
+
     def shutdown(self):
         for client in self.clients:
             client.shutdown()
