@@ -351,6 +351,7 @@ class MainWindow(threading.Thread):
         cliname = con.getClientString()
         for cli in self.clients:
             if cli.name == cliname:
+                self.servers[0].sc.server.removeClient(cli.clientConnection)
                 self.clients.remove(cli)
                 if self.tablist.remove(cliname):
                     self.showNearestItem()
