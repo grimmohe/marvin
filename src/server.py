@@ -439,6 +439,8 @@ class ClientContainer(threading.Thread):
         there, xml-templates will be filled and executed.
         """
         pos = map.Position(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
+        if not self.devs["self"].has_key("raduis"):
+            return
         router = map.Router(self.devs["self"]["radius"])
         for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
