@@ -54,7 +54,7 @@ class ServerControl(threading.Thread):
         if not self.server:
             if self.tab.name == MARSRV:
                 self.server = server.MarvinServer()
-                self.server.cb_addClient = guiinstance.newClient
+                self.server.cb_addClient = guiinstance.addClient
             if self.tab.name == DEVSRV:
                 self.server = server.DeviceServer()
             self.server.srvlis.setLogger(self.tab.logger)
@@ -340,11 +340,11 @@ class MainWindow(threading.Thread):
         else:
             self.showActiveItem(self.servers[0].getDiv())
 
-    def newClient(self, con):
+    def addClient(self, clientConnection):
         print "add client"
-        self.clients.append(ClientTabPage(con.getClientString(), con))
-        self.tablist.add(con.getClientString(), lambda w: self.showClientTab(con.getClientString()))
-        self.tablist.div.show()
+        self.clients.append(ClientTabPage(clientConnection.getClientString(), clientConnection))
+        self.tablist.add(clientConnection.getClientString(), lambda w: self.showClientTab(clientConnection.getClientString()))
+        self.tablist.div.show_all()
 
     def removeClient(self, con):
         print "remove client"
