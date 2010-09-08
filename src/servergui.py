@@ -239,35 +239,30 @@ class MainWindow(threading.Thread):
         self.width=width
         self.height=height
         self.mainwindow=None
-        self.servers = []
-        self.clients = []
+        self.servers = {}
+        self.clients = {}
         self.tablist = None
         self.ActiveItem = None
         self.MainBox = None
 
-    def delete_event(self, widget, event, data=None):
-        print "delete event occurred"
+    def fromGtk_delete(self, widget, event, data=None):
         self.destroy()
         return False
 
+    def fromGtk_destroy(self, widget):
+        self.destroy()
+
     def destroy(self):
-        print "destroy clients"
-        for cli in self.clients:
+        for cli in self.clients.values():
             cli.close()
-        self.clients = []
-        print "destroy servers"
-        for srv in self.servers:
+        self.clients = {}
+        for srv in self.servers.values():
             srv.close()
-        self.servers = []
+        self.servers = {}
 
-    def destroyFromGtk(self, widget):
-        print "destroyFromGtk"
-        self.destroy()
 
-    def emitDestroy(self, widget, data=None):
-        print "emitDestroy"
+    def quit(self, widget, data=None):
         self.destroy()
-        print "gtk.main_quit()"
         gtk.main_quit()
 
     def run(self):
@@ -291,8 +286,8 @@ class MainWindow(threading.Thread):
 
     def buildMainWindow(self):
         self.mainwindow = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.mainwindow.connect("delete_event", self.delete_event)
-        self.mainwindow.connect("destroy", self.destroyFromGtk)
+        self.mainwindow.connect("delete_event", self.fromGtk_delete)
+        self.mainwindow.connect("destroy", self.fromGtk_destroy)
 
     def buildTabList(self):
         self.tablist = TabBox()
@@ -305,34 +300,19 @@ class MainWindow(threading.Thread):
 
         # big quit button
         QuitButton = gtk.Button("Quit")
-        QuitButton.connect("clicked", lambda w: self.emitDestroy(None))
+        QuitButton.connect("clicked", lambda w: self.quit(None))
         self.MainBox.pack_end(QuitButton, False, False, 0)
         self.mainwindow.add(self.MainBox)
 
     def initServerConnections(self):
-        self.servers.append(ServerTabPage(MARSRV))
-        self.servers.append(ServerTabPage(DEVSRV))
-
-    def show(self):
-        for cli in self.clients:
-            cli.show()
-        for srv in self.servers:
-            srv.show()
-        if self.tablist:
-            self.tablist.show()
-        self.mainwindow.show()
+        self.servers[MARSRV] = ServerTabPage(MARSRV)
+        self.servers[DEVSRV] = ServerTabPage(DEVSRV)
 
     def showServerTab(self, btn):
-        for srv in self.servers:
-            if srv.name == btn:
-                self.showActiveItem(srv.getDiv())
-                return
+        self.showActiveItem(self.servers[btn].getDiv())
 
     def showClientTab(self, btn):
-        for cli in self.clients:
-            if cli.name == btn:
-                self.showActiveItem(cli.getDiv())
-                return
+        self.showActiveItem(self.clients[btn].getDiv())
 
     def showActiveItem(self, new):
         if new and new <> self.ActiveItem:
@@ -343,27 +323,25 @@ class MainWindow(threading.Thread):
 
     def showNearestItem(self):
         if len(self.clients) > 0:
-            self.showActiveItem(self.clients[0].getDiv())
+            self.showActiveItem(self.clients.values()[0].getDiv())
         else:
-            self.showActiveItem(self.servers[0].getDiv())
+            self.showActiveItem(self.servers.values()[0].getDiv())
 
     def addClient(self, clientConnection):
         print "add client"
-        self.clients.append(ClientTabPage(clientConnection.getClientString(), clientConnection))
+        self.clients[clientConnection.getClientString()] = ClientTabPage(clientConnection.getClientString(), clientConnection)
         self.tablist.add(clientConnection.getClientString(), lambda w: self.showClientTab(clientConnection.getClientString()))
         self.tablist.div.show_all()
 
-    def removeClient(self, con):
+    def removeClient(self, clientConnection):
         print "remove client"
-        cliname = con.getClientString()
-        for cli in self.clients:
-            if cli.name == cliname:
-                self.servers[0].sc.server.removeClient(cli.clientConnection)
-                self.clients.remove(cli)
-                if self.tablist.remove(cliname):
-                    self.showNearestItem()
-                return true
-        return False
+        cliname = clientConnection.getClientString()
+        cli = self.clients[cliname]
+        self.servers[MARSRV].sc.server.removeClient(cli.clientConnection)
+        if self.tablist.remove(cliname):
+            self.showNearestItem()
+        del self.clients[cliname]
+        return True
 
 
 if __name__ == "__main__":
