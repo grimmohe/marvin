@@ -320,11 +320,13 @@ class MainWindow(threading.Thread):
         for srv in self.servers:
             if srv.name == btn:
                 self.showActiveItem(srv.getDiv())
+                return
 
     def showClientTab(self, btn):
         for cli in self.clients:
             if cli.name == btn:
                 self.showActiveItem(cli.getDiv())
+                return
 
     def showActiveItem(self, new):
         if new and new <> self.ActiveItem:
