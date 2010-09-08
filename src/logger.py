@@ -20,4 +20,4 @@ class loggerTextBuffer(logger):
         gdk.threads_enter()
         self.buffer.insert_at_cursor(text+"\n")
         gdk.threads_leave()
-
+        print text
