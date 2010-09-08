@@ -24,35 +24,42 @@ class ServerControl(threading.Thread):
         self.event_SwitchState = threading.Event()
         self.tab = tab
         self.stop = False
+        self.server = None
 
     def run(self):
+        self.prints("running..")
         while not self.stop:
             self.event_SwitchState.clear()
             self.event_SwitchState.wait()
+            self.prints("event!")
             if self.stop:
+                if self.server:
+                    self.ServerStop()
+                self.prints("leaving event loop")
                 return
-            if self.tab.server:
+            if self.server:
                 self.ServerStop()
             else:
                 self.ServerStart()
 
+
     def ServerStop(self):
         self.tab.logger.log("stop server " + self.tab.name)
-        if self.tab.server:
-            self.tab.server.shutdown()
+        if self.server:
+            self.server.shutdown()
         self.server=None
 
     def ServerStart(self):
-        #self.tab.logger.log("start server " + self.tab.name)
-        if not self.tab.server:
+        self.tab.logger.log("start server " + self.tab.name)
+        if not self.server:
             if self.tab.name == MARSRV:
-                self.tab.server = server.MarvinServer()
-                self.tab.server.cb_addClient = guiinstance.newClient
+                self.server = server.MarvinServer()
+                self.server.cb_addClient = guiinstance.newClient
             if self.tab.name == DEVSRV:
-                self.tab.server = server.DeviceServer()
-            self.tab.server.srvlis.setLogger(self.tab.logger)
+                self.server = server.DeviceServer()
+            self.server.srvlis.setLogger(self.tab.logger)
             if self.ServerRun(50):
-                self.tab.logger.log("done")
+                self.tab.logger.log("done (" + self.server.srvlis.name + ")")
             else:
                 self.tab.logger.log("failed")
 
@@ -60,8 +67,8 @@ class ServerControl(threading.Thread):
     def ServerRun(self, maxTries):
         curTry = 0
         while curTry <= maxTries:
-            self.tab.logger.log( "try to run " + self.tab.server.name + " (" + str(curTry) + "/" + str(maxTries) + ")")
-            if self.tab.server.run():
+            self.tab.logger.log( "try to run " + self.server.name + " (" + str(curTry) + "/" + str(maxTries) + ")")
+            if self.server.run():
                 return True
             curTry += 1
             time.sleep(5.0)
@@ -69,6 +76,22 @@ class ServerControl(threading.Thread):
 
     def setStop(self, stop):
         self.stop = stop
+
+    def isRunning(self):
+        if self.server:
+            return True
+        return False
+
+    def destroy(self):
+        self.prints("destroy")
+        if self.server:
+            self.server.srvlis.setLogger(None)
+        self.stop = True
+        self.event_SwitchState.set()
+        self.prints("done..")
+
+    def prints(self, msg):
+         print "ServerControl " + self.name + ": " + msg
 
 class TabPage:
 
@@ -118,23 +141,27 @@ class ServerTabPage(TabPage):
         self.toolbar.pack_end(self.btnstop, False, 0)
 
         self.mainWidget.show_all()
-        self.logger = logger.loggerTextBuffer(self.textBuffer)
-        self.server = None
         self.sc = ServerControl(self)
         self.sc.start()
 
     def serverStop(self):
-        if self.server:
+        if self.sc.isRunning():
             self.sc.event_SwitchState.set()
 
     def serverStart(self):
-        if not self.server:
+        if not self.sc.isRunning():
             self.sc.event_SwitchState.set()
 
     def close(self):
-        if self.server:
-            self.sc.setStop(True)
-            self.sc.event_SwitchState.set()
+        print "ServerTabPage closing"
+        if self.sc:
+            self.sc.destroy()
+        self.sc = None
+        self.logger = None
+        self.logger = logger.logger()
+
+        print "ServerTabPage closed"
+
 
 class ClientTabPage(TabPage):
 
@@ -150,7 +177,6 @@ class ClientTabPage(TabPage):
         self.toolbar.pack_start(self.btndisco, False, 0)
 
         self.mainWidget.show_all()
-        self.logger = logger.loggerTextBuffer(self.textBuffer)
         self.clientConnection = clientConnection
         self.clientConnection.setLogger(self.logger)
 
@@ -208,32 +234,50 @@ class MainWindow(threading.Thread):
         self.width=width
         self.height=height
         self.mainwindow=gtk.Window(gtk.WINDOW_TOPLEVEL)
+        #self.event_Destroy = threading.Event()
         self.servers = []
         self.clients = []
         self.tablist = None
         self.ActiveItem = None
         self.MainBox = None
-        self.run()
 
     def delete_event(self, widget, event, data=None):
         print "delete event occurred"
         return False
 
-    def destroy(self, widget, data=None):
+    def destroy(self):
+        print "destroy clients"
         for cli in self.clients:
             cli.close()
+        self.clients = []
+        print "destroy servers"
         for srv in self.servers:
             srv.close()
+        self.servers = []
+
+    def destroyFromGtk(self, widget):
+        print "destroyFromGtk"
+
+    def emitDestroy(self, widget, data=None):
+        print "emitDestroy"
+        #self.event_Destroy.set()
+        self.destroy()
+        print "gtk.main_quit()"
         gtk.main_quit()
 
     def run(self):
+        global guiinstance
+        print "run thread " + self.name + "(MainWindow)"
         self.tablist = TabBox()
         self.tablist.add(MARSRV, lambda w: self.showServerTab(MARSRV))
         self.tablist.add(DEVSRV, lambda w: self.showServerTab(DEVSRV))
 
         self.mainwindow.connect("delete_event", self.delete_event)
-        self.mainwindow.connect("destroy", self.destroy)
+        self.mainwindow.connect("destroy", self.destroyFromGtk)
+        print "jepping"
         self.jepp()
+        print "jepped"
+        guiinstance = None
 
     def jepp(self):
         self.MainBox = gtk.VBox(False,0)
@@ -242,7 +286,7 @@ class MainWindow(threading.Thread):
         self.tablist.show()
 
         QuitButton = gtk.Button("Quit")
-        QuitButton.connect("clicked", lambda w: self.destroy(None))
+        QuitButton.connect("clicked", lambda w: self.emitDestroy(None))
         self.MainBox.pack_end(QuitButton, False, False, 0)
         QuitButton.show()
 
@@ -286,9 +330,9 @@ class MainWindow(threading.Thread):
 
     def showNearestItem(self):
         if len(self.clients) > 0:
-            self.showActiveItem(self.clients[0])
+            self.showActiveItem(self.clients[0].getDiv())
         else:
-            self.showActiveItem(self.servers[0])
+            self.showActiveItem(self.servers[0].getDiv())
 
     def newClient(self, con):
         print "add client"
@@ -310,3 +354,5 @@ class MainWindow(threading.Thread):
 
 if __name__ == "__main__":
     win = MainWindow(500,500)
+    win.start()
+    print "..."
