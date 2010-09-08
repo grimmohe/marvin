@@ -258,6 +258,7 @@ class MainWindow(threading.Thread):
 
     def destroyFromGtk(self, widget):
         print "destroyFromGtk"
+        self.destroy()
 
     def emitDestroy(self, widget, data=None):
         print "emitDestroy"
