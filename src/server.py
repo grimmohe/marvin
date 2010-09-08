@@ -493,12 +493,12 @@ class MarvinServer(Server):
         else:
             client.shellEcho("no suitable client found")
 
-    def addClient(self, con):
-        con.clientContainer=ClientContainer()
-        con.clientContainer.connection = con
-        self.clients.append(con.clientContainer)
+    def addClient(self, clientConnection):
+        clientConnection.clientContainer=ClientContainer()
+        clientConnection.clientContainer.connection = clientConnection
+        self.clients.append(clientConnection.clientContainer)
         if self.cb_addClient:
-            self.cb_addClient(con)
+            self.cb_addClient(clientConnection)
         self.srvlis.shellEcho("client added")
 
     def shutdown(self):
