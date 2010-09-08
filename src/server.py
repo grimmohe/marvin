@@ -122,11 +122,15 @@ class serverListener(threading.Thread):
             print "buff msg: " + msg
 
     def setLogger(self, logger):
-        self.logger = logger
-        for msg in self.loggerbuf:
-            logger.log(msg)
-        self.loggerbuf = []
-        logger.log("logging enabled")
+        if logger:
+            self.logger = logger
+            for msg in self.loggerbuf:
+                logger.log(msg)
+            self.loggerbuf = []
+            logger.log("logging enabled")
+        else:
+            self.logger = None
+
 
 class clientConnection(network.networkConnection):
 
