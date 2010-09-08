@@ -28,6 +28,7 @@ class ServerControl(threading.Thread):
 
     def run(self):
         self.prints("running..")
+        self.ServerStart()
         while not self.stop:
             self.event_SwitchState.clear()
             self.event_SwitchState.wait()
