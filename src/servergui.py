@@ -260,7 +260,6 @@ class MainWindow(threading.Thread):
 
     def emitDestroy(self, widget, data=None):
         print "emitDestroy"
-        #self.event_Destroy.set()
         self.destroy()
         print "gtk.main_quit()"
         gtk.main_quit()
