@@ -233,8 +233,7 @@ class MainWindow(threading.Thread):
         threading.Thread.__init__(self)
         self.width=width
         self.height=height
-        self.mainwindow=gtk.Window(gtk.WINDOW_TOPLEVEL)
-        #self.event_Destroy = threading.Event()
+        self.mainwindow=None
         self.servers = []
         self.clients = []
         self.tablist = None
@@ -243,6 +242,7 @@ class MainWindow(threading.Thread):
 
     def delete_event(self, widget, event, data=None):
         print "delete event occurred"
+        self.destroy()
         return False
 
     def destroy(self):
@@ -268,34 +268,41 @@ class MainWindow(threading.Thread):
     def run(self):
         global guiinstance
         print "run thread " + self.name + "(MainWindow)"
+
+        self.buildMainWindow()
+        self.buildTabList()
+        self.buildMainBox()
+        self.initServerConnections()
+
+        # show mainwindow
+        self.mainwindow.show_all()
+        #self.mainwindow.maximize()
+
+        self.showNearestItem()
+
+        gtk.main()
+
+        guiinstance = None
+
+    def buildMainWindow(self):
+        self.mainwindow = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.mainwindow.connect("delete_event", self.delete_event)
+        self.mainwindow.connect("destroy", self.destroyFromGtk)
+
+    def buildTabList(self):
         self.tablist = TabBox()
         self.tablist.add(MARSRV, lambda w: self.showServerTab(MARSRV))
         self.tablist.add(DEVSRV, lambda w: self.showServerTab(DEVSRV))
 
-        self.mainwindow.connect("delete_event", self.delete_event)
-        self.mainwindow.connect("destroy", self.destroyFromGtk)
-        print "jepping"
-        self.jepp()
-        print "jepped"
-        guiinstance = None
-
-    def jepp(self):
+    def buildMainBox(self):
         self.MainBox = gtk.VBox(False,0)
-
         self.MainBox.pack_start(self.tablist.getDiv(), False, False, 0)
-        self.tablist.show()
 
+        # big quit button
         QuitButton = gtk.Button("Quit")
         QuitButton.connect("clicked", lambda w: self.emitDestroy(None))
         self.MainBox.pack_end(QuitButton, False, False, 0)
-        QuitButton.show()
-
         self.mainwindow.add(self.MainBox)
-        self.MainBox.show()
-        self.mainwindow.show_all()
-        #self.mainwindow.maximize()
-        self.initServerConnections()
-        gtk.main()
 
     def initServerConnections(self):
         self.servers.append(ServerTabPage(MARSRV))
