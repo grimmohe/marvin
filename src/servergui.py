@@ -355,7 +355,7 @@ class MainWindow(threading.Thread):
                 self.clients.remove(cli)
                 if self.tablist.remove(cliname):
                     self.showNearestItem()
-
+                return true
         return False
 
 
