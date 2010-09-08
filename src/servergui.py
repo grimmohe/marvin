@@ -109,8 +109,10 @@ class TabPage:
         self.textView = gtk.TextView()
         self.textBuffer = self.textView.get_buffer()
 
-        # join text and scrollable window
+        #wrap words in textinput
         self.textView.set_wrap_mode(gtk.WRAP_WORD)
+
+        # join text and scrollable window
         self.scrollableWindow.add(self.textView)
 
         self.toolbar = gtk.HBox(False, 0)
@@ -118,7 +120,9 @@ class TabPage:
         self.mainWidget.attach(self.scrollableWindow, 0,1,0,1)
         self.mainWidget.attach(self.toolbar, 0,1,1,2,0,0,0,0)
 
+        # new textbuffer logger
         self.logger = logger.loggerTextBuffer(self.textBuffer)
+
         self.name = name
 
     def getDiv(self):
