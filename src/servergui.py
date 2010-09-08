@@ -334,7 +334,6 @@ class MainWindow(threading.Thread):
                 self.MainBox.remove(self.ActiveItem)
             self.ActiveItem = new
             self.MainBox.add(self.ActiveItem)
-            self.MainBox.pack_end(self.ActiveItem, False, False, 0)
 
     def showNearestItem(self):
         if len(self.clients) > 0:
