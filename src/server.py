@@ -415,7 +415,7 @@ class ClientContainer(threading.Thread):
         while not self.stop:
             self.actionlogNew.clear()
             self.actionlogNew.wait()
-            if self.actionlogData:
+            if not self.stop and self.actionlogData:
                 actionlog = common.Actionlog()
                 try:
                     actionlog.readXml(self.actionlogData)
