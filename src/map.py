@@ -185,6 +185,9 @@ class BorderList:
         else:
             raise "Object None or wrong type. Expected Vector()"
 
+    def count(self):
+        return len(self.borders)
+
     def getAllBorders(self):
         ret = []
         for b in self.borders:
