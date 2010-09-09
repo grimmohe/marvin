@@ -333,10 +333,12 @@ class ClientContainer(threading.Thread):
         self.start()
 
     def assimilateActions(self, actionlog):
-
+        """ turn the cliens action log into a map and if send, get some other infos """
         for action in actionlog.actions:
             # contains action and value
             dev, key = action.action.split(":")
+            dev = dev.lower()
+            key = key.lower()
             if dev == "engine" and self.devs.has_key(dev):
                 if key == "turned":
                     self.position.orientation += action.value
@@ -410,6 +412,9 @@ class ClientContainer(threading.Thread):
 
     def handlePanicEvents(self):
         """ in case the batterie is low or other stuff, handle that """
+        if not self.devs["self"].has_key("raduis"):
+            pass
+            #TODO: Oh, panic!(TM)
 
     def run(self):
         while not self.stop:
@@ -439,8 +444,6 @@ class ClientContainer(threading.Thread):
         there, xml-templates will be filled and executed.
         """
         pos = map.Position(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
-        if not self.devs["self"].has_key("raduis"):
-            return
         router = map.Router(self.devs["self"]["radius"])
         for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
@@ -452,6 +455,11 @@ class ClientContainer(threading.Thread):
                     if pos.point.getDistanceTo(wp) < collisions[i][0]:
                         break
                     router.route(pos, collisions[i][2], xmltemplate.addTemplate)
+                    if i < len(collisions)-1:
+                        bpos = map.Position(collisions[i+1][2], pos.orientation+180)
+                        bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
+                        if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
+                            router.route(pos, bc[0][2], xmltemplate.addTemplate)
 
             if wp.duty & map.WayPoint.WP_DISCOVER:
                 router.discover(pos, wp.attachment, xmltemplate.addTemplate)
