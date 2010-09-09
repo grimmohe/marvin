@@ -5,6 +5,7 @@ import math
 from numpy.ma.core import max
 from mathix import turn_point, roundup, getVectorIntersectionRatio, get_angle
 from common import SortedList
+import xmltemplate
 
 """ global statics """
 MERGE_RANGE = 1.0
@@ -230,7 +231,8 @@ class BorderList:
             if loose[0] or loose[1]:
                 looseEnds.append(v)
             ii += 1
-        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point) - position.point.getDistanceTo(v2.point)))
+        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point)
+                                              - position.point.getDistanceTo(v2.point)))
         return looseEnds
 
     def getLooseEndPoints(self, border=Vector()):
@@ -330,11 +332,36 @@ class Router:
         p = turn_point({"x": 0, "y": c}, wa)
         return Point(collision.x + p["x"], collision.y + p["y"])
 
-    def discover(self, position, direction, cb_addAction):
+    def actionDiscover(self, position, directionVector, cb_addAction):
         """
         direction is a Vector(), the loose end of a border.
         it has to discover in direction of the start point.
         """
+        direction = 0
+        if directionVector:
+            ratio = getVectorIntersectionRatio(Vector(position.point,
+                                                      Point(0, 1).getTurned(position.orientation)),
+                                               directionVector)
+            if ratio and ratio[0] > 0:
+                self.actionTurn(position, angle=180, headUp=True, cb_addAction=cb_addAction)
+            v1 = Vector(position.point)
+            v1.setEndPoint(directionVector.getStartPoint())
+            v2 = Vector(position.point)
+            v2.setEndPoint(directionVector.getEndPoint())
+            a1 = v1.getAngle()
+            a2 = v2.getAngle()
+            direction = not (a1 > a2 or abs(a1-a2) > 180)
+        cb_addAction(xmltemplate.TEMPLATE_DISCOVER,
+                     direction=direction)
+
+    def actionRoute(self, position, destination, cb_addAction=None):
+        """
+        finds a route from position to destination. cb_addAction is used to transfer required
+        client actions into templates and later assignments.
+        """
+        pass
+
+    def actionTurn(self):
         pass
 
     def prepare(self, borders=BorderList()):
@@ -354,9 +381,6 @@ class Router:
                     border.twist()
                 self._addWaypoint(border, Vector(p, border.size.getTurned(90)))
                 self._addWaypoint(border, Vector(p, border.size.getTurned(-90)))
-
-    def route(self, position, destination, cb_addAction=None):
-        pass
 
 class Map:
 

@@ -452,22 +452,22 @@ class ClientContainer(threading.Thread):
         router = map.Router(self.devs["self"]["radius"])
         for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
-                router.route(pos, wp, xmltemplate.addTemplate)
+                router.actionRoute(pos, wp, xmltemplate.addTemplate)
 
             if wp.duty & map.WayPoint.WP_STRICT:
                 collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
                 for i in range(len(collisions)):
                     if pos.point.getDistanceTo(wp) < collisions[i][0]:
                         break
-                    router.route(pos, collisions[i][2], xmltemplate.addTemplate)
+                    router.actionRoute(pos, collisions[i][2], xmltemplate.addTemplate)
                     if i < len(collisions)-1:
                         bpos = map.Position(collisions[i+1][2], pos.orientation+180)
                         bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
                         if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
-                            router.route(pos, bc[0][2], xmltemplate.addTemplate)
+                            router.actionRoute(pos, bc[0][2], xmltemplate.addTemplate)
 
             if wp.duty & map.WayPoint.WP_DISCOVER:
-                router.discover(pos, wp.attachment, xmltemplate.addTemplate)
+                router.actionDiscover(pos, wp.attachment, xmltemplate.addTemplate)
 
         #TODO: transmit template data
 
