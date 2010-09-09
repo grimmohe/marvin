@@ -348,7 +348,8 @@ class ClientContainer(threading.Thread):
                 elif key == "distance" and self.devs[dev].has_key(key):
                     new_x = self.x + math.sin(math.radians(self.position.orientation)) * action.value
                     new_y = self.y + math.cos(math.radians(self.position.orientation)) * action.value
-                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
+                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
+                                                               self.position.orientation)
                     v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.position.orientation)
                     for dev in self.devs:
                         if dev.has_key("touch") and dev["touch"]:
@@ -368,10 +369,14 @@ class ClientContainer(threading.Thread):
                 self.devs[dev][key] = action.value
                 if key == "distance":
                     self.devs[dev]["touch"] = (action.value < 1.0)
-                    sensorOffset = None
-                    if self.devs[dev].has_key("orientation"):
-                        sensorOffset = self.devs[dev]["orientation"]
-                    self.map.borders.add(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation, sensorOffset))
+                    if self.devs[dev]["touch"]:
+                        sensorOffset = None
+                        if self.devs[dev].has_key("orientation"):
+                            sensorOffset = self.devs[dev]["orientation"]
+                        self.map.borders.add(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x,
+                                                                                        self.position.point.y),
+                                                                              self.position.orientation,
+                                                                              sensorOffset))
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
@@ -394,7 +399,7 @@ class ClientContainer(threading.Thread):
                                                   loose.point.y + loose.size.y * bmulti,
                                                   map.WayPoint.WP_FAST | map.WayPoint.WP_DISCOVER,
                                                   loose))
-            elif len(self.map.borders) == 0:
+            elif self.map.borders.count() == 0:
                 self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
         else:
             self.connection.logger.log("try to discover, but no \"radius\" item found" )
