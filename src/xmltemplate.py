@@ -27,6 +27,10 @@ TEMPLATE_TURN_BLIND = 8
 TEMPLATE_TURN_ANGLE = 16
 TEMPLATE_TURN_HIT = 32
 
+DIRECTIONS = ("left", "right")
+DIRECTION_LEFT = 0
+DIRECTION_RIGHT = 1
+
 _templateList = []
 
 def addTemplate(typ, baseSensor=None, untouchedSensor=None, direction=None, compare=None,
