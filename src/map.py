@@ -357,7 +357,13 @@ class Router:
                                                       Point(0, 1).getTurned(position.orientation)),
                                                directionVector)
             if ratio and ratio[0] > 0:
-                self.actionTurn(position, angle=180, headUp=True, cb_addAction=cb_addAction)
+                self.actionHead(headUp=True, cb_addAction=cb_addAction)
+                self.actionTurn(position,
+                                goAngle=180,
+                                headUp=True,
+                                cb_getSensorList=cb_getSensorList,
+                                cb_addAction=cb_addAction)
+                self.actionHead(headUp=False, cb_addAction=cb_addAction)
             a1 = Vector(position.point, endPoint=directionVector.getStartPoint()).getAngle()
             a2 = Vector(position.point, endPoint=directionVector.getEndPoint()).getAngle()
             if not(a1 > a2 or abs(a1-a2) > 180):
@@ -377,15 +383,64 @@ class Router:
                      baseSensor=sensorsTouching,
                      untouchedSensor=sensorsUntouched)
 
-    def actionRoute(self, position, destination, cb_addAction=None):
+    def actionHead(self, headUp, cb_addAction):
+        if headUp:
+            movement = xmltemplate.HEAD_UP
+        else:
+            movement = xmltemplate.HEAD_DOWN
+        cb_addAction(headMovement=movement)
+
+    def actionRoute(self, position, destination, cb_getSensorList, cb_addAction):
         """
         finds a route from position to destination. cb_addAction is used to transfer required
         client actions into templates and later assignments.
         """
         pass
 
-    def actionTurn(self):
-        pass
+    def actionTurn(self, position, headUp=False, goAngle=None, destAngle=None,
+                   hitSensorNames=None, hitDirection=None, cb_getSensorList, cb_addAction):
+        """
+        turn the device to a destined or relative angle while the head is up or not.
+        maybe you turn and turn till you hit something.
+        """
+        if hitSensorNames or hitDirection:
+            if not (hitSensorNames and hitDirection):
+                raise Exception()
+            sensors = cb_getSensorList()
+            sensorsTouching = []
+            sensorsUntouched = []
+            for s in sensors:
+                a = (Vector(endPoint=s.getStartPoint()).getAngle() + Vector(endPoint=s.getEndPoint()).getAngle() / 2)
+                if (hitDirection == xmltemplate.DIRECTION_LEFT and angleIsLeft(a)) \
+                or (hitDirection == xmltemplate.DIRECTION_RIGHT and angleIsRight(a)):
+                    sensorsTouching.append(s.name)
+                else:
+                    sensorsUntouched.append(s.name)
+            cb_addAction(xmltemplate.TEMPLATE_TURN_HIT,
+                         baseSensor=sensorsTouching,
+                         untouchedSensor=sensorsUntouched,
+                         direction=hitDirection)
+            if destAngle:
+                position.orientation = destAngle
+            if goAngle:
+                position.orientation += goAngle
+        else:
+            if not (position and (goAngle or destAngle)):
+                raise Exception()
+            if headUp:
+                self.actionHead(headUp=True, cb_addAction=cb_addAction)
+
+            direction = xmltemplate.DIRECTION_LEFT
+            if goAngle:
+                destAngle = position.orientation + goAngle
+                if goAngle > 0: direction = xmltemplate.DIRECTION_RIGHT
+            else:
+                if :
+                    direction = xmltemplate.DIRECTION_RIGHT
+
+            cb_addAction(xmltemplate.TEMPLATE_TURN_ANGLE,
+                         direction=direction,
+                         targetAngle=destAngle)
 
     def prepare(self, borders=BorderList()):
         """ generate waypoints """
