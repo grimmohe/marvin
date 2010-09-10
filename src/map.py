@@ -12,6 +12,18 @@ MERGE_RANGE = 1.0
 MAX_VECTOR_LENGTH = 50.0
 MAX_RANGE = 6378137000
 
+def isAngle(a):
+    return a and type(1) in (int, float)
+
+def angleIsFront(a):
+    return isAngle(a) and (a >= 315 or a <= 45)
+
+def angleIsLeft(a):
+    return isAngle(a) and a >= 225 and a <= 315
+
+def angleIsRight(a):
+    return isAngle(a) and a >= 45 and a <= 135
+
 class Point(object):
 
     def __init__(self, x, y):
@@ -50,9 +62,11 @@ class Vector:
     """
     point (X;Y) with size (X;Y)
     """
-    def __init__(self, point=Point(0, 0), size=Point(0, 0)):
+    def __init__(self, point=Point(0, 0), size=Point(0, 0), endPoint=None):
         self.point = point
         self.size = size
+        if endPoint:
+            self.setEndPoint(endPoint)
 
     def combine(self, vector1, vector2, kind_of_point):
         """ create a new vector between vector1 and vector2 """
@@ -332,27 +346,36 @@ class Router:
         p = turn_point({"x": 0, "y": c}, wa)
         return Point(collision.x + p["x"], collision.y + p["y"])
 
-    def actionDiscover(self, position, directionVector, cb_addAction):
+    def actionDiscover(self, position, directionVector, cb_getSensorList, cb_addAction):
         """
         direction is a Vector(), the loose end of a border.
         it has to discover in direction of the start point.
         """
-        direction = 0
+        direction = xmltemplate.DIRECTION_LEFT
         if directionVector:
             ratio = getVectorIntersectionRatio(Vector(position.point,
                                                       Point(0, 1).getTurned(position.orientation)),
                                                directionVector)
             if ratio and ratio[0] > 0:
                 self.actionTurn(position, angle=180, headUp=True, cb_addAction=cb_addAction)
-            v1 = Vector(position.point)
-            v1.setEndPoint(directionVector.getStartPoint())
-            v2 = Vector(position.point)
-            v2.setEndPoint(directionVector.getEndPoint())
-            a1 = v1.getAngle()
-            a2 = v2.getAngle()
-            direction = not (a1 > a2 or abs(a1-a2) > 180)
+            a1 = Vector(position.point, endPoint=directionVector.getStartPoint()).getAngle()
+            a2 = Vector(position.point, endPoint=directionVector.getEndPoint()).getAngle()
+            if not(a1 > a2 or abs(a1-a2) > 180):
+                direction = xmltemplate.DIRECTION_RIGHT
+        sensors = cb_getSensorList()
+        sensorsTouching = []
+        sensorsUntouched = []
+        for s in sensors:
+            a = (Vector(endPoint=s.getStartPoint()).getAngle() + Vector(endPoint=s.getEndPoint()).getAngle() / 2)
+            if (direction == xmltemplate.DIRECTION_LEFT and angleIsLeft(a)) \
+            or (direction == xmltemplate.DIRECTION_RIGHT and angleIsRight(a)):
+                sensorsTouching.append(s.name)
+            else:
+                sensorsUntouched.append(s.name)
         cb_addAction(xmltemplate.TEMPLATE_DISCOVER,
-                     direction=direction)
+                     direction=direction,
+                     baseSensor=sensorsTouching,
+                     untouchedSensor=sensorsUntouched)
 
     def actionRoute(self, position, destination, cb_addAction=None):
         """

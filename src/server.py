@@ -467,7 +467,7 @@ class ClientContainer(threading.Thread):
                             router.actionRoute(pos, bc[0][2], xmltemplate.addTemplate)
 
             if wp.duty & map.WayPoint.WP_DISCOVER:
-                router.actionDiscover(pos, wp.attachment, xmltemplate.addTemplate)
+                router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=xmltemplate.addTemplate)
 
         #TODO: transmit template data
 
