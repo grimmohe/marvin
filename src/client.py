@@ -147,7 +147,7 @@ class Client:
                         if config.has_option(devname, "output"):
                             for output in config.get(devname, "output").split(";"):
                                 self.stateholder.update(devname + ":" + output.split("=")[0], \
-                                                        output.split("=")[1], \
+                                                        float(output.split("=")[1]), \
                                                         process=False)
                         self.stateholder.addDevice(devname)
             except Exception, e:

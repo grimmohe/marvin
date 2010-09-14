@@ -92,7 +92,7 @@ class ActionlogEntry:
         self.start_value = start_value
 
     def toXml(self):
-        if type(self.value) in ("int", "float"):
+        if type(self.value) in (int, float):
             value = str(int((self.value - self.start_value) * 100))
         else:
             value = str(self.value)

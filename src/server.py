@@ -333,10 +333,12 @@ class ClientContainer(threading.Thread):
         self.start()
 
     def assimilateActions(self, actionlog):
-
+        """ turn the cliens action log into a map and if send, get some other infos """
         for action in actionlog.actions:
             # contains action and value
             dev, key = action.action.split(":")
+            dev = dev.lower()
+            key = key.lower()
             if dev == "engine" and self.devs.has_key(dev):
                 if key == "turned":
                     self.position.orientation += action.value
@@ -346,7 +348,8 @@ class ClientContainer(threading.Thread):
                 elif key == "distance" and self.devs[dev].has_key(key):
                     new_x = self.x + math.sin(math.radians(self.position.orientation)) * action.value
                     new_y = self.y + math.cos(math.radians(self.position.orientation)) * action.value
-                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
+                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
+                                                               self.position.orientation)
                     v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.position.orientation)
                     for dev in self.devs:
                         if dev.has_key("touch") and dev["touch"]:
@@ -366,10 +369,14 @@ class ClientContainer(threading.Thread):
                 self.devs[dev][key] = action.value
                 if key == "distance":
                     self.devs[dev]["touch"] = (action.value < 1.0)
-                    sensorOffset = None
-                    if self.devs[dev].has_key("orientation"):
-                        sensorOffset = self.devs[dev]["orientation"]
-                    self.map.borders.add(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y), self.position.orientation, sensorOffset))
+                    if self.devs[dev]["touch"]:
+                        sensorOffset = None
+                        if self.devs[dev].has_key("orientation"):
+                            sensorOffset = self.devs[dev]["orientation"]
+                        self.map.borders.add(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x,
+                                                                                        self.position.point.y),
+                                                                              self.position.orientation,
+                                                                              sensorOffset))
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
@@ -392,7 +399,7 @@ class ClientContainer(threading.Thread):
                                                   loose.point.y + loose.size.y * bmulti,
                                                   map.WayPoint.WP_FAST | map.WayPoint.WP_DISCOVER,
                                                   loose))
-            elif len(self.map.borders) == 0:
+            elif self.map.borders.count() == 0:
                 self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
         else:
             self.connection.logger.log("try to discover, but no \"radius\" item found" )
@@ -410,6 +417,9 @@ class ClientContainer(threading.Thread):
 
     def handlePanicEvents(self):
         """ in case the batterie is low or other stuff, handle that """
+        if not self.devs["self"].has_key("raduis"):
+            pass
+            #TODO: Oh, panic!(TM)
 
     def run(self):
         while not self.stop:
@@ -439,22 +449,25 @@ class ClientContainer(threading.Thread):
         there, xml-templates will be filled and executed.
         """
         pos = map.Position(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
-        if not self.devs["self"].has_key("raduis"):
-            return
         router = map.Router(self.devs["self"]["radius"])
         for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
-                router.route(pos, wp, xmltemplate.addTemplate)
+                router.actionRoute(pos, wp, xmltemplate.addTemplate)
 
             if wp.duty & map.WayPoint.WP_STRICT:
                 collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
                 for i in range(len(collisions)):
                     if pos.point.getDistanceTo(wp) < collisions[i][0]:
                         break
-                    router.route(pos, collisions[i][2], xmltemplate.addTemplate)
+                    router.actionRoute(pos, collisions[i][2], xmltemplate.addTemplate)
+                    if i < len(collisions)-1:
+                        bpos = map.Position(collisions[i+1][2], pos.orientation+180)
+                        bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
+                        if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
+                            router.actionRoute(pos, bc[0][2], xmltemplate.addTemplate)
 
             if wp.duty & map.WayPoint.WP_DISCOVER:
-                router.discover(pos, wp.attachment, xmltemplate.addTemplate)
+                router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=xmltemplate.addTemplate)
 
         #TODO: transmit template data
 
