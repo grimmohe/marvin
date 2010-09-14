@@ -10,6 +10,8 @@ import threading
 import server
 import logger
 import time
+import gnomecanvas
+import map
 gtk.gdk.threads_init()
 
 MARSRV = "MarvinServer"
@@ -177,8 +179,15 @@ class ClientTabPage(TabPage):
         self.btndel = gtk.Button("Delete")
         self.btndel.connect("clicked", lambda w: self.delete())
 
+        self.mapvis = MapVisual(None, 200, 200)
+
         self.toolbar.pack_start(self.btndisco, False, 0)
         self.toolbar.pack_start(self.btndel, False, 0)
+
+        self.mainWidget.resize(1,2)
+        self.mainWidget.attach(self.mapvis.getDiv(), 1,2,0,1)
+
+        #self.mapvis.run()
 
         self.mainWidget.show_all()
         self.clientConnection = clientConnection
@@ -199,6 +208,99 @@ class ClientTabPage(TabPage):
         self.disconnect()
         self.close()
         return True
+
+    def getDiv(self, parent=None):
+        if parent:
+            self.mapvis.update()
+        return self.mainWidget
+
+
+class MapVisual:
+
+    def __init__(self, _map, height, width):
+        self.area = gnomecanvas.Canvas(aa=True)
+        self.map = _map
+        self.height = height
+        self.width = width
+        self.area.set_size_request(height + 2, width + 2)
+        if not self.map:
+            self.map = map.Map()
+            self.map.borders.add(map.Vector(map.Point(0,0), map.Point(0,10)))
+            self.map.borders.add(map.Vector(map.Point(0,10), map.Point(10,10)))
+            self.map.borders.add(map.Vector(map.Point(10,10), map.Point(10,0)))
+            self.map.borders.add(map.Vector(map.Point(0,0), map.Point(10,5)))
+            #T
+            self.map.borders.add(map.Vector(map.Point(0.5,3), map.Point(1.5,3)))
+            self.map.borders.add(map.Vector(map.Point(1,3), map.Point(1,4)))
+            #E
+            self.map.borders.add(map.Vector(map.Point(2,3), map.Point(3,3)))
+            self.map.borders.add(map.Vector(map.Point(2,3.5), map.Point(3,3.5)))
+            self.map.borders.add(map.Vector(map.Point(2,4), map.Point(3,4)))
+            self.map.borders.add(map.Vector(map.Point(2,3), map.Point(2,4)))
+            #S
+            self.map.borders.add(map.Vector(map.Point(4,3), map.Point(5,3)))
+            self.map.borders.add(map.Vector(map.Point(4,3), map.Point(4,3.5)))
+            self.map.borders.add(map.Vector(map.Point(4,3.5), map.Point(5,3.5)))
+            self.map.borders.add(map.Vector(map.Point(5,3.5), map.Point(5,4)))
+            self.map.borders.add(map.Vector(map.Point(4,4), map.Point(5,4)))
+            #T
+            self.map.borders.add(map.Vector(map.Point(5.5,3), map.Point(6.5,3)))
+            self.map.borders.add(map.Vector(map.Point(6,3), map.Point(6,4)))
+
+
+    def getDiv(self):
+        return self.area
+
+    def show(self):
+        self.update()
+
+    def update(self):
+        minx = miny = maxx = maxy = 0
+        drw = self.area.root()
+
+        drw.add("GnomeCanvasRect",
+                fill_color='black',
+                x1=0,
+                x2=self.width,
+                y1=0,
+                y2=self.height)
+
+
+        for vec in self.map.borders.getAllBorders():
+            if minx > vec.point.x:
+                minx = vec.point.x
+            if miny > vec.point.y:
+                miny = vec.point.y
+
+            if maxx < vec.size.x:
+                maxx = vec.size.x
+            if maxy < vec.size.y:
+                maxy = vec.size.y
+
+        ratiox = ((maxx - minx) / self.width) / 0.75
+        ratioy = ((maxy - miny) / self.height) / 0.75
+        count = 0
+        colors = ["red","blue", "yellow"]
+        for vec in self.map.borders.getAllBorders():
+
+            x1 = vec.point.x / ratiox
+            x2 = vec.size.x / ratiox
+            y1 = vec.point.y / ratioy
+            y2 = vec.size.y / ratioy
+
+            print "x1: " + str(x1) + ", y1: " + str(y1) + ",x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
+            drw.add("GnomeCanvasLine",
+                fill_color=colors[count],
+                width_units=1.0,
+                points=[x1,
+                        y1,
+                        x2,
+                        y2])
+
+            if count == 2:
+                count = 0
+            else:
+                count += 1
 
 class TabBox:
 
@@ -311,7 +413,7 @@ class MainWindow(threading.Thread):
         self.showActiveItem(self.servers[btn].getDiv())
 
     def showClientTab(self, btn):
-        self.showActiveItem(self.clients[btn].getDiv())
+        self.showActiveItem(self.clients[btn].getDiv(self.MainBox.window))
 
     def showActiveItem(self, new):
         if new and new <> self.ActiveItem:
