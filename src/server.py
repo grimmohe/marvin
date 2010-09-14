@@ -466,7 +466,8 @@ class ClientContainer(threading.Thread):
         # semi fire event to come out of wait state, but set stop flag before, so thread
         # is killed
         self.stop = True
-        self.actionlogNew.set()
+        if self.actionlogNew:
+            self.actionlogNew.set()
         self.actionlogNew = None
         self.map = None
 
