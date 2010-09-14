@@ -321,7 +321,17 @@ class Router:
 
     def __init__(self, objectRadius=0):
         self.waypoints = SortedList(lambda a, b: id(a) - id(b))
+        self.routes = SortedList(self.__routesOrder)
         self.objectRadius = objectRadius
+        self.shortest = None
+
+    def __routesOrder(self, a, b):
+        order = a["left"] - b["left"]
+        if not order:
+            order = a["distance"] - b["distance"]
+        if not order:
+            order = len(a["wp"]) - len(b["wp"])
+        return order
 
     def _addWaypoint(self, b1=Vector(), b2=Vector()):
         ratio = getVectorIntersectionRatio(b1, b2)
@@ -345,6 +355,14 @@ class Router:
         c = self.objectRadius * math.sin(math.radians(angle))
         p = turn_point({"x": 0, "y": c}, wa)
         return Point(collision.x + p["x"], collision.y + p["y"])
+
+    def _getDirection(self, aCurrent, aDest):
+        aDest += (360 - aCurrent) % 360
+        if aDest > 180:
+            direction = xmltemplate.DIRECTION_LEFT
+        else:
+            direction = xmltemplate.DIRECTION_RIGHT
+        return direction
 
     def actionDiscover(self, position, directionVector, cb_getSensorList, cb_addAction):
         """
@@ -383,6 +401,22 @@ class Router:
                      baseSensor=sensorsTouching,
                      untouchedSensor=sensorsUntouched)
 
+    def actionDrive(self, position, distance=None, cb_getSensorList=None, cb_addAction=None):
+        if not (cb_getSensorList and cb_addAction):
+            raise Exception("cb_getSensorList or cb_addAction missing")
+        sensorsUntouched = []
+        if distance:
+            for s in cb_getSensorList():
+                sensorsUntouched.append(s.name)
+        else:
+            for s in cb_getSensorList():
+                a = (Vector(endPoint=s.getStartPoint()).getAngle() + Vector(endPoint=s.getEndPoint()).getAngle() / 2)
+                if angleIsFront(a):
+                    sensorsUntouched.append(s.name)
+        cb_addAction(xmltemplate.TEMPLATE_DRIVE,
+                     untouchedSensor=sensorsUntouched,
+                     distance=distance)
+
     def actionHead(self, headUp, cb_addAction):
         if headUp:
             movement = xmltemplate.HEAD_UP
@@ -390,19 +424,74 @@ class Router:
             movement = xmltemplate.HEAD_DOWN
         cb_addAction(headMovement=movement)
 
-    def actionRoute(self, position, destination, cb_getSensorList, cb_addAction):
+    def actionRoute(self, position, destination, cb_getSensorList, cb_addAction, cb_getCollisions):
         """
         finds a route from position to destination. cb_addAction is used to transfer required
         client actions into templates and later assignments.
         """
-        pass
+        self._actionRouteRun(position, destination, cb_getSensorList, cb_getCollisions)
+
+        route = self.routes[0]
+        for wp in route["wp"]:
+            self.actionTurn(position=position,
+                            destAngle=Vector(position.point, endPoint=wp).getAngle(),
+                            cb_getSensorList=cb_getSensorList,
+                            cb_addAction=cb_addAction)
+            self.actionDrive(position=position,
+                             distance=position.point.getDistanceTo(wp),
+                             cb_getSensorList=cb_getSensorList,
+                             cb_addAction=cb_addAction)
+
+        self.routes.clear()
+
+    def _actionRouteRun(self, position, destination, cb_getSensorList, cb_getCollisions, route={"distance": 0, "wp": [], "left": None}):
+        """ run through all possible waypoints to find destination """
+
+        def copyRoute(route):
+            return {"distance": route["distance"],
+                    "wp": [] + route["wp"],
+                    "left": route["left"]}
+
+        basicSensor = Vector(Point(-self.objectRadius, 0), Point(self.objectRadius*2, 0))
+        for index in range(self.waypoints.count()):
+            wp = self.waypoints.get(index)
+            if not route["wp"].count(wp): # not two times the same waypoint
+                pos = Position(position.point, Vector(position.point, endPoint=wp).getAngle())
+                distance = cb_getCollisions(pos, basicSensor)
+                if len(distance):
+                    distanceC = distance[0][0]
+                else:
+                    distanceC = MAX_RANGE
+                distanceWP = pos.point.getDistanceTo(wp)
+                if distanceC >= distanceWP:
+                    r = copyRoute(route)
+                    r["distance"] += distanceWP
+                    r["wp"].append(wp)
+                    pos.point = wp
+                    self._actionRouteRun(pos, destination, cb_getSensorList, cb_getCollisions, r)
+
+        position.orientation = Vector(position.point, endPoint=wp).getAngle()
+        distance = cb_getCollisions(position, cb_getSensorList())
+        if len(distance):
+            distanceC = distance[0]
+        else:
+            distanceC = MAX_RANGE
+        distanceWP = pos.point.getDistanceTo(destination)
+        route["wp"].append(distanceC[2])
+        route["distance"] += distanceC[0]
+        route["left"] = distanceC[2].getDistanceTo(destination)
+        self.routes.append(route)
+
 
     def actionTurn(self, position, headUp=False, goAngle=None, destAngle=None,
-                   hitSensorNames=None, hitDirection=None, cb_getSensorList, cb_addAction):
+                   hitSensorNames=None, hitDirection=None, cb_getSensorList=None, cb_addAction=None):
         """
         turn the device to a destined or relative angle while the head is up or not.
         maybe you turn and turn till you hit something.
         """
+        if not (cb_getSensorList and cb_addAction):
+            raise Exception("cb_getSensorList or cb_addAction missing")
+
         if hitSensorNames or hitDirection:
             if not (hitSensorNames and hitDirection):
                 raise Exception()
@@ -435,8 +524,7 @@ class Router:
                 destAngle = position.orientation + goAngle
                 if goAngle > 0: direction = xmltemplate.DIRECTION_RIGHT
             else:
-                if :
-                    direction = xmltemplate.DIRECTION_RIGHT
+                direction = self._getDirection(position.orientation, destAngle)
 
             cb_addAction(xmltemplate.TEMPLATE_TURN_ANGLE,
                          direction=direction,
