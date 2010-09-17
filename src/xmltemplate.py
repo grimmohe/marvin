@@ -29,15 +29,67 @@ TEMPLATE_TURN_HIT = 16
 HEAD_UP = 0
 HEAD_DOWN = 100
 
-DIRECTIONS = ("left", "right")
 DIRECTION_LEFT = 0
 DIRECTION_RIGHT = 1
+DIRECTION_KEYS = (DIRECTION_LEFT, DIRECTION_RIGHT)
+DIRECTIONS = ("left", "right")
 
 _templateList = []
 
-def addTemplate(typ, baseSensor=None, untouchedSensor=None, direction=None, compare=None,
+def addTemplate(type, baseSensor=None, untouchedSensor=None, direction=None, compare=None,
                 targetAngle=None, distance=None, headMovement=None):
-    pass
+    """ used as callback method to add an assignment, still in form of template type and the required variables """
+    tki = TemplateKeyInformation(type)
+
+    if type in (TEMPLATE_DISCOVER, TEMPLATE_TURN_HIT):
+        if not (baseSensor and untouchedSensor and direction in DIRECTION_KEYS):
+            raise Exception("there are parameters missing")
+
+        tki.add(TemplateVariable("direction", direction))
+        if direction == DIRECTION_LEFT:
+            tki.add(TemplateVariable("opposite-direction", DIRECTION_RIGHT))
+        else:
+            tki.add(TemplateVariable("opposite-direction", DIRECTION_LEFT))
+
+        # one entry for every device name
+        for dev in baseSensor:
+            tki.add(TemplateVariable("base-sensor", dev))
+        for dev in untouchedSensor:
+            tki.add(TemplateVariable("untouched-sensor", dev))
+
+    elif type == TEMPLATE_DRIVE:
+        if not untouchedSensor:
+            raise Exception("there are parameters missing")
+
+        if distance:
+            tki.add(TemplateVariable("distance", distance))
+
+        for dev in untouchedSensor:
+            tki.add(TemplateVariable("untouched-sensor", dev))
+
+    elif type == TEMPLATE_HEAD:
+        if not headMovement in (HEAD_DOWN, HEAD_UP):
+            raise Exception("there are parameters missing")
+
+        tki.add(TemplateVariable("head-target", headMovement))
+        if headMovement == HEAD_DOWN:
+            tki.add(TemplateVariable("head-movement", "down"))
+        else:
+            tki.add(TemplateVariable("head-movement", "up"))
+
+
+    elif type == TEMPLATE_TURN_ANGLE:
+        if not (targetAngle and direction in DIRECTION_KEYS):
+            raise Exception("there are parameters missing")
+
+        tki.add(TemplateVariable("direction", direction))
+        tki.add(TemplateVariable("target-angle", targetAngle))
+
+    else:
+        raise Exception("unknown template type")
+
+    _templateList.append(tki)
+
 
 def clear():
     _templateList = []
