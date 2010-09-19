@@ -469,7 +469,8 @@ class ClientContainer(threading.Thread):
             if wp.duty & map.WayPoint.WP_DISCOVER:
                 router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=xmltemplate.addTemplate)
 
-        #TODO: transmit template data
+        self.connection.write(xmltemplate.getTransmissionData())
+        xmltemplate.clear()
 
     def shutdown(self):
         if self.connection:
