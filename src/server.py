@@ -407,7 +407,7 @@ class ClientContainer(threading.Thread):
     def getSensorList(self, extended=False):
         sensors = []
         for devname in self.devs:
-            if self.devs[devname].hasKey("dimension") and self.devs[devname].hasKey("distance"):
+            if self.devs[devname].has_key("dimension") and self.devs[devname].has_key("distance"):
                 if extended: os = self.devs[devname]["distance"]
                 else: os = 0
                 s = self.devs[devname]["dimension"].copy(offset=os)
