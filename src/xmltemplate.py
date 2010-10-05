@@ -43,7 +43,7 @@ def addTemplate(type, baseSensor=None, untouchedSensor=None, direction=None, com
     tki = TemplateKeyInformation(type)
 
     if type in (TEMPLATE_DISCOVER, TEMPLATE_TURN_HIT):
-        if not (baseSensor and untouchedSensor and direction in DIRECTION_KEYS):
+        if not (baseSensor <> None and untouchedSensor <> None and direction in DIRECTION_KEYS):
             raise Exception("there are parameters missing")
 
         tki.add(TemplateVariable("direction", direction))
@@ -59,7 +59,7 @@ def addTemplate(type, baseSensor=None, untouchedSensor=None, direction=None, com
             tki.add(TemplateVariable("untouched-sensor", dev))
 
     elif type == TEMPLATE_DRIVE:
-        if not untouchedSensor:
+        if not untouchedSensor <> None:
             raise Exception("there are parameters missing")
 
         if distance:
@@ -78,7 +78,6 @@ def addTemplate(type, baseSensor=None, untouchedSensor=None, direction=None, com
         else:
             tki.add(TemplateVariable("head-movement", "up"))
 
-
     elif type == TEMPLATE_TURN_ANGLE:
         if not (targetAngle and direction in DIRECTION_KEYS):
             raise Exception("there are parameters missing")
@@ -93,6 +92,7 @@ def addTemplate(type, baseSensor=None, untouchedSensor=None, direction=None, com
 
 
 def clear():
+    global _templateList
     _templateList = []
 
 def getTransmissionData():
@@ -101,16 +101,48 @@ def getTransmissionData():
         data += tki.toXml()
     return data
 
-def readTransmissionData():
-    pass
+def readTransmissionData(data):
+    xml.sax.parseString(data, TransmissiondataXmlHandler())
+
+def processTemplates(xmlHandler):
+    for tki in _templateList:
+        data = getTemplateData(tki.type)
+        xmlHandler.getVar = tki.lookup
+        xml.sax.parseString(data, xmlHandler)
+
+def getTemplateData(type):
+    """ loads the template file to return as string """
+    filename = ""
+    if type == TEMPLATE_DISCOVER:
+        filename = "discover.xml"
+    elif type == TEMPLATE_DRIVE:
+        filename = "drive.xml"
+    elif type == TEMPLATE_HEAD:
+        filename = "head.xml"
+    elif type == TEMPLATE_TURN_ANGLE:
+        filename = "turn-angle.xml"
+    elif type == TEMPLATE_TURN_HIT:
+        filename = "turn-hit.xml"
+    else:
+        raise Exception("unknown template type")
+
+    try:
+        input = open(filename, "r")
+        data = input.read()
+    finally:
+        input.close()
+
+    return data
 
 class TransmissiondataXmlHandler(xml.sax.ContentHandler):
     """
     Handles XML.SAX events to create ActionlogEntry
     """
 
+    def __init__(self):
+        self.tki = None
+
     def startElement(self,name,attrs):
-        tki = None
         if name == "tki":
             type = None
             for attr,val in attrs.items():
@@ -120,8 +152,8 @@ class TransmissiondataXmlHandler(xml.sax.ContentHandler):
                     except ValueError:
                         continue
             if type:
-                tki = TemplateKeyInformation(type)
-                _templateList.append(tki)
+                self.tki = TemplateKeyInformation(type)
+                _templateList.append(self.tki)
         elif name == "tv":
             n = None
             v = None
@@ -130,8 +162,8 @@ class TransmissiondataXmlHandler(xml.sax.ContentHandler):
                     n = val
                 elif attr == "v":
                     v = val
-            if tki:
-                tki.varlist.append(TemplateVariable(n, v))
+            if self.tki:
+                self.tki.varlist.append(TemplateVariable(n, v))
         return 0
 
 class TemplateList:
@@ -209,10 +241,11 @@ class TemplateKeyInformation:
             self.varlist.append(var)
 
     def lookup(self, varname):
+        ret = ""
         for var in self.varlist:
             if var.name == varname:
-                return var
-        return None
+                ret += "," + var.value
+        return ret.lstrip(",")
 
     def toXml(self):
         data = '<tki type="' + str(self.type) + '">'

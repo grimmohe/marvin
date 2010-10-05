@@ -292,14 +292,18 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
     def __init__(self, client):
         self.client = client
         self.openAssignment = None
+        self.getVar = None
 
     def startElement(self,name,attrs):
+        if not self.getVar:
+            raise Exception("missing callback 'getVar'")
 
         if name == "assignment":
             actionStart = None
             actionEnd = None
             id = 0
             for key,value in attrs.items():
+                value = self.valueReplace(value)
                 if key == "start":
                     actionStart = Action(value, "false", None)
                 elif key == "end":
@@ -331,11 +335,13 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
             final = None
 
             for key,value in attrs.items():
+                value = self.valueReplace(value)
+
                 if key == "ifarg1":
-                    arg1 = Argument(value)
+                    arg1 = value
 
                 elif key == "ifarg2":
-                    arg2 = Argument(value)
+                    arg2 = value
 
                 elif key == "ifcompare":
                     compare = value
@@ -346,12 +352,22 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
                 elif key == "final":
                     final = value
 
-            action = Action(then, final, self.openAssignment)
-            self.openAssignment.events.append(Event(arg1, arg2, compare, action))
+            for rarg1 in arg1.split(","):
+                for rarg2 in arg2.split(","):
+                    action = Action(then, final, self.openAssignment)
+                    self.openAssignment.events.append(Event(Argument(rarg1), Argument(rarg2), compare, action))
 
     def endElement(self, name):
         if name == "assignment" and self.openAssignment:
             self.openAssignment = self.openAssignment.parentAssignment
+
+    def valueReplace(self, value):
+        ret = value
+        if len(value) and value[0] == "$":
+            ret = self.getVar(value[1:])
+            if not len(ret):
+                raise Exception("variable missing (" + value + ")")
+        return ret
 
 
 class Argument:

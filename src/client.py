@@ -6,6 +6,7 @@ import xml.sax
 import device
 from common import Actionlog, AssignmentXmlHandler, Connector
 import ConfigParser
+import xmltemplate
 
 class State:
     """
@@ -110,10 +111,15 @@ class Client:
         self.assignments   = []
         data = self.connection.read(flushData=True)
         if data:
+            print data
             try:
-                xml.sax.parseString(data, AssignmentXmlHandler(self))
+                xmltemplate.readTransmissionData("<document>" + data + "</document>") #its "junk" without <document/>
+            except Exception as e:
+                print "no valid xml tki? " + e.message
+            try:
+                xmltemplate.processTemplates(AssignmentXmlHandler(self))
             except:
-                print "no valid xml?"
+                print "no valid xml template?"
         return 0
 
     def initialize (self):

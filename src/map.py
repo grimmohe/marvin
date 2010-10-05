@@ -591,6 +591,9 @@ class Map:
         """ add a waypoint to current waypoints """
         self.waypoints.append(wp)
 
+    def clearWaypoints(self):
+        self.waypoints = []
+
     def getCollisions(self, position=Position(), sensors=[], min_distance=0):
         """ calc distance to next collision """
         def __order(a, b):

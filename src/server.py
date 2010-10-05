@@ -320,6 +320,7 @@ class Server:
 class ClientContainer(threading.Thread):
 
     def __init__(self):
+        print "new ClientContainer"
         threading.Thread.__init__(self)
         self.position = map.Position()
         self.map = map.Map()
@@ -417,15 +418,20 @@ class ClientContainer(threading.Thread):
 
     def handlePanicEvents(self):
         """ in case the batterie is low or other stuff, handle that """
-        if not self.devs["self"].has_key("raduis"):
+        if not self.devs.has_key("self") or not self.devs["self"].has_key("raduis"):
             pass
             #TODO: Oh, panic!(TM)
 
     def run(self):
+        print "start run"
         while not self.stop:
+            print "start wait"
             self.actionlogNew.clear()
             self.actionlogNew.wait()
+            print "done wait"
             if not self.stop and self.actionlogData:
+                print "data:"
+                print self.actionlogData
                 actionlog = common.Actionlog()
                 try:
                     actionlog.readXml(self.actionlogData)
@@ -470,6 +476,7 @@ class ClientContainer(threading.Thread):
                 router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=xmltemplate.addTemplate)
 
         self.connection.write(xmltemplate.getTransmissionData())
+        self.map.clearWaypoints()
         xmltemplate.clear()
 
     def shutdown(self):
@@ -506,7 +513,7 @@ class MarvinServer(Server):
             client.actionlogData=data
             client.actionlogNew.set()
         else:
-            client.shellEcho("no suitable client found")
+            print "no suitable client found"
 
     def addClient(self, clientConnection):
         clientConnection.clientContainer=ClientContainer()
