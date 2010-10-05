@@ -179,15 +179,17 @@ class ClientTabPage(TabPage):
         self.btndel = gtk.Button("Delete")
         self.btndel.connect("clicked", lambda w: self.delete())
 
-        self.mapvis = MapVisual(None, 200, 200)
+        self.mapvis = MapVisual(clientConnection.clientContainer.map, 200, 200)
+        #self.mapvis = MapVisual(None, 200, 200)
 
         self.toolbar.pack_start(self.btndisco, False, 0)
         self.toolbar.pack_start(self.btndel, False, 0)
 
         self.mainWidget.resize(1,2)
-        self.mainWidget.attach(self.mapvis.getDiv(), 1,2,0,1)
+        self.mainWidget.attach(self.mapvis.getDiv(), 1,2,0,1, 0, 0, 0, 0)
 
         #self.mapvis.run()
+        self.mapvis.width 
 
         self.mainWidget.show_all()
         self.clientConnection = clientConnection
@@ -222,8 +224,11 @@ class MapVisual:
         self.map = _map
         self.height = height
         self.width = width
-        self.area.set_size_request(height + 2, width + 2)
+        self.area.set_size_request(height, width)
+        self.area.connect("draw-background", self.update)
         if not self.map:
+            """ some rtesting stuff ifnot map is set """
+            print "using test map"
             self.map = map.Map()
             self.map.borders.add(map.Vector(map.Point(0,0), map.Point(0,10)))
             self.map.borders.add(map.Vector(map.Point(0,10), map.Point(10,10)))
@@ -254,15 +259,18 @@ class MapVisual:
     def show(self):
         self.update()
 
-    def update(self):
+    def update(self, arg1="", arg2="", arg3="", arg4="", arg5="", user_data=""):
+        print "MapVisual update"
         minx = miny = maxx = maxy = 0
         drw = self.area.root()
 
+        print "rect dimmensions: w: " + str(self.width) + " h: " + str(self.height)
+
         drw.add("GnomeCanvasRect",
                 fill_color='black',
-                x1=0,
+                x1=-50,
                 x2=self.width,
-                y1=0,
+                y1=-50,
                 y2=self.height)
 
 
@@ -277,16 +285,16 @@ class MapVisual:
             if maxy < vec.size.y:
                 maxy = vec.size.y
 
-        ratiox = ((maxx - minx) / self.width) / 0.75
-        ratioy = ((maxy - miny) / self.height) / 0.75
+        ratiox = ((maxx - minx) / self.width)
+        ratioy = ((maxy - miny) / self.height)
         count = 0
         colors = ["red","blue", "yellow"]
         for vec in self.map.borders.getAllBorders():
 
-            x1 = vec.point.x / ratiox
-            x2 = vec.size.x / ratiox
-            y1 = vec.point.y / ratioy
-            y2 = vec.size.y / ratioy
+            x1 = (vec.point.x / ratiox) - 50
+            x2 = (vec.size.x / ratiox) - 50
+            y1 = (vec.point.y / ratioy) - 50
+            y2 = (vec.size.y / ratioy) - 50
 
             print "x1: " + str(x1) + ", y1: " + str(y1) + ",x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
             drw.add("GnomeCanvasLine",
