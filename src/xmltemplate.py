@@ -3,6 +3,7 @@
 import re
 import glob
 import os
+import xml.sax
 
 """
 known template variables:
@@ -95,10 +96,43 @@ def clear():
     _templateList = []
 
 def getTransmissionData():
+    data = ""
+    for tki in _templateList:
+        data += tki.toXml()
+    return data
+
+def readTransmissionData():
     pass
 
-def readTransmissiondata():
-    pass
+class TransmissiondataXmlHandler(xml.sax.ContentHandler):
+    """
+    Handles XML.SAX events to create ActionlogEntry
+    """
+
+    def startElement(self,name,attrs):
+        tki = None
+        if name == "tki":
+            type = None
+            for attr,val in attrs.items():
+                if attr == "type":
+                    try:
+                        type = int(val)
+                    except ValueError:
+                        continue
+            if type:
+                tki = TemplateKeyInformation(type)
+                _templateList.append(tki)
+        elif name == "tv":
+            n = None
+            v = None
+            for attr,val in attrs.items():
+                if attr == "n":
+                    n = val
+                elif attr == "v":
+                    v = val
+            if tki:
+                tki.varlist.append(TemplateVariable(n, v))
+        return 0
 
 class TemplateList:
 
@@ -157,15 +191,22 @@ class Template:
 
 class TemplateVariable:
 
-    def __init__(self, varname, value=""):
+    def __init__(self, varname="", value=""):
         self.name = varname
         self.value = value
 
+    def toXml(self):
+        return '<tv n="' + self.name + '" v="' + str(self.value) + '"/>'
+
 class TemplateKeyInformation:
 
-    def __init__(self, typ):
+    def __init__(self, type):
         self.varlist = []
-        self.typ = typ
+        self.type = type
+
+    def add(self, var):
+        if not self.lookup(var.name):
+            self.varlist.append(var)
 
     def lookup(self, varname):
         for var in self.varlist:
@@ -173,6 +214,9 @@ class TemplateKeyInformation:
                 return var
         return None
 
-    def add(self, var):
-        if not self.lookup(var.name):
-            self.varlist.append(var)
+    def toXml(self):
+        data = '<tki type="' + str(self.type) + '">'
+        for var in self.varlist:
+            data += var.toXml()
+        data += "</tki>"
+        return data

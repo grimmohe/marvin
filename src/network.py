@@ -45,7 +45,7 @@ class networkConnection(threading.Thread):
                 self.socket.send(data + "\n\n")
                 return True
             except socket.error:
-                print "error while sending, effect? no idear"
+                print "error while sending. effect? no idea."
         return False
 
     def receive(self, data):
