@@ -1,3 +1,3 @@
-<assignment id="1" start="head:move=$head-movement">
+<assignment id="$id" start="head:move=$head-movement">
 	<event ifarg1="head:position" ifcompare="e" ifarg2="$head-target" then="" final="true"/>
 </assignment>
