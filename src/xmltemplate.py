@@ -40,6 +40,7 @@ _templateList = []
 def addTemplate(type, baseSensor=None, untouchedSensor=None, direction=None, compare=None,
                 targetAngle=None, distance=None, headMovement=None):
     """ used as callback method to add an assignment, still in form of template type and the required variables """
+    global _templateList
     tki = TemplateKeyInformation(type)
 
     if type in (TEMPLATE_DISCOVER, TEMPLATE_TURN_HIT):
@@ -97,6 +98,7 @@ def clear():
 
 def getTransmissionData():
     data = ""
+    global _templateList
     for tki in _templateList:
         data += tki.toXml()
     return data
@@ -105,6 +107,7 @@ def readTransmissionData(data):
     xml.sax.parseString(data, TransmissiondataXmlHandler())
 
 def processTemplates(xmlHandler):
+    global _templateList
     for tki in _templateList:
         data = getTemplateData(tki.type)
         xmlHandler.getVar = tki.lookup
@@ -143,6 +146,8 @@ class TransmissiondataXmlHandler(xml.sax.ContentHandler):
         self.tki = None
 
     def startElement(self,name,attrs):
+        global _templateList
+            
         if name == "tki":
             type = None
             for attr,val in attrs.items():
