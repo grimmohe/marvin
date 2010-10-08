@@ -438,6 +438,7 @@ class MainWindow(threading.Thread):
 
     def addClient(self, clientConnection):
         print "add client"
+        clientConnection.cbDisconnect = lambda w: self.removeClient(clientConnection) 
         self.clients[clientConnection.getClientString()] = ClientTabPage(clientConnection.getClientString(), clientConnection)
         self.tablist.add(clientConnection.getClientString(), lambda w: self.showClientTab(clientConnection.getClientString()))
         self.tablist.div.show_all()
@@ -447,9 +448,9 @@ class MainWindow(threading.Thread):
         cliname = clientConnection.getClientString()
         cli = self.clients[cliname]
         self.servers[MARSRV].sc.server.removeClient(cli.clientConnection)
+        del self.clients[cliname]
         if self.tablist.remove(cliname):
             self.showNearestItem()
-        del self.clients[cliname]
         return True
 
 

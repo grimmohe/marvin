@@ -50,9 +50,9 @@ class networkConnection(threading.Thread):
 
     def receive(self, data):
         if data == "DISCO":
-            self.disconnect(False)
             if self.cbDisconnect:
                 self.cbDisconnect(self)
+            self.disconnect(False)
             return
         self.data = data
         if self.cbDataIncome:
