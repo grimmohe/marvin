@@ -118,8 +118,8 @@ class Client:
                 print "no valid xml tki? " + e.message
             try:
                 xmltemplate.processTemplates(AssignmentXmlHandler(self))
-            except:
-                print "no valid xml template?"
+            except Exception as e:
+                print "no valid xml template? " + e.message
         return 0
 
     def initialize (self):
