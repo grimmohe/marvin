@@ -115,17 +115,17 @@ def processTemplates(xmlHandler):
 
 def getTemplateData(type):
     """ loads the template file to return as string """
-    filename = ""
+    filename = "templates"
     if type == TEMPLATE_DISCOVER:
-        filename = "discover.xml"
+        filename += "/discover.xml"
     elif type == TEMPLATE_DRIVE:
-        filename = "drive.xml"
+        filename += "/drive.xml"
     elif type == TEMPLATE_HEAD:
-        filename = "head.xml"
+        filename += "/head.xml"
     elif type == TEMPLATE_TURN_ANGLE:
-        filename = "turn-angle.xml"
+        filename += "/turn-angle.xml"
     elif type == TEMPLATE_TURN_HIT:
-        filename = "turn-hit.xml"
+        filename += "/turn-hit.xml"
     else:
         raise Exception("unknown template type")
 
