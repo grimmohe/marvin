@@ -194,6 +194,7 @@ class ClientTabPage(TabPage):
 
         self.mainWidget.show_all()
         self.clientConnection = clientConnection
+        self.clientConnection.clientContainer.cbMapRefresh = self.mapvisRefresh()
         self.clientConnection.setLogger(self.logger)
 
     def disconnect(self):
@@ -217,6 +218,8 @@ class ClientTabPage(TabPage):
             self.mapvis.update()
         return self.mainWidget
 
+    def mapvisRefresh(self):
+        self.mapvis.update()
 
 class MapVisual:
 
