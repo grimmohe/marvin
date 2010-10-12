@@ -361,6 +361,7 @@ class MainWindow(threading.Thread):
 
     def fromGtk_destroy(self, widget):
         self.destroy()
+        gtk.main_quit()
 
     def destroy(self):
         for cli in self.clients.values():
