@@ -177,10 +177,10 @@ class TemplateKeyInformation:
         self.type = type
 
     def add(self, var, value):
-        self.set(var, (self.get(var) + "," + value).lstrip(","))
+        self.set(var, (self.get(var) + "," + str(value)).lstrip(","))
 
     def set(self, var, value):
-        self.varlist[var] = value
+        self.varlist[var] = str(value)
 
     def get(self, var):
         ret = ""
