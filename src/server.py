@@ -177,7 +177,7 @@ class ClientConnection(network.networkConnection):
         self.logger = logger
         for msg in self.loggerbuf:
             logger.log(msg)
-        shellEcho("loggin enabled")
+        self.logger.log("ClientConnection: logging enabled")
 
 class Shell:
 
