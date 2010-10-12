@@ -129,13 +129,9 @@ def getTemplateData(type):
     else:
         raise Exception("unknown template type")
 
-    try:
-        input = open(filename, "r")
-        data = input.read()
-    finally:
-        input.close()
-
-    return data
+    tmplt = Template(filename)
+    
+    return tmplt.content
 
 class TransmissiondataXmlHandler(xml.sax.ContentHandler):
     """
