@@ -377,11 +377,10 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
 
     def valueReplace(self, value):
         ret = value
-        if len(value) and value[0] == "$":
-            ret = value.split(":")[0]
-            ret = value.replace(ret, self.getVar(ret[1:]))
-            if not len(ret):
-                raise Exception("variable missing (" + value + ")")
+        vars = re.findall("\$[a-zA-Z\-]*", value)
+        for var in vars:
+            ret = ret.replace(var, self.getVar(var[1:]))
+        print "replace " + value + " to " + ret
         return ret
 
 
