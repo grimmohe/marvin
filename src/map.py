@@ -54,6 +54,9 @@ class Position:
         self.point = point
         self.orientation = orientation
 
+    def copy(self):
+        return Position(Point(self.point.x, self.point.y), self.orientation)
+
 class Vector:
 
     START_POINT = 0
@@ -431,16 +434,17 @@ class Router:
         """
         self._actionRouteRun(position, destination, cb_getSensorList, cb_getCollisions)
 
-        route = self.routes[0]
-        for wp in route["wp"]:
-            self.actionTurn(position=position,
-                            destAngle=Vector(position.point, endPoint=wp).getAngle(),
-                            cb_getSensorList=cb_getSensorList,
-                            cb_addAction=cb_addAction)
-            self.actionDrive(position=position,
-                             distance=position.point.getDistanceTo(wp),
-                             cb_getSensorList=cb_getSensorList,
-                             cb_addAction=cb_addAction)
+        if self.routes.count():
+            route = self.routes.get(0)
+            for wp in route["wp"]:
+                self.actionTurn(position=position,
+                                destAngle=Vector(position.point, endPoint=wp).getAngle(),
+                                cb_getSensorList=cb_getSensorList,
+                                cb_addAction=cb_addAction)
+                self.actionDrive(position=position,
+                                 distance=position.point.getDistanceTo(wp),
+                                 cb_getSensorList=cb_getSensorList,
+                                 cb_addAction=cb_addAction)
 
         self.routes.clear()
 
@@ -451,32 +455,32 @@ class Router:
             return {"distance": route["distance"],
                     "wp": [] + route["wp"],
                     "left": route["left"]}
-
+        position = position.copy()
         basicSensor = Vector(Point(-self.objectRadius, 0), Point(self.objectRadius*2, 0))
         for index in range(self.waypoints.count()):
             wp = self.waypoints.get(index)
             if not route["wp"].count(wp): # not two times the same waypoint
-                pos = Position(position.point, Vector(position.point, endPoint=wp).getAngle())
-                distance = cb_getCollisions(pos, basicSensor)
+                position.orientation = Vector(position.point, endPoint=wp).getAngle()
+                distance = cb_getCollisions(position, basicSensor)
                 if len(distance):
                     distanceC = distance[0][0]
                 else:
                     distanceC = MAX_RANGE
-                distanceWP = pos.point.getDistanceTo(wp)
+                distanceWP = position.point.getDistanceTo(wp)
                 if distanceC >= distanceWP:
                     r = copyRoute(route)
                     r["distance"] += distanceWP
                     r["wp"].append(wp)
-                    pos.point = wp
-                    self._actionRouteRun(pos, destination, cb_getSensorList, cb_getCollisions, r)
+                    position.point = wp
+                    self._actionRouteRun(position, destination, cb_getSensorList, cb_getCollisions, r)
 
-        position.orientation = Vector(position.point, endPoint=wp).getAngle()
+        position.orientation = Vector(position.point, endPoint=destination).getAngle()
         distance = cb_getCollisions(position, cb_getSensorList())
         if len(distance):
             distanceC = distance[0]
         else:
             distanceC = MAX_RANGE
-        distanceWP = pos.point.getDistanceTo(destination)
+        distanceWP = position.point.getDistanceTo(destination)
         route["wp"].append(distanceC[2])
         route["distance"] += distanceC[0]
         route["left"] = distanceC[2].getDistanceTo(destination)
