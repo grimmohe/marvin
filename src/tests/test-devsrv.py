@@ -40,6 +40,6 @@ dev1.close()
 dev2.close()
 dev1=None
 dev2=None
-devsrv.srvlis.shutdown()
+devsrv.shutdown()
 devsrv = None
 
