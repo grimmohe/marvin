@@ -446,11 +446,12 @@ class MainWindow(threading.Thread):
     def removeClient(self, clientConnection):
         print "remove client"
         cliname = clientConnection.getClientString()
-        cli = self.clients[cliname]
-        self.servers[MARSRV].sc.server.removeClient(cli.clientConnection)
-        del self.clients[cliname]
-        if self.tablist.remove(cliname):
-            self.showNearestItem()
+        if self.clients.has_key(cliname):
+            cli = self.clients[cliname]
+            self.servers[MARSRV].sc.server.removeClient(cli.clientConnection)
+            del self.clients[cliname]
+            if self.tablist.remove(cliname):
+                self.showNearestItem()
         return True
 
 
