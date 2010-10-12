@@ -321,6 +321,7 @@ class ClientContainer(threading.Thread):
         self.stop = False
         self.x = 0
         self.y = 0
+        self.cbMapRefresh = None
         self.start()
 
     def assimilateActions(self, actionlog):
@@ -377,6 +378,9 @@ class ClientContainer(threading.Thread):
                 elif key in ("radius", "position"):
                     self.devs[dev][key] = float(action.value)
         self.map.merge()
+
+        if self.cbMapRefresh:
+            self.cbMapRefresh()
 
     def discover(self):
         """ discover new borders """
