@@ -1,16 +1,21 @@
 <assignment id="$id">
-	<!-- wenn vorne angestößt, ist endgültig Schluss -->
-	<event ifarg1="$untouched-sensor:distance" ifcompare="l" ifarg2="100" then="engine:drive=0" final="true"/>
+	<assignment id="1" start="head:move=down" end="a#=2">
+		<event ifarg1="head:position" ifcompare="e" ifarg2="0" then="" final="true"/>
+	</assignment>
+	<assignment id="2">
+		<!-- wenn vorne angestößt, ist endgültig Schluss -->
+		<event ifarg1="$untouched-sensor:distance" ifcompare="l" ifarg2="100" then="engine:drive=0" final="true"/>
 
-	<assignment id="1" start="engine:drive=1" end="engine:drive=0">
-		<!-- rechts/links mit einer distanz von 40 <> 60 halten -->
-		<event ifarg1="$base-sensor:distance" ifcompare="g" ifarg2="60" then="a#=2" final="true"/>
-		<event ifarg1="$base-sensor:distance" ifcompare="l" ifarg2="40" then="a#=3" final="true"/>
-	</assignment>
-	<assignment id="2" start="engine:turn=$direction" end="engine:turn=stop">
-		<event ifarg1="$base-sensor:distance" ifcompare="l" ifarg2="60" then="a#=1" final="true"/>
-	</assignment>
-	<assignment id="3" start="engine:turn=$opposite-direction" end="engine:turn=stop">
-		<event ifarg1="$base-sensor:distance" ifcompare="g" ifarg2="40" then="a#=1" final="true"/>
+		<assignment id="1" start="engine:drive=1" end="engine:drive=0">
+			<!-- rechts/links mit einer distanz von 40 <> 60 halten -->
+			<event ifarg1="$base-sensor:distance" ifcompare="g" ifarg2="60" then="a#=2" final="true"/>
+			<event ifarg1="$base-sensor:distance" ifcompare="l" ifarg2="40" then="a#=3" final="true"/>
+		</assignment>
+		<assignment id="2" start="engine:turn=$direction" end="engine:turn=stop">
+			<event ifarg1="$base-sensor:distance" ifcompare="l" ifarg2="60" then="a#=1" final="true"/>
+		</assignment>
+		<assignment id="3" start="engine:turn=$opposite-direction" end="engine:turn=stop">
+			<event ifarg1="$base-sensor:distance" ifcompare="g" ifarg2="40" then="a#=1" final="true"/>
+		</assignment>
 	</assignment>
 </assignment>
