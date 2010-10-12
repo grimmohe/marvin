@@ -293,6 +293,8 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
         self.client = client
         self.openAssignment = None
         self.getVar = None
+        self.setVar = None
+        self.idcount = 0
 
     def startElement(self,name,attrs):
         if not self.getVar:
@@ -301,7 +303,8 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
         if name == "assignment":
             actionStart = None
             actionEnd = None
-            id = 0
+            self.idcount += 1
+            self.setVar("id", str(self.idcount))
             for key,value in attrs.items():
                 value = self.valueReplace(value)
                 if key == "start":
@@ -309,7 +312,7 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
                 elif key == "end":
                     actionEnd = Action(value, "false", None)
                 elif key == "id":
-                    id = int(value)
+                    id = int(self.valueReplace(value))
             if self.openAssignment:
                 parent = self.openAssignment
             else:
@@ -364,7 +367,8 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
     def valueReplace(self, value):
         ret = value
         if len(value) and value[0] == "$":
-            ret = self.getVar(value[1:].split(":")[0])
+            ret = value[1:].split(":")[0]
+            ret = value.replace(ret, self.getVar(ret))
             if not len(ret):
                 raise Exception("variable missing (" + value + ")")
         return ret
