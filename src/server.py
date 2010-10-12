@@ -127,7 +127,7 @@ class ServerListener(threading.Thread):
             for msg in self.loggerbuf:
                 logger.log(msg)
             self.loggerbuf = []
-            logger.log("logging enabled")
+            logger.log("ServerListener["+self.serverInstance.name+"] logging enabled")
         else:
             self.logger = None
 
@@ -177,7 +177,7 @@ class ClientConnection(network.networkConnection):
         self.logger = logger
         for msg in self.loggerbuf:
             logger.log(msg)
-        logger.log("loggin enabled")
+        shellEcho("loggin enabled")
 
 class Shell:
 
@@ -268,7 +268,7 @@ class Shell:
 
     def runServer(self, srv, maxTries):
         curTry = 0
-        srv.srvlis.setLogger(self.logger)
+        srv.setLogger(self.logger)
         while curTry <= maxTries:
             print "try to run " + srv.name + " (" + str(curTry) + "/" + str(maxTries) + ")"
             if srv.run():
@@ -316,6 +316,9 @@ class Server:
         if self.srvlis:
             self.srvlis.shutdown()
             self.srvlis = None
+            
+    def setLogger(self, logger):
+        self.srvlis.setLogger(logger)
 
 class ClientContainer(threading.Thread):
 
@@ -403,7 +406,7 @@ class ClientContainer(threading.Thread):
             elif self.map.borders.count() == 0:
                 self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
         else:
-            self.connection.logger.log("try to discover, but no \"radius\" item found" )
+            self.connection.shellEcho("try to discover, but no \"radius\" item found" )
 
     def getSensorList(self, extended=False):
         sensors = []

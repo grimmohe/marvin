@@ -60,9 +60,9 @@ class ServerControl(threading.Thread):
                 self.server.cb_addClient = guiinstance.addClient
             if self.tab.name == DEVSRV:
                 self.server = server.DeviceServer()
-            self.server.srvlis.setLogger(self.tab.logger)
+            self.server.setLogger(self.tab.logger)
             if self.ServerRun(50):
-                self.tab.logger.log("done (" + self.server.srvlis.name + ")")
+                self.tab.logger.log("done (" + self.server.name + ")")
             else:
                 self.tab.logger.log("failed")
 
