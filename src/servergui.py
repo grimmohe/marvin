@@ -27,6 +27,7 @@ class ServerControl(threading.Thread):
         self.tab = tab
         self.stop = False
         self.server = None
+        self.daemon = True
 
     def run(self):
         self.prints("running..")
