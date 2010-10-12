@@ -1,4 +1,4 @@
-<assignment id="1">
+<assignment id="$id">
 	<!-- wenn vorne angestößt, ist endgültig Schluss -->
 	<event ifarg1="$untouched-sensor:distance" ifcompare="l" ifarg2="100" then="engine:drive=0" final="true"/>
 
