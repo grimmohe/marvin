@@ -100,6 +100,8 @@ class Client:
         self.assignments = []
         self.stateholder = None
         self.connection = None
+        self.serverIp = ""
+        self.serverPort = ""
 
     def __del__(self):
         if self.connection:
@@ -136,8 +138,8 @@ class Client:
                 self.stateholder.update("self:Tolerance", config.getfloat("client", "tolerance"), process=False)
                 self.stateholder.update("self:Radius", config.getfloat("client", "radius"), process=False)
 
-                ServerIP = config.get("client", "ServerIP")
-                ServerPort = config.getint("client", "ServerPort")
+                self.serverIp = config.get("client", "ServerIP")
+                self.serverPort = config.getint("client", "ServerPort")
 
                 for section in ("SensorDevices", "EngineDevices", "HeadDevices"):
                     devlist = config.get("client", section)
@@ -161,14 +163,10 @@ class Client:
                 print e.message
                 return 0
 
-            try:
-                self.connection = Connector(ServerIP, ServerPort)
-                self.connection.setCbDisconnect(self.networkDisconnection)
-            except Exception, e:
-                print "ERROR: Connection failed."
-                print e.message
-                return 0
-
+            while not self.tryConnect():
+                print "try connect..."
+                time.sleep(1)
+                
             return 1
         finally:
             config = None
@@ -249,8 +247,23 @@ class Client:
         self.stateholder = None
 
     def networkDisconnection(self, connection):
-        print "network disconnect"
-        self.quit()
+        print "network disconnect, try reconnect, never give up"
+        while not self.tryConnect():
+            print "try reconnect ..."
+            time.sleep(1)
+        print "yeah, reconnected ..."
+            
+        
+    def tryConnect(self):
+        try:
+            self.connection = Connector(self.serverIp, self.serverPort)
+            self.connection.setCbDisconnect(self.networkDisconnection)
+        except Exception, e:
+            print "ERROR: Connection failed."
+            print e.message
+            return 0
+        return 1
+        
 
 if __name__ == '__main__':
     print "init client"
