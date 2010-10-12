@@ -295,11 +295,14 @@ class MapVisual:
         colors = ["red","blue", "yellow"]
         for vec in self.map.borders.getAllBorders():
 
-            x1 = (vec.point.x / ratiox) - 50
-            x2 = (vec.size.x / ratiox) - 50
-            y1 = (vec.point.y / ratioy) - 50
-            y2 = (vec.size.y / ratioy) - 50
-
+            try:
+                x1 = (vec.point.x / ratiox) - 50
+                x2 = (vec.size.x / ratiox) - 50
+                y1 = (vec.point.y / ratioy) - 50
+                y2 = (vec.size.y / ratioy) - 50
+            except:
+                return
+                
             print "x1: " + str(x1) + ", y1: " + str(y1) + ",x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
             drw.add("GnomeCanvasLine",
                 fill_color=colors[count],
