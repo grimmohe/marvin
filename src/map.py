@@ -390,7 +390,7 @@ class Router:
         sensorsTouching = []
         sensorsUntouched = []
         for s in sensors:
-            a = (Vector(endPoint=s.getStartPoint()).getAngle() + Vector(endPoint=s.getEndPoint()).getAngle() / 2)
+            a = (Vector(endPoint=s.getStartPoint()).getAngle() + Vector(endPoint=s.getEndPoint()).getAngle()) / 2
             if (direction == xmltemplate.DIRECTION_LEFT and angleIsLeft(a)) \
             or (direction == xmltemplate.DIRECTION_RIGHT and angleIsRight(a)):
                 sensorsTouching.append(s.name)

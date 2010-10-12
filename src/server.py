@@ -217,8 +217,6 @@ class Shell:
         cmd = cmd.replace("  "," ").strip().split(" ")
         if "sft" == cmd[0]:
             self.processCommand("sf ../doc/test.xml")
-        if "sfx" == cmd[0]:
-            self.sendXmlTest( cmd[1], cmd[2] )
         elif "sf" == cmd[0]:
             print "sending file: ", cmd[1]
             if self.marvinsrv.srvlis.sendFile(cmd[1]) == 0:
@@ -277,17 +275,6 @@ class Shell:
             time.sleep(5.0)
         return False
 
-    def sendXmlTest(self, one, two):
-        if not self.tmplts:
-            self.tmplts = xmltemplate.TemplateList()
-        tmplt = self.tmplts.lookup("erkunde-gerichtet.xml")
-        if tmplt:
-            tmplt.varlist.lookup("$base-sensor").value = one
-            tmplt.varlist.lookup("$opposite-sensor").value = two
-            tmplt.varlist.lookup("$id").value = "1"
-            self.marvinsrv.srvlis.clients[0].write('<what-to-do>' + tmplt.fill() + '</what-to-do>')
-            #print('<what-to-do><assignment id="1" start="head:move=down"><event ifarg1="head:position" ifcompare="e" ifarg2="100" then="" final="true"/></assignment>' + tmplt.fill() + '</what-to-do>')
-
 class Server:
 
     def __init__(self, name, ip, port, cb_read):
@@ -316,7 +303,7 @@ class Server:
         if self.srvlis:
             self.srvlis.shutdown()
             self.srvlis = None
-            
+
     def setLogger(self, logger):
         self.srvlis.setLogger(logger)
 
@@ -334,6 +321,7 @@ class ClientContainer(threading.Thread):
         self.stop = False
         self.x = 0
         self.y = 0
+        self.cbMapRefresh = None
         self.start()
 
     def assimilateActions(self, actionlog):
@@ -390,6 +378,9 @@ class ClientContainer(threading.Thread):
                 elif key in ("radius", "position"):
                     self.devs[dev][key] = float(action.value)
         self.map.merge()
+
+        if self.cbMapRefresh:
+            self.cbMapRefresh()
 
     def discover(self):
         """ discover new borders """

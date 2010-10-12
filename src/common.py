@@ -293,6 +293,8 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
         self.client = client
         self.openAssignment = None
         self.getVar = None
+        self.setVar = None
+        self.idcount = 0
 
     def startElement(self,name,attrs):
         if not self.getVar:
@@ -301,7 +303,8 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
         if name == "assignment":
             actionStart = None
             actionEnd = None
-            id = 0
+            self.idcount += 1
+            self.setVar("id", str(self.idcount))
             for key,value in attrs.items():
                 value = self.valueReplace(value)
                 if key == "start":
@@ -352,10 +355,21 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
                 elif key == "final":
                     final = value
 
-            for rarg1 in arg1.split(","):
-                for rarg2 in arg2.split(","):
-                    action = Action(then, final, self.openAssignment)
-                    self.openAssignment.events.append(Event(Argument(rarg1), Argument(rarg2), compare, action))
+            arg1suffix = arg1.split(":")
+            arg1 = arg1suffix[0]
+            if len(arg1suffix) > 1: arg1suffix = ":" + arg1suffix[1]
+            else: arg1suffix = ""
+
+            arg2suffix = arg2.split(":")
+            arg2 = arg2suffix[0]
+            if len(arg2suffix) > 1: arg2suffix = ":" + arg2suffix[1]
+            else: arg2suffix = ""
+
+            if len(arg1) and len(arg2):
+                for rarg1 in arg1.split(","):
+                    for rarg2 in arg2.split(","):
+                        action = Action(then, final, self.openAssignment)
+                        self.openAssignment.events.append(Event(Argument(rarg1 + arg1suffix), Argument(rarg2 + arg2suffix), compare, action))
 
     def endElement(self, name):
         if name == "assignment" and self.openAssignment:
@@ -363,10 +377,10 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
 
     def valueReplace(self, value):
         ret = value
-        if len(value) and value[0] == "$":
-            ret = self.getVar(value[1:].split(":")[0])
-            if not len(ret):
-                raise Exception("variable missing (" + value + ")")
+        vars = re.findall("\$[a-zA-Z\-]*", value)
+        for var in vars:
+            ret = ret.replace(var, self.getVar(var[1:]))
+        print "replace " + value + " to " + ret
         return ret
 
 

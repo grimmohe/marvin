@@ -47,44 +47,44 @@ def addTemplate(type, baseSensor=None, untouchedSensor=None, direction=None, com
         if not (baseSensor <> None and untouchedSensor <> None and direction in DIRECTION_KEYS):
             raise Exception("there are parameters missing")
 
-        tki.add(TemplateVariable("direction", direction))
+        tki.add("direction", direction)
         if direction == DIRECTION_LEFT:
-            tki.add(TemplateVariable("opposite-direction", DIRECTION_RIGHT))
+            tki.add("opposite-direction", DIRECTION_RIGHT)
         else:
-            tki.add(TemplateVariable("opposite-direction", DIRECTION_LEFT))
+            tki.add("opposite-direction", DIRECTION_LEFT)
 
         # one entry for every device name
         for dev in baseSensor:
-            tki.add(TemplateVariable("base-sensor", dev))
+            tki.add("base-sensor", dev)
         for dev in untouchedSensor:
-            tki.add(TemplateVariable("untouched-sensor", dev))
+            tki.add("untouched-sensor", dev)
 
     elif type == TEMPLATE_DRIVE:
         if not untouchedSensor <> None:
             raise Exception("there are parameters missing")
 
         if distance:
-            tki.add(TemplateVariable("distance", distance))
+            tki.add("distance", distance)
 
         for dev in untouchedSensor:
-            tki.add(TemplateVariable("untouched-sensor", dev))
+            tki.add("untouched-sensor", dev)
 
     elif type == TEMPLATE_HEAD:
         if not headMovement in (HEAD_DOWN, HEAD_UP):
             raise Exception("there are parameters missing")
 
-        tki.add(TemplateVariable("head-target", headMovement))
+        tki.add("head-target", headMovement)
         if headMovement == HEAD_DOWN:
-            tki.add(TemplateVariable("head-movement", "down"))
+            tki.add("head-movement", "down")
         else:
-            tki.add(TemplateVariable("head-movement", "up"))
+            tki.add("head-movement", "up")
 
     elif type == TEMPLATE_TURN_ANGLE:
         if not (targetAngle and direction in DIRECTION_KEYS):
             raise Exception("there are parameters missing")
 
-        tki.add(TemplateVariable("direction", direction))
-        tki.add(TemplateVariable("target-angle", targetAngle))
+        tki.add("direction", direction)
+        tki.add("target-angle", targetAngle)
 
     else:
         raise Exception("unknown template type")
@@ -110,7 +110,8 @@ def processTemplates(xmlHandler):
     global _templateList
     for tki in _templateList:
         data = getTemplateData(tki.type)
-        xmlHandler.getVar = tki.lookup
+        xmlHandler.getVar = tki.get
+        xmlHandler.setVar = tki.set
         xml.sax.parseString(data, xmlHandler)
 
 def getTemplateData(type):
@@ -129,9 +130,11 @@ def getTemplateData(type):
     else:
         raise Exception("unknown template type")
 
-    tmplt = Template(filename)
-    
-    return tmplt.content
+    try:
+        input = open(filename, "r")
+        data = input.read()
+    finally:
+        return data
 
 class TransmissiondataXmlHandler(xml.sax.ContentHandler):
     """
@@ -143,7 +146,7 @@ class TransmissiondataXmlHandler(xml.sax.ContentHandler):
 
     def startElement(self,name,attrs):
         global _templateList
-            
+
         if name == "tki":
             type = None
             for attr,val in attrs.items():
@@ -164,93 +167,30 @@ class TransmissiondataXmlHandler(xml.sax.ContentHandler):
                 elif attr == "v":
                     v = val
             if self.tki:
-                self.tki.varlist.append(TemplateVariable(n, v))
+                self.tki.add(n, v)
         return 0
-
-class TemplateList:
-
-    def __init__(self):
-        self.basepath='../templates/*'
-        self.templates=[]
-        self.load()
-
-    def load(self):
-        res = glob.glob(self.basepath)
-        for file in res:
-            print file
-            self.templates.append(Template(file))
-
-    def lookup(self, xmlfilename):
-        for tmplt in self.templates:
-            if os.path.basename(tmplt.filepath) == xmlfilename:
-                return tmplt
-        return None
-
-class Template:
-
-    def __init__(self,path):
-        self.filepath=path
-        self.varlist=None
-        self.content=''
-        self.load()
-
-    def load(self):
-        """ loads the template an read available variables """
-        self.varlist=TemplateKeyInformation("")
-        ofile = os.open(self.filepath, os.O_RDONLY)
-        rc=1
-        stream = ""
-        while True:
-            fread = os.read(ofile, 2048)
-            stream += fread
-            if len(fread) > 0:
-                rc = 0
-            else:
-                break
-        os.close(ofile)
-        self.content=stream
-        res = re.findall("[\$][a-zA-Z\-]*", stream)
-        for var in res:
-            self.varlist.add(TemplateVariable(var))
-        return rc
-
-    def fill(self):
-        """ replaces all variables with its values """
-        res=self.content
-        for var in self.varlist.varlist:
-            res=res.replace("$" + var.name, var.value)
-        return res
-
-
-class TemplateVariable:
-
-    def __init__(self, varname="", value=""):
-        self.name = varname
-        self.value = value
-
-    def toXml(self):
-        return '<tv n="' + self.name + '" v="' + str(self.value) + '"/>'
 
 class TemplateKeyInformation:
 
     def __init__(self, type):
-        self.varlist = []
+        self.varlist = {}
         self.type = type
 
-    def add(self, var):
-        if not self.lookup(var.name):
-            self.varlist.append(var)
+    def add(self, var, value):
+        self.set(var, (self.get(var) + "," + str(value)).lstrip(","))
 
-    def lookup(self, varname):
+    def set(self, var, value):
+        self.varlist[var] = str(value)
+
+    def get(self, var):
         ret = ""
-        for var in self.varlist:
-            if var.name == varname:
-                ret += "," + var.value
-        return ret.lstrip(",")
+        if self.varlist.has_key(var):
+            ret = self.varlist[var]
+        return ret
 
     def toXml(self):
         data = '<tki type="' + str(self.type) + '">'
         for var in self.varlist:
-            data += var.toXml()
+            data += '<tv n="' + var + '" v="' + str(self.varlist[var]) + '"/>'
         data += "</tki>"
         return data
