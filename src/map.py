@@ -57,6 +57,12 @@ class Position:
     def copy(self):
         return Position(Point(self.point.x, self.point.y), self.orientation)
 
+    def getPointInDistance(self, distance):
+        p = Point(0, distance).getTurned(self.orientation)
+        p.x += self.point.x
+        p.y += self.point.y
+        return p
+
 class Vector:
 
     START_POINT = 0
@@ -205,6 +211,9 @@ class BorderList:
 
     def count(self):
         return len(self.borders)
+
+    def get(self, index):
+        return self.borders[index]
 
     def getAllBorders(self):
         ret = []
@@ -479,7 +488,7 @@ class Router:
         if len(distance):
             distanceC = distance[0]
         else:
-            distanceC = MAX_RANGE
+            distanceC = (position.point.getDistanceTo(destination), None, destination)
         distanceWP = position.point.getDistanceTo(destination)
         route["wp"].append(distanceC[2])
         route["distance"] += distanceC[0]
@@ -664,8 +673,8 @@ class Map:
         while len(self.areas_unmerged):
             area = self.areas_unmerged[0]
             ii = 0
-            while ii < len(self.borders):
-                vector = self.borders[ii]
+            while ii < self.borders.count():
+                vector = self.borders.get(ii)
                 if area.p1.getDistanceTo(vector.point) > doubleMax:
                     ii += 1
                     continue

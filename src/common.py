@@ -334,7 +334,7 @@ class AssignmentXmlHandler(xml.sax.ContentHandler):
             arg2 = None
             compare = None
             action = None
-            then = None
+            then = ""
             final = None
 
             for key,value in attrs.items():

@@ -322,39 +322,48 @@ class ClientContainer(threading.Thread):
         self.x = 0
         self.y = 0
         self.cbMapRefresh = None
+        self.template = xmltemplate.Template()
         self.start()
 
     def assimilateActions(self, actionlog):
         """ turn the cliens action log into a map and if send, get some other infos """
         for action in actionlog.actions:
             # contains action and value
-            dev, key = action.action.split(":")
-            dev = dev.lower()
-            key = key.lower()
+            dev, key = action.action.lower().split(":")
+
+
             if dev == "engine" and self.devs.has_key(dev):
                 if key == "turned":
                     self.position.orientation += action.value
                     for dev in self.devs.values():
                         if dev.has_key("touch"):
                             dev["touch"] = False
-                elif key == "distance" and self.devs[dev].has_key(key):
-                    new_x = self.x + math.sin(math.radians(self.position.orientation)) * action.value
-                    new_y = self.y + math.cos(math.radians(self.position.orientation)) * action.value
-                    v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
-                                                               self.position.orientation)
-                    v_end = self.devs[dev]["dimension"].copy(map.Point(new_x, new_y), self.position.orientation)
-                    for dev in self.devs:
-                        if dev.has_key("touch") and dev["touch"]:
-                            # sensor at start position
-                            self.map.borders.add(v_start)
-                            # sensor on end position
-                            self.map.borders.add(v_end)
-                            # point 1 start to end
-                            self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
-                            # point 2 start to end
-                            self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
-                        if dev.has_key("position") and dev["position"]:
-                            self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
+                elif key == "distance":
+                    newPos = self.position.getPointInDistance(action.value)
+
+                    if ( self.devs.has_key("head")
+                         and self.devs["head"].has_key("dimension")
+                         and self.devs["head"].has_key("position")
+                         and self.devs["head"]["position"] ):
+                        for dev in self.devs:
+                            if ( self.devs[dev].has_key("touch")
+                                 and self.devs[dev]["touch"]
+                                 and self.devs[dev].has_key("dimension")
+                                 and self.devs[dev]["dimension"] ):
+                                v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
+                                                                           self.position.orientation)
+                                v_end = self.devs[dev]["dimension"].copy(newPos, self.position.orientation)
+                                # sensor at start position
+                                self.map.borders.add(v_start)
+                                # sensor on end position
+                                self.map.borders.add(v_end)
+                                # point 1 start to end
+                                self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
+                                # point 2 start to end
+                                self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
+                                # area marked as cleaned
+                                self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
+                    self.position.point = newPos
             else:
                 if not self.devs.has_key(dev):
                     self.devs[dev] = {}
@@ -424,8 +433,6 @@ class ClientContainer(threading.Thread):
             self.actionlogNew.wait()
             print "done wait"
             if not self.stop and self.actionlogData:
-                print "data:"
-                print self.actionlogData
                 actionlog = common.Actionlog()
                 try:
                     actionlog.readXml(self.actionlogData)
@@ -452,26 +459,28 @@ class ClientContainer(threading.Thread):
         router = map.Router(self.devs["self"]["radius"])
         for wp in self.map.waypoints:
             if wp.duty & map.WayPoint.WP_FAST:
-                router.actionRoute(pos, wp, self.getSensorList, xmltemplate.addTemplate, self.map.getCollisions)
+                router.actionRoute(pos, wp, self.getSensorList, self.template.addTemplate, self.map.getCollisions)
 
             if wp.duty & map.WayPoint.WP_STRICT:
                 collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
                 for i in range(len(collisions)):
                     if pos.point.getDistanceTo(wp) < collisions[i][0]:
                         break
-                    router.actionRoute(pos, collisions[i][2], self.getSensorList, xmltemplate.addTemplate, self.map.getCollisions)
+                    router.actionRoute(pos, collisions[i][2], self.getSensorList, self.template.addTemplate, self.map.getCollisions)
                     if i < len(collisions)-1:
                         bpos = map.Position(collisions[i+1][2], pos.orientation+180)
                         bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
                         if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
-                            router.actionRoute(pos, bc[0][2], self.getSensorList, xmltemplate.addTemplate, self.map.getCollisions)
+                            router.actionRoute(pos, bc[0][2], self.getSensorList, self.template.addTemplate, self.map.getCollisions)
 
             if wp.duty & map.WayPoint.WP_DISCOVER:
-                router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=xmltemplate.addTemplate)
+                router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=self.template.addTemplate)
 
-        self.connection.write(xmltemplate.getTransmissionData())
+        xml = self.template.getTransmissionData()
+        print "send: " + xml
+        self.connection.write(xml)
         self.map.clearWaypoints()
-        xmltemplate.clear()
+        self.template.clear()
 
     def shutdown(self):
         if self.connection:

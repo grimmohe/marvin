@@ -2,7 +2,6 @@
 #coding=utf8
 
 import time
-import xml.sax
 import device
 from common import Actionlog, AssignmentXmlHandler, Connector
 import ConfigParser
@@ -102,6 +101,7 @@ class Client:
         self.connection = None
         self.serverIp = ""
         self.serverPort = ""
+        self.template = xmltemplate.Template()
 
     def __del__(self):
         if self.connection:
@@ -113,15 +113,10 @@ class Client:
         self.assignments   = []
         data = self.connection.read(flushData=True)
         if data:
-            print data
-            try:
-                xmltemplate.readTransmissionData("<document>" + data + "</document>") #its "junk" without <document/>
-            except Exception as e:
-                print "no valid xml tki? " + e.message
-            try:
-                xmltemplate.processTemplates(AssignmentXmlHandler(self))
-            except Exception as e:
-                print "no valid xml template? " + e.message
+            print "reseived: " + data
+            self.template.readTransmissionData("<document>" + data + "</document>") #its "junk" without <document/>
+            self.template.processTemplates(AssignmentXmlHandler(self))
+            self.template.clear()
         return 0
 
     def initialize (self):
@@ -166,7 +161,7 @@ class Client:
             while not self.tryConnect():
                 print "try connect..."
                 time.sleep(1)
-                
+
             return 1
         finally:
             config = None
@@ -252,8 +247,8 @@ class Client:
             print "try reconnect ..."
             time.sleep(1)
         print "yeah, reconnected ..."
-            
-        
+
+
     def tryConnect(self):
         try:
             self.connection = Connector(self.serverIp, self.serverPort)
@@ -263,7 +258,7 @@ class Client:
             print e.message
             return 0
         return 1
-        
+
 
 if __name__ == '__main__':
     print "init client"

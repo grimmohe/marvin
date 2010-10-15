@@ -1,6 +1,6 @@
 <assignment id="$id">
 	<assignment id="1" start="head:move=down" end="a#=2">
-		<event ifarg1="head:position" ifcompare="e" ifarg2="0" then="" final="true"/>
+		<event ifarg1="head:position" ifcompare="e" ifarg2="100" then="" final="true"/>
 	</assignment>
 	<assignment id="2">
 		<!-- wenn vorne angestößt, ist endgültig Schluss -->
