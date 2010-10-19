@@ -49,9 +49,9 @@ class Template:
 
             tki.add("direction", direction)
             if direction == DIRECTION_LEFT:
-                tki.add("opposite-direction", DIRECTION_RIGHT)
+                tki.add("opposite-direction", DIRECTIONS[DIRECTION_RIGHT])
             else:
-                tki.add("opposite-direction", DIRECTION_LEFT)
+                tki.add("opposite-direction", DIRECTIONS[DIRECTION_LEFT])
 
             # one entry for every device name
             for dev in baseSensor:
@@ -80,10 +80,15 @@ class Template:
                 tki.add("head-movement", "up")
 
         elif type == TEMPLATE_TURN_ANGLE:
-            if not (targetAngle and direction in DIRECTION_KEYS):
+            if not (targetAngle <> None and direction in DIRECTION_KEYS):
                 raise Exception("there are parameters missing")
 
-            tki.add("direction", direction)
+            tki.add("direction", DIRECTIONS[direction])
+            if direction == DIRECTION_LEFT:
+                targetAngle = -360 + (targetAngle % 360)
+                tki.add("compare", "le")
+            else:
+                tki.add("compare", "ge")
             tki.add("target-angle", targetAngle)
 
         else:
@@ -115,6 +120,8 @@ class Template:
             vars = re.findall("\$[a-zA-Z\-]*", data)
             for var in vars:
                 data = data.replace(var, tki.get(var[1:]))
+
+            print "template: " + data
 
             xml.sax.parseString(data, xmlHandler)
 
