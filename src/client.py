@@ -2,7 +2,6 @@
 #coding=utf8
 
 import time
-import xml.sax
 import device
 from common import Actionlog, AssignmentXmlHandler, Connector
 import ConfigParser
@@ -102,6 +101,7 @@ class Client:
         self.connection = None
         self.serverIp = ""
         self.serverPort = ""
+        self.template = xmltemplate.Template()
 
     def __del__(self):
         if self.connection:
@@ -113,15 +113,11 @@ class Client:
         self.assignments   = []
         data = self.connection.read(flushData=True)
         if data:
-            print data
-            try:
-                xmltemplate.readTransmissionData("<document>" + data + "</document>") #its "junk" without <document/>
-            except Exception as e:
-                print "no valid xml tki? " + e.message
-            try:
-                xmltemplate.processTemplates(AssignmentXmlHandler(self))
-            except Exception as e:
-                print "no valid xml template? " + e.message
+            print "received: " + data
+            self.template.readTransmissionData("<document>" + data + "</document>") #its "junk" without <document/>
+            self.template.processTemplates(AssignmentXmlHandler(self))
+            self.template.clear()
+            return 1
         return 0
 
     def initialize (self):
@@ -166,7 +162,7 @@ class Client:
             while not self.tryConnect():
                 print "try connect..."
                 time.sleep(1)
-                
+
             return 1
         finally:
             config = None
@@ -193,6 +189,7 @@ class Client:
         """ unterrichtet den Server """
         xml = self.stateholder.getActionlogXml()
         if xml:
+            print "send: " + xml
             self.connection.write(xml)
         self.stateholder.clearActionlog()
         return 1
@@ -215,8 +212,8 @@ class Client:
                 # Verbindugn zum Server aufbauen,
                 # Bericht an den Server senden und neue Aufgaben holen
                 else:
-                    self.sendActionlog()
-                    self.getNextAssignments()
+                    if not self.getNextAssignments():
+                        self.sendActionlog()
             except KeyboardInterrupt:
                 break
 
@@ -252,8 +249,8 @@ class Client:
             print "try reconnect ..."
             time.sleep(1)
         print "yeah, reconnected ..."
-            
-        
+
+
     def tryConnect(self):
         try:
             self.connection = Connector(self.serverIp, self.serverPort, autoReconnect=True)
@@ -262,7 +259,7 @@ class Client:
             print e.message
             return 0
         return 1
-        
+
 
 if __name__ == '__main__':
     print "init client"

@@ -1,9 +1,7 @@
 #coding=utf8
 
-import re
-import glob
-import os
 import xml.sax
+import re
 
 """
 known template variables:
@@ -35,118 +33,130 @@ DIRECTION_RIGHT = 1
 DIRECTION_KEYS = (DIRECTION_LEFT, DIRECTION_RIGHT)
 DIRECTIONS = ("left", "right")
 
-_templateList = []
+class Template:
 
-def addTemplate(type, baseSensor=None, untouchedSensor=None, direction=None, compare=None,
-                targetAngle=None, distance=None, headMovement=None):
-    """ used as callback method to add an assignment, still in form of template type and the required variables """
-    global _templateList
-    tki = TemplateKeyInformation(type)
+    def __init__(self):
+        self.clear()
 
-    if type in (TEMPLATE_DISCOVER, TEMPLATE_TURN_HIT):
-        if not (baseSensor <> None and untouchedSensor <> None and direction in DIRECTION_KEYS):
-            raise Exception("there are parameters missing")
+    def addTemplate(self, type, baseSensor=None, untouchedSensor=None, direction=None, compare=None,
+                    targetAngle=None, distance=None, headMovement=None):
+        """ used as callback method to add an assignment, still in form of template type and the required variables """
+        tki = TemplateKeyInformation(type)
 
-        tki.add("direction", direction)
-        if direction == DIRECTION_LEFT:
-            tki.add("opposite-direction", DIRECTION_RIGHT)
+        if type in (TEMPLATE_DISCOVER, TEMPLATE_TURN_HIT):
+            if not (baseSensor <> None and untouchedSensor <> None and direction in DIRECTION_KEYS):
+                raise Exception("there are parameters missing")
+
+            tki.add("direction", direction)
+            if direction == DIRECTION_LEFT:
+                tki.add("opposite-direction", DIRECTIONS[DIRECTION_RIGHT])
+            else:
+                tki.add("opposite-direction", DIRECTIONS[DIRECTION_LEFT])
+
+            # one entry for every device name
+            for dev in baseSensor:
+                tki.add("base-sensor", dev)
+            for dev in untouchedSensor:
+                tki.add("untouched-sensor", dev)
+
+        elif type == TEMPLATE_DRIVE:
+            if not untouchedSensor <> None:
+                raise Exception("there are parameters missing")
+
+            if distance:
+                tki.add("distance", distance)
+
+            for dev in untouchedSensor:
+                tki.add("untouched-sensor", dev)
+
+        elif type == TEMPLATE_HEAD:
+            if not headMovement in (HEAD_DOWN, HEAD_UP):
+                raise Exception("there are parameters missing")
+
+            tki.add("head-target", headMovement)
+            if headMovement == HEAD_DOWN:
+                tki.add("head-movement", "down")
+            else:
+                tki.add("head-movement", "up")
+
+        elif type == TEMPLATE_TURN_ANGLE:
+            if not (targetAngle <> None and direction in DIRECTION_KEYS):
+                raise Exception("there are parameters missing")
+
+            tki.add("direction", DIRECTIONS[direction])
+            if direction == DIRECTION_LEFT:
+                targetAngle = -360 + (targetAngle % 360)
+                tki.add("compare", "le")
+            else:
+                tki.add("compare", "ge")
+            tki.add("target-angle", targetAngle)
+
         else:
-            tki.add("opposite-direction", DIRECTION_LEFT)
+            raise Exception("unknown template type")
 
-        # one entry for every device name
-        for dev in baseSensor:
-            tki.add("base-sensor", dev)
-        for dev in untouchedSensor:
-            tki.add("untouched-sensor", dev)
-
-    elif type == TEMPLATE_DRIVE:
-        if not untouchedSensor <> None:
-            raise Exception("there are parameters missing")
-
-        if distance:
-            tki.add("distance", distance)
-
-        for dev in untouchedSensor:
-            tki.add("untouched-sensor", dev)
-
-    elif type == TEMPLATE_HEAD:
-        if not headMovement in (HEAD_DOWN, HEAD_UP):
-            raise Exception("there are parameters missing")
-
-        tki.add("head-target", headMovement)
-        if headMovement == HEAD_DOWN:
-            tki.add("head-movement", "down")
-        else:
-            tki.add("head-movement", "up")
-
-    elif type == TEMPLATE_TURN_ANGLE:
-        if not (targetAngle and direction in DIRECTION_KEYS):
-            raise Exception("there are parameters missing")
-
-        tki.add("direction", direction)
-        tki.add("target-angle", targetAngle)
-
-    else:
-        raise Exception("unknown template type")
-
-    _templateList.append(tki)
+        self._templateList.append(tki)
 
 
-def clear():
-    global _templateList
-    _templateList = []
+    def clear(self):
+        self._templateList = []
 
-def getTransmissionData():
-    data = ""
-    global _templateList
-    for tki in _templateList:
-        data += tki.toXml()
-    return data
-
-def readTransmissionData(data):
-    xml.sax.parseString(data, TransmissiondataXmlHandler())
-
-def processTemplates(xmlHandler):
-    global _templateList
-    for tki in _templateList:
-        data = getTemplateData(tki.type)
-        xmlHandler.getVar = tki.get
-        xmlHandler.setVar = tki.set
-        xml.sax.parseString(data, xmlHandler)
-
-def getTemplateData(type):
-    """ loads the template file to return as string """
-    filename = "templates"
-    if type == TEMPLATE_DISCOVER:
-        filename += "/discover.xml"
-    elif type == TEMPLATE_DRIVE:
-        filename += "/drive.xml"
-    elif type == TEMPLATE_HEAD:
-        filename += "/head.xml"
-    elif type == TEMPLATE_TURN_ANGLE:
-        filename += "/turn-angle.xml"
-    elif type == TEMPLATE_TURN_HIT:
-        filename += "/turn-hit.xml"
-    else:
-        raise Exception("unknown template type")
-
-    try:
-        input = open(filename, "r")
-        data = input.read()
-    finally:
+    def getTransmissionData(self):
+        data = ""
+        for tki in self._templateList:
+            data += tki.toXml()
         return data
+
+    def readTransmissionData(self, data):
+        xml.sax.parseString(data, TransmissiondataXmlHandler(self._templateList))
+
+    def processTemplates(self, xmlHandler):
+        tid = 0
+        for tki in self._templateList:
+            tid += 1
+            tki.set("id", str(tid))
+
+            data = self.getTemplateData(tki.type)
+
+            vars = re.findall("\$[a-zA-Z\-]*", data)
+            for var in vars:
+                data = data.replace(var, tki.get(var[1:]))
+
+            print "template: " + data
+
+            xml.sax.parseString(data, xmlHandler)
+
+    def getTemplateData(self, type):
+        """ loads the template file to return as string """
+        filename = "templates"
+        if type == TEMPLATE_DISCOVER:
+            filename += "/discover.xml"
+        elif type == TEMPLATE_DRIVE:
+            filename += "/drive.xml"
+        elif type == TEMPLATE_HEAD:
+            filename += "/head.xml"
+        elif type == TEMPLATE_TURN_ANGLE:
+            filename += "/turn-angle.xml"
+        elif type == TEMPLATE_TURN_HIT:
+            filename += "/turn-hit.xml"
+        else:
+            raise Exception("unknown template type")
+
+        try:
+            input = open(filename, "r")
+            data = input.read()
+        finally:
+            return data
 
 class TransmissiondataXmlHandler(xml.sax.ContentHandler):
     """
     Handles XML.SAX events to create ActionlogEntry
     """
 
-    def __init__(self):
+    def __init__(self, list):
         self.tki = None
+        self._templateList = list
 
     def startElement(self,name,attrs):
-        global _templateList
-
         if name == "tki":
             type = None
             for attr,val in attrs.items():
@@ -157,7 +167,7 @@ class TransmissiondataXmlHandler(xml.sax.ContentHandler):
                         continue
             if type:
                 self.tki = TemplateKeyInformation(type)
-                _templateList.append(self.tki)
+                self._templateList.append(self.tki)
         elif name == "tv":
             n = None
             v = None
