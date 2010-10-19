@@ -375,7 +375,7 @@ class Argument:
 
     def __init__(self, arg):
         # nur float (0.0)
-        if re.match("^([\d]+\.?[\d]*|[\d]*\.?[\d]+)$", arg, 0):
+        if re.match("^(-?[\d]+\.?[\d]*|-?[\d]*\.?[\d]+)$", arg, 0):
             arg_typ = self.ARG_STATIC
             arg_key = float(arg) / 100
         else:
