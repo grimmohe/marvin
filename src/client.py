@@ -113,10 +113,11 @@ class Client:
         self.assignments   = []
         data = self.connection.read(flushData=True)
         if data:
-            print "reseived: " + data
+            print "received: " + data
             self.template.readTransmissionData("<document>" + data + "</document>") #its "junk" without <document/>
             self.template.processTemplates(AssignmentXmlHandler(self))
             self.template.clear()
+            return 1
         return 0
 
     def initialize (self):
@@ -188,6 +189,7 @@ class Client:
         """ unterrichtet den Server """
         xml = self.stateholder.getActionlogXml()
         if xml:
+            print "send: " + xml
             self.connection.write(xml)
         self.stateholder.clearActionlog()
         return 1
@@ -210,8 +212,8 @@ class Client:
                 # Verbindugn zum Server aufbauen,
                 # Bericht an den Server senden und neue Aufgaben holen
                 else:
-                    self.sendActionlog()
-                    self.getNextAssignments()
+                    if not self.getNextAssignments():
+                        self.sendActionlog()
             except KeyboardInterrupt:
                 break
 
