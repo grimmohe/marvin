@@ -1,6 +1,7 @@
 #coding=utf8
 
 import xml.sax
+import re
 
 """
 known template variables:
@@ -104,10 +105,17 @@ class Template:
         xml.sax.parseString(data, TransmissiondataXmlHandler(self._templateList))
 
     def processTemplates(self, xmlHandler):
+        tid = 0
         for tki in self._templateList:
+            tid += 1
+            tki.set("id", str(tid))
+
             data = self.getTemplateData(tki.type)
-            xmlHandler.getVar = tki.get
-            xmlHandler.setVar = tki.set
+
+            vars = re.findall("\$[a-zA-Z\-]*", data)
+            for var in vars:
+                data = data.replace(var, tki.get(var[1:]))
+
             xml.sax.parseString(data, xmlHandler)
 
     def getTemplateData(self, type):
