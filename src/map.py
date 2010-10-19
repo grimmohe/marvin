@@ -527,7 +527,7 @@ class Router:
             if goAngle:
                 position.orientation += goAngle
         else:
-            if not (position and (goAngle or destAngle)):
+            if not (position and (goAngle <> None or destAngle <> None)):
                 raise Exception()
             if headUp:
                 self.actionHead(headUp=True, cb_addAction=cb_addAction)
