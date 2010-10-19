@@ -3,6 +3,7 @@
 
 import threading
 import socket
+import callback as cb
 
 BUFSIZE = 4096
 
@@ -10,8 +11,8 @@ class networkConnection(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        self.cbDataIncome = None
-        self.cbDisconnect = None
+        self.cbl = cb.CallbackList({"onDataIncoming": cb.Callback(), 
+                                    "onExternDisconnection": cb.Callback()})
         self.reader = None
         self.socket = None
         self.data = ''
@@ -45,20 +46,18 @@ class networkConnection(threading.Thread):
                 self.socket.send(data + "\n\n")
                 return True
             except socket.error:
-                print "error while sending. effect? no idea."
+                print "error while sending. effect? no idea, disconnect socket"
+                self.disconnect(False)
+                self.cbl["onExternDisconnection"].call({"networkConnection": self})
         return False
 
     def receive(self, data):
         if data == "DISCO":
-            if self.cbDisconnect:
-                self.cbDisconnect(self)
             self.disconnect(False)
+            self.cbl.call("onExternDisconnection", {"networkConnection": self})
             return
         self.data = data
-        if self.cbDataIncome:
-            self.cbDataIncome(self, data)
-        else:
-            print "data recieved, bot no callback", data
+        self.cbl["onDataIncoming"].call({"networkConnection": self, "data": data})
 
     def read(self,flushData=False):
         data = self.data
@@ -66,8 +65,8 @@ class networkConnection(threading.Thread):
             self.data = ''
         return data
 
-    def setCbDisconnect(self, cb):
-        self.cbDisconnect = cb
+    def getCallback(self, name):
+        return self.cbl[name]
 
 class networkConnectionReader(threading.Thread):
 
@@ -84,6 +83,7 @@ class networkConnectionReader(threading.Thread):
     def run(self):
         #print "run netConReader <" + self.name + ">"
         self.awaitIncoming()
+        print "awaitIncoming closed"
 
     def awaitIncoming(self):
         data = "" # in case of an exception, data would be unreferenced
@@ -92,6 +92,7 @@ class networkConnectionReader(threading.Thread):
                 data += self.netConnection.socket.recv(BUFSIZE)
             except socket.error:
                 print "Unfriendly connection reset"
+                return
             if not data:
                 break
             if "\n\n" == data[-2:]:

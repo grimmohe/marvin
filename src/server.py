@@ -11,23 +11,21 @@ import time
 import xmltemplate
 import math
 import logger
+import callback as cb
 
 shellInstance = None
 
 class ServerListener(threading.Thread):
 
-    def __init__(self, server, cb_read):
+    def __init__(self, server):
         threading.Thread.__init__(self)
         self.listening  = 0
         self.clients = []
-        self.cb_read = cb_read
-        self.cb_newClient = None
         self.serverInstance=server
-        self.logger = None
-        self.loggerbuf = []
+        self.logger = logger.logger()
 
     def __del__(self):
-        self.shellEcho("destroy ServerListener")
+        self.log("destroy ServerListener")
         self.serverInstance = None
         self.socket = None
 
@@ -35,8 +33,10 @@ class ServerListener(threading.Thread):
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         try:
             self.socket.bind((ip,port))
-        except socket.error:
+        except IOError as (errno, strerror):
+            print "I/O error({0}): {1}".format(errno, strerror)
             return False
+        self.log("binded...")
         self.start()
         return True
 
@@ -44,17 +44,15 @@ class ServerListener(threading.Thread):
         self.listening = 1
         while self.listening and self.socket:
             self.listenForConnectionRequests()
-        self.shellEcho("server listening stopped")
+        self.log("server listening stopped")
 
     def listenForConnectionRequests(self):
         self.socket.listen(1)
         if self.socket:
             try:
-                newClient = self.socket.accept()
-                newClient = ClientConnection(self,newClient,self.cb_read)
+                newClient = ClientConnection(self, self.socket.accept())
                 self.clients.append(newClient)
-                if self.cb_newClient:
-                    self.cb_newClient(newClient)
+                self.serverInstance.cbl["onNewClient"].call({"clientConnection": newClient})
             except socket.error:
                 self.listening = False
                 return
@@ -62,7 +60,7 @@ class ServerListener(threading.Thread):
     def serverCmd(self, cmd):
         cmd = cmd.strip()
         if cmd == 'disco':
-            self.shellEcho("disconnect all clients")
+            self.log("disconnect all clients")
             self.disconnectClients()
         elif cmd == "kill":
             self.shutdown()
@@ -88,7 +86,7 @@ class ServerListener(threading.Thread):
                     self.sendFile(file)
             return rc
         else:
-            self.shellEcho("no client available")
+            self.log("no client available")
 
     def disconnectClients(self):
         for client in self.clients:
@@ -96,61 +94,50 @@ class ServerListener(threading.Thread):
         self.clients = []
 
     def shutdown(self):
-        #self.shellEcho("shutdown")
+        #self.log("shutdown")
         self.listening = 0
-        #self.shellEcho("disconnect clients")
+        #self.log("disconnect clients")
         self.disconnectClients()
-        #self.shellEcho("close socket")
+        #self.log("close socket")
         self.socketClose()
-        self.shellEcho("shutdown done")
+        self.log("shutdown done")
 
     def socketClose(self):
         if self.socket:
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
                 self.socket.close()
+                self.socket = None
             except socket.error:
                 print "socketClose failed"
                 return
 
-    def shellEcho(self, msg):
-        msg = "[" + self.serverInstance.name + "] " + msg
-        if self.logger:
-            self.logger.log(msg)
-        else:
-            self.loggerbuf.append(msg)
-            print "buff msg: " + msg
+    def log(self, msg):
+        self.logger.log("["+self.name+"][" + self.serverInstance.name + "] " + msg)
 
     def setLogger(self, logger):
         if logger:
             self.logger = logger
-            for msg in self.loggerbuf:
-                logger.log(msg)
-            self.loggerbuf = []
-            logger.log("ServerListener["+self.serverInstance.name+"] logging enabled")
-        else:
-            self.logger = None
-
+            self.log("logging enabled")
 
 class ClientConnection(network.networkConnection):
 
-    def __init__(self, server, client, cb_read):
+    def __init__(self, server, client):
         network.networkConnection.__init__(self)
         self.server = server
         self.clientContainer = None
+        self.cbl["onDataIncoming"].add(cb.CallbackCall(self.clientReceiving))
         self.clientInfo = client[1]
         self.clientStuff = client
-        self.cbDataIncome = cb_read
         self.socket = client[0]
         self.start()
-        self.logger = None
-        self.loggerbuf = []
+        self.logger = logger.logger()
 
     def __del__(self):
         self.disconnect(True)
 
     def disconnect(self, withDisco):
-        #self.server.shellEcho("disconnecting...")
+        self.log("disconnecting...")
         network.networkConnection.disconnect(self, withDisco)
         self.clientInfo = None
         if self.clientContainer:
@@ -158,26 +145,27 @@ class ClientConnection(network.networkConnection):
             self.clientContainer = None
         if self in self.server.clients:
             self.server.clients.remove(self)
-        #self.shellEcho(".. done")
+        self.log(".. done")
 
     def getClientString(self):
         if self.clientInfo:
             return "[" + self.clientInfo[0] + "]"
         return "[<unknown>]"
 
+    def clientReceiving(self, attributes):
+        #connection.log(" received: " + data)
+        # DeviceServer clients does not have clientContainer
+        if self.clientContainer:
+            self.clientContainer.actionlogData=attributes["data"]
+            self.clientContainer.actionlogNew.set()
 
-    def shellEcho(self, msg):
-        msg = self.getClientString() + " " + msg
-        if self.logger:
-            self.logger.log(msg)
-        else:
-            self.loggerbuf.append(msg)
+    def log(self, msg):
+        self.logger.log(self.getClientString() + " " + msg)
 
     def setLogger(self, logger):
-        self.logger = logger
-        for msg in self.loggerbuf:
-            logger.log(msg)
-        self.logger.log("ClientConnection: logging enabled")
+        if logger:
+            self.logger = logger
+            self.log("logging enabled")
 
 class Shell:
 
@@ -277,12 +265,13 @@ class Shell:
 
 class Server:
 
-    def __init__(self, name, ip, port, cb_read):
+    def __init__(self, name, ip, port):
         self.name = name
         self.ip = ip
         self.port = port
-        self.srvlis = ServerListener(self, cb_read)
-
+        self.cbl = cb.CallbackList({"onNewClient": cb.Callback()})
+        self.srvlis = ServerListener(self)
+        
     def __del__(self):
         self.srvlis = None
 
@@ -397,7 +386,7 @@ class ClientContainer(threading.Thread):
             elif self.map.borders.count() == 0:
                 self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
         else:
-            self.connection.shellEcho("try to discover, but no \"radius\" item found" )
+            self.connection.log("try to discover, but no \"radius\" item found" )
 
     def getSensorList(self, extended=False):
         sensors = []
@@ -449,29 +438,30 @@ class ClientContainer(threading.Thread):
         there, xml-templates will be filled and executed.
         """
         pos = map.Position(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
-        router = map.Router(self.devs["self"]["radius"])
-        for wp in self.map.waypoints:
-            if wp.duty & map.WayPoint.WP_FAST:
-                router.actionRoute(pos, wp, xmltemplate.addTemplate)
-
-            if wp.duty & map.WayPoint.WP_STRICT:
-                collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
-                for i in range(len(collisions)):
-                    if pos.point.getDistanceTo(wp) < collisions[i][0]:
-                        break
-                    router.actionRoute(pos, collisions[i][2], xmltemplate.addTemplate)
-                    if i < len(collisions)-1:
-                        bpos = map.Position(collisions[i+1][2], pos.orientation+180)
-                        bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
-                        if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
-                            router.actionRoute(pos, bc[0][2], xmltemplate.addTemplate)
-
-            if wp.duty & map.WayPoint.WP_DISCOVER:
-                router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=xmltemplate.addTemplate)
-
-        self.connection.write(xmltemplate.getTransmissionData())
-        self.map.clearWaypoints()
-        xmltemplate.clear()
+        if self.devs.has_key("self"):
+            router = map.Router(self.devs["self"]["radius"])
+            for wp in self.map.waypoints:
+                if wp.duty & map.WayPoint.WP_FAST:
+                    router.actionRoute(pos, wp, xmltemplate.addTemplate)
+    
+                if wp.duty & map.WayPoint.WP_STRICT:
+                    collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
+                    for i in range(len(collisions)):
+                        if pos.point.getDistanceTo(wp) < collisions[i][0]:
+                            break
+                        router.actionRoute(pos, collisions[i][2], xmltemplate.addTemplate)
+                        if i < len(collisions)-1:
+                            bpos = map.Position(collisions[i+1][2], pos.orientation+180)
+                            bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
+                            if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
+                                router.actionRoute(pos, bc[0][2], xmltemplate.addTemplate)
+    
+                if wp.duty & map.WayPoint.WP_DISCOVER:
+                    router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=xmltemplate.addTemplate)
+    
+            self.connection.write(xmltemplate.getTransmissionData())
+            self.map.clearWaypoints()
+            xmltemplate.clear()
 
     def shutdown(self):
         if self.connection:
@@ -489,33 +479,20 @@ class ClientContainer(threading.Thread):
 class MarvinServer(Server):
 
     def __init__(self):
-        Server.__init__(self, "MarvinServer",'127.0.0.1',29875, self.ClientReceiving)
-        self.srvlis.cb_newClient=self.addClient
-        self.cb_addClient = None
+        Server.__init__(self, "MarvinServer",'127.0.0.1',29875)
+        self.cbl["onNewClient"].add(cb.CallbackCall(self.addClient))
         self.clients = []
 
     def __del__(self):
         self.shutdown()
 
-    def ClientReceiving(self, connection, data):
-        #connection.shellEcho(" received: " + data)
-        client = None
-        for c in self.clients:
-            if c.connection == connection:
-                client = c
-        if client:
-            client.actionlogData=data
-            client.actionlogNew.set()
-        else:
-            print "no suitable client found"
-
-    def addClient(self, clientConnection):
+    def addClient(self, attributes):
+        clientConnection = attributes["clientConnection"]
         clientConnection.clientContainer=ClientContainer()
         clientConnection.clientContainer.connection = clientConnection
         self.clients.append(clientConnection.clientContainer)
-        if self.cb_addClient:
-            self.cb_addClient(clientConnection)
-        self.srvlis.shellEcho("client added")
+        if self.srvlis:
+            self.srvlis.log("client added")
 
     def removeClient(self, clientConnection):
         for cli in self.clients:
@@ -534,11 +511,16 @@ class MarvinServer(Server):
 class DeviceServer(Server):
 
     def __init__(self):
-        Server.__init__(self, "DeviceServer",'127.0.0.1',29874, self.ClientReceiving)
+        Server.__init__(self, "DeviceServer",'127.0.0.1',29874)
+        self.cbl["onNewClient"].add(cb.CallbackCall(self.addClient))
 
-    def ClientReceiving(self, connection, data):
-        self.broadcast(data, [connection])
+    def addClient(self, attributes):
+        clientConnection = attributes["clientConnection"]
+        clientConnection.cbl["onDataIncoming"].add(cb.CallbackCall(self.clientReceiving))
 
+    def clientReceiving(self, attributes):
+        self.broadcast(attributes["data"], [attributes["networkConnection"]])
+    
 
 if __name__ == '__main__':
     Shell()

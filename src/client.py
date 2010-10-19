@@ -256,8 +256,7 @@ class Client:
         
     def tryConnect(self):
         try:
-            self.connection = Connector(self.serverIp, self.serverPort)
-            self.connection.setCbDisconnect(self.networkDisconnection)
+            self.connection = Connector(self.serverIp, self.serverPort, autoReconnect=True)
         except Exception, e:
             print "ERROR: Connection failed."
             print e.message

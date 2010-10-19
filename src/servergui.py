@@ -8,10 +8,12 @@ import gtk
 import pango
 import threading
 import server
+import loggerGtk
 import logger
 import time
 import gnomecanvas
 import map
+import callback as cb
 gtk.gdk.threads_init()
 
 MARSRV = "MarvinServer"
@@ -27,7 +29,6 @@ class ServerControl(threading.Thread):
         self.tab = tab
         self.stop = False
         self.server = None
-        self.daemon = True
 
     def run(self):
         self.prints("running..")
@@ -58,7 +59,7 @@ class ServerControl(threading.Thread):
         if not self.server:
             if self.tab.name == MARSRV:
                 self.server = server.MarvinServer()
-                self.server.cb_addClient = guiinstance.addClient
+                self.server.cbl["onNewClient"].add(cb.CallbackCall(guiinstance.addClient))
             if self.tab.name == DEVSRV:
                 self.server = server.DeviceServer()
             self.server.setLogger(self.tab.logger)
@@ -124,7 +125,7 @@ class TabPage:
         self.mainWidget.attach(self.toolbar, 0,1,1,2,0,0,0,0)
 
         # new textbuffer logger
-        self.logger = logger.loggerTextBuffer(self.textBuffer)
+        self.logger = loggerGtk.logger(self.textBuffer)
 
         self.name = name
 
@@ -444,14 +445,16 @@ class MainWindow(threading.Thread):
         else:
             self.showActiveItem(self.servers.values()[0].getDiv())
 
-    def addClient(self, clientConnection):
+    def addClient(self, attributes):
         print "add client"
-        clientConnection.cbDisconnect = lambda w: self.removeClient(clientConnection) 
+        clientConnection = attributes["clientConnection"]
+        clientConnection.cbl["onExternDisconnection"].add(cb.CallbackCall(self.removeClient, {"clientConnection": clientConnection}))
         self.clients[clientConnection.getClientString()] = ClientTabPage(clientConnection.getClientString(), clientConnection)
         self.tablist.add(clientConnection.getClientString(), lambda w: self.showClientTab(clientConnection.getClientString()))
         self.tablist.div.show_all()
 
-    def removeClient(self, clientConnection):
+    def removeClient(self, attributes):
+        clientConnection=attributes["clientConnection"]
         print "remove client"
         cliname = clientConnection.getClientString()
         if self.clients.has_key(cliname):
@@ -460,6 +463,8 @@ class MainWindow(threading.Thread):
             del self.clients[cliname]
             if self.tablist.remove(cliname):
                 self.showNearestItem()
+        else:
+            print "client not found"
         return True
 
 

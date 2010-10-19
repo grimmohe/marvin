@@ -2,6 +2,7 @@
 #coding=utf8
 
 from common import Connector
+import callback as cb
 
 class Device:
     """
@@ -12,15 +13,17 @@ class Device:
 
     def __init__(self, devname, cb_event):
         print "new dev: " + devname
-        self.con = Connector('127.0.0.1', 29874)
-        self.con.setDataIncomingCb(self.read)
+        self.con = Connector('127.0.0.1', 29874, autoReconnect=True)
+        self.con.cbl["onDataIncoming"].add(cb.CallbackCall(self.read))
         self.name = devname
         self.cb_readevent = cb_event
 
     def __del__(self):
         self.close()
 
-    def read(self, connection, data):
+    def read(self, attributes):
+        connection = attributes["networkConnection"]
+        data= attributes["data"]
         if len(data):
             lines= data.split('\n')
             for line in lines:

@@ -478,28 +478,66 @@ class Connector(network.networkConnection):
     """
     Stellt die Verbindung zum Server her
     """
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, autoReconnect=False):
         network.networkConnection.__init__(self)
         self.host = ip
         self.port = port
         self.connected = False
-        self.connect()
+        self.autoReconnect = autoReconnect
+        self.deamon = True
         self.start()
 
+    def run(self):
+        if self.autoReconnect:
+            if not self.tryConnectEndless():
+                return False
+        else:
+            if not self.connect():
+                return False
+        network.networkConnection.run(self)
+        return True 
+                
+
+    def tryConnectEndless(self):
+        self.socket = None
+        while True:
+            print self.name + ": connecting.. " + str(self.host) + ":" + str(self.port)
+            if self.connect():
+                self.cbDisconnect = self.disconnection
+                return True
+            time.sleep(5)
+        
+
     def connect(self):
+        sock = None
         if not self.connected:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((self.host, self.port))
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.connect((self.host, self.port))
+            except Exception, e:
+                print e.message
+                return False
+            print self.name + ": connection established"
+            self.socket = sock
             self.connected = True
+            return True
 
     def disconnect(self, withDisco):
         if self.connected:
-            print "disconnecting..."
+            print self.name + ": disconnecting (withDisco:"+str(withDisco)+")..."
             network.networkConnection.disconnect(self, withDisco)
             self.connected = False
 
-    def setDataIncomingCb(self,cb):
+    def setDataIncomingCb(self, cb):
         self.cbDataIncome = cb
+
+    def disconnection(self, connection):
+        print self.name + ": disconnection..."
+        self.connected = False
+        if self.autoReconnect:
+            self.tryConnectEndless()
+        
+    
 
 class SortedList(object):
 
