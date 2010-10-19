@@ -434,7 +434,8 @@ class Router:
             movement = xmltemplate.HEAD_UP
         else:
             movement = xmltemplate.HEAD_DOWN
-        cb_addAction(headMovement=movement)
+        cb_addAction(xmltemplate.TEMPLATE_HEAD,
+                     headMovement=movement)
 
     def actionRoute(self, position, destination, cb_getSensorList, cb_addAction, cb_getCollisions):
         """
