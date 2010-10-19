@@ -449,7 +449,7 @@ class ClientContainer(threading.Thread):
             router = map.Router(self.devs["self"]["radius"])
             for wp in self.map.waypoints:
                 if wp.duty & map.WayPoint.WP_FAST:
-                router.actionRoute(pos, wp, self.getSensorList, self.template.addTemplate, self.map.getCollisions)
+                    router.actionRoute(pos, wp, self.getSensorList, self.template.addTemplate, self.map.getCollisions)
     
                 if wp.duty & map.WayPoint.WP_STRICT:
                     collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
@@ -457,19 +457,19 @@ class ClientContainer(threading.Thread):
                         if pos.point.getDistanceTo(wp) < collisions[i][0]:
                             break
                     router.actionRoute(pos, collisions[i][2], self.getSensorList, self.template.addTemplate, self.map.getCollisions)
-                        if i < len(collisions)-1:
-                            bpos = map.Position(collisions[i+1][2], pos.orientation+180)
-                            bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
-                            if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
+                    if i < len(collisions)-1:
+                        bpos = map.Position(collisions[i+1][2], pos.orientation+180)
+                        bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
+                        if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
                             router.actionRoute(pos, bc[0][2], self.getSensorList, self.template.addTemplate, self.map.getCollisions)
     
                 if wp.duty & map.WayPoint.WP_DISCOVER:
-                router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=self.template.addTemplate)
+                    router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=self.template.addTemplate)
     
         xml = self.template.getTransmissionData()
         print "send: " + xml
         self.connection.write(xml)
-            self.map.clearWaypoints()
+        self.map.clearWaypoints()
         self.template.clear()
 
     def shutdown(self):
