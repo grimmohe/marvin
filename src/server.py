@@ -126,7 +126,6 @@ class ClientConnection(network.networkConnection):
         network.networkConnection.__init__(self)
         self.server = server
         self.clientContainer = None
-        self.cbl["onDataIncoming"].add(cb.CallbackCall(self.clientReceiving))
         self.clientInfo = client[1]
         self.clientStuff = client
         self.socket = client[0]
@@ -151,13 +150,6 @@ class ClientConnection(network.networkConnection):
         if self.clientInfo:
             return "[" + self.clientInfo[0] + "]"
         return "[<unknown>]"
-
-    def clientReceiving(self, attributes):
-        #connection.log(" received: " + data)
-        # DeviceServer clients does not have clientContainer
-        if self.clientContainer:
-            self.clientContainer.actionlogData=attributes["data"]
-            self.clientContainer.actionlogNew.set()
 
     def log(self, msg):
         self.logger.log(self.getClientString() + " " + msg)
@@ -298,13 +290,13 @@ class Server:
 
 class ClientContainer(threading.Thread):
 
-    def __init__(self):
-        print "new ClientContainer"
+    def __init__(self, clientConnection):
         threading.Thread.__init__(self)
         self.position = map.Position()
         self.map = map.Map()
         self.devs = {}
-        self.connection = None
+        self.clientConnection = clientConnection
+        self.clientConnection.cbl["onDataIncoming"].add(cb.CallbackCall(self.clientReceiving))
         self.actionlogData = ""
         self.actionlogNew = threading.Event()
         self.stop = False
@@ -380,6 +372,11 @@ class ClientContainer(threading.Thread):
         if self.cbMapRefresh:
             self.cbMapRefresh()
 
+
+    def clientReceiving(self, attributes):
+        self.actionlogData=attributes["data"]
+        self.actionlogNew.set()
+            
     def discover(self):
         """ discover new borders """
         if self.devs.has_key("self") and self.devs["self"].has_key("radius"):
@@ -395,7 +392,7 @@ class ClientContainer(threading.Thread):
             elif self.map.borders.count() == 0:
                 self.map.addWaypoint(map.WayPoint(self.position.point.x, self.position.point.y, map.WayPoint.WP_DISCOVER))
         else:
-            self.connection.log("try to discover, but no \"radius\" item found" )
+            self.clientConnection.log("try to discover, but no \"radius\" item found" )
 
     def getSensorList(self, extended=False):
         sensors = []
@@ -468,14 +465,14 @@ class ClientContainer(threading.Thread):
     
         xml = self.template.getTransmissionData()
         print "send: " + xml
-        self.connection.write(xml)
+        self.clientConnection.write(xml)
         self.map.clearWaypoints()
         self.template.clear()
 
     def shutdown(self):
-        if self.connection:
-            self.connection.disconnect(True)
-        self.connection = None
+        if self.clientConnection:
+            self.clientConnection.disconnect(True)
+        self.clientConnection = None
         self.actionlog = None
         # semi fire event to come out of wait state, but set stop flag before, so thread
         # is killed
@@ -496,16 +493,14 @@ class MarvinServer(Server):
         self.shutdown()
 
     def addClient(self, attributes):
-        clientConnection = attributes["clientConnection"]
-        clientConnection.clientContainer=ClientContainer()
-        clientConnection.clientContainer.connection = clientConnection
-        self.clients.append(clientConnection.clientContainer)
+        clientContainer=ClientContainer(attributes["clientConnection"])
+        self.clients.append(clientContainer)
         if self.srvlis:
             self.srvlis.log("client added")
 
     def removeClient(self, clientConnection):
         for cli in self.clients:
-            if cli.connection == clientConnection:
+            if cli.clientConnection == clientConnection:
                 cli.shutdown()
                 self.clients.remove(cli)
 
