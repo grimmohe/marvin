@@ -77,13 +77,10 @@ class networkConnectionReader(threading.Thread):
         self.start()
 
     def __del__(self):
-        #print "__del__ netConReader <" + self.name + ">"
         self.clientCon = None
 
     def run(self):
-        #print "run netConReader <" + self.name + ">"
         self.awaitIncoming()
-        print "awaitIncoming closed"
 
     def awaitIncoming(self):
         data = "" # in case of an exception, data would be unreferenced
