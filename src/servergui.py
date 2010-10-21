@@ -294,15 +294,17 @@ class MapVisual:
         ratioy = ((maxy - miny) / self.height)
         count = 0
         colors = ["red","blue", "yellow"]
+        
+        # avoid zero deivision
+        if ratiox == 0 or ratioy == 0:
+            return;
+        
         for vec in self.map.borders.getAllBorders():
 
-            try:
-                x1 = (vec.point.x / ratiox) - 50
-                x2 = (vec.size.x / ratiox) - 50
-                y1 = (vec.point.y / ratioy) - 50
-                y2 = (vec.size.y / ratioy) - 50
-            except:
-                return
+            x1 = (vec.point.x / ratiox) - 50
+            x2 = (vec.size.x / ratiox) - 50
+            y1 = (vec.point.y / ratioy) - 50
+            y2 = (vec.size.y / ratioy) - 50
                 
             print "x1: " + str(x1) + ", y1: " + str(y1) + ",x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
             drw.add("GnomeCanvasLine",
