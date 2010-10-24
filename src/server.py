@@ -9,9 +9,9 @@ import map
 import common
 import time
 import xmltemplate
-import math
 import logger
 import callback as cb
+from papyon.gnet.constants import IoError
 
 shellInstance = None
 
@@ -33,7 +33,7 @@ class ServerListener(threading.Thread):
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         try:
             self.socket.bind((ip,port))
-        except IOError as (errno, strerror):
+        except IoError as (errno, strerror):
             print "I/O error({0}): {1}".format(errno, strerror)
             return False
         self.log("binded...")
@@ -263,7 +263,7 @@ class Server:
         self.port = port
         self.cbl = cb.CallbackList({"onNewClient": cb.Callback()})
         self.srvlis = ServerListener(self)
-        
+
     def __del__(self):
         self.srvlis = None
 
@@ -323,17 +323,17 @@ class ClientContainer(threading.Thread):
                     newPos = self.position.getPointInDistance(action.value)
 
                     if ( self.devs.has_key("head")
-                         and self.devs["head"].has_key("dimension")
                          and self.devs["head"].has_key("position")
                          and self.devs["head"]["position"] ):
-                        for dev in self.devs:
-                            if ( self.devs[dev].has_key("touch")
-                                 and self.devs[dev]["touch"]
-                                 and self.devs[dev].has_key("dimension")
-                                 and self.devs[dev]["dimension"] ):
-                                v_start = self.devs[dev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
-                                                                           self.position.orientation)
-                                v_end = self.devs[dev]["dimension"].copy(newPos, self.position.orientation)
+                        for sdev in self.devs:
+                            if ( self.devs[sdev].has_key("touch")
+                                 and self.devs[sdev]["touch"]
+                                 and self.devs[sdev].has_key("dimension")
+                                 and self.devs[sdev]["dimension"] ):
+                                # here the sensor vector is copied to start and end point of the movement
+                                v_start = self.devs[sdev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
+                                                                            self.position.orientation)
+                                v_end = self.devs[sdev]["dimension"].copy(newPos, self.position.orientation)
                                 # sensor at start position
                                 self.map.borders.add(v_start)
                                 # sensor on end position
@@ -343,7 +343,7 @@ class ClientContainer(threading.Thread):
                                 # point 2 start to end
                                 self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
                                 # area marked as cleaned
-                                self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
+                                #self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
                     self.position.point = newPos
             else:
                 if not self.devs.has_key(dev):
@@ -376,7 +376,7 @@ class ClientContainer(threading.Thread):
     def clientReceiving(self, attributes):
         self.actionlogData=attributes["data"]
         self.actionlogNew.set()
-            
+
     def discover(self):
         """ discover new borders """
         if self.devs.has_key("self") and self.devs["self"].has_key("radius"):
@@ -384,9 +384,11 @@ class ClientContainer(threading.Thread):
             if loose and len(loose):
                 loose = loose[0]
                 vlen = loose.len()
+                # the direction of vector 'loose' is the loose end to discover
+                # with bmulti the target waypoint will be set 'radius' before the vectors end
                 bmulti = min(vlen, self.devs["self"]["radius"]) / vlen
-                self.map.addWaypoint(map.WayPoint(loose.point.x + loose.size.x * bmulti,
-                                                  loose.point.y + loose.size.y * bmulti,
+                self.map.addWaypoint(map.WayPoint(loose.point.x + loose.size.x - loose.size.x * bmulti,
+                                                  loose.point.y + loose.size.y - loose.size.y * bmulti,
                                                   map.WayPoint.WP_FAST | map.WayPoint.WP_DISCOVER,
                                                   loose))
             elif self.map.borders.count() == 0:
@@ -441,13 +443,13 @@ class ClientContainer(threading.Thread):
         send assignments in a packed format back to our waiting client.
         there, xml-templates will be filled and executed.
         """
-        pos = map.Position(map.Point(self.position.point.x, self.position.point.y), self.position.orientation)
+        pos = self.position.copy()
         if self.devs.has_key("self"):
             router = map.Router(self.devs["self"]["radius"])
             for wp in self.map.waypoints:
                 if wp.duty & map.WayPoint.WP_FAST:
                     router.actionRoute(pos, wp, self.getSensorList, self.template.addTemplate, self.map.getCollisions)
-    
+
                 if wp.duty & map.WayPoint.WP_STRICT:
                     collisions = self.map.getCollisions(pos, self.getSensorList(True), 0)
                     for i in range(len(collisions)):
@@ -459,10 +461,10 @@ class ClientContainer(threading.Thread):
                         bc = self.map.getCollisions(bpos, self.getSensorList(True), 0)
                         if len(bc) and pos.point.getDistanceTo(wp) < bc[0][0]:
                             router.actionRoute(pos, bc[0][2], self.getSensorList, self.template.addTemplate, self.map.getCollisions)
-    
+
                 if wp.duty & map.WayPoint.WP_DISCOVER:
                     router.actionDiscover(pos, wp.attachment, cb_getSensorList=self.getSensorList, cb_addAction=self.template.addTemplate)
-    
+
         xml = self.template.getTransmissionData()
         print "send: " + xml
         self.clientConnection.write(xml)
@@ -524,7 +526,7 @@ class DeviceServer(Server):
 
     def clientReceiving(self, attributes):
         self.broadcast(attributes["data"], [attributes["networkConnection"]])
-    
+
 
 if __name__ == '__main__':
     Shell()

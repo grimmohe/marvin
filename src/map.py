@@ -485,6 +485,7 @@ class Router:
                     self._actionRouteRun(position, destination, cb_getSensorList, cb_getCollisions, r)
 
         position.orientation = Vector(position.point, endPoint=destination).getAngle()
+        #TODO: the collisions comming out of here are bullshit
         distance = cb_getCollisions(position, cb_getSensorList())
         if len(distance):
             distanceC = distance[0]
@@ -544,6 +545,7 @@ class Router:
                          direction=direction,
                          targetAngle=destAngle)
 
+    #TODO: prepare is never called
     def prepare(self, borders=BorderList()):
         """ generate waypoints """
         self.waypoints.clear()
