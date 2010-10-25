@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 #coding=utf8
 
+#TODO: head move=up is to often send
+#TODO: actionlog shows a turn of 182 but sim still looks the same
+#TODO: commanding to move towards a wall when already touching it is bad
+#TODO: the assignment structure is way too inflexible
+
 import os
 import socket
 import threading
@@ -11,7 +16,6 @@ import time
 import xmltemplate
 import logger
 import callback as cb
-from papyon.gnet.constants import IoError
 
 shellInstance = None
 
@@ -33,7 +37,7 @@ class ServerListener(threading.Thread):
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         try:
             self.socket.bind((ip,port))
-        except IoError as (errno, strerror):
+        except IOError, (errno, strerror):
             print "I/O error({0}): {1}".format(errno, strerror)
             return False
         self.log("binded...")
@@ -330,10 +334,17 @@ class ClientContainer(threading.Thread):
                                  and self.devs[sdev]["touch"]
                                  and self.devs[sdev].has_key("dimension")
                                  and self.devs[sdev]["dimension"] ):
+                                sensorOffset = None
+                                if self.devs[sdev].has_key("orientation") \
+                                   and self.devs[sdev].has_key("distance"):
+                                    sensorOffset = self.devs[sdev]["orientation"]
+                                    sensorOffset.size.x *= self.devs[sdev]["distance"]
+                                    sensorOffset.size.y *= self.devs[sdev]["distance"]
                                 # here the sensor vector is copied to start and end point of the movement
                                 v_start = self.devs[sdev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
-                                                                            self.position.orientation)
-                                v_end = self.devs[sdev]["dimension"].copy(newPos, self.position.orientation)
+                                                                            self.position.orientation,
+                                                                            sensorOffset)
+                                v_end = self.devs[sdev]["dimension"].copy(newPos, self.position.orientation, sensorOffset)
                                 # sensor at start position
                                 self.map.borders.add(v_start)
                                 # sensor on end position
@@ -355,6 +366,8 @@ class ClientContainer(threading.Thread):
                         sensorOffset = None
                         if self.devs[dev].has_key("orientation"):
                             sensorOffset = self.devs[dev]["orientation"]
+                            sensorOffset.size.x *= action.value
+                            sensorOffset.size.y *= action.value
                         self.map.borders.add(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x,
                                                                                         self.position.point.y),
                                                                               self.position.orientation,
@@ -399,9 +412,14 @@ class ClientContainer(threading.Thread):
     def getSensorList(self, extended=False):
         sensors = []
         for devname in self.devs:
-            if self.devs[devname].has_key("dimension") and self.devs[devname].has_key("distance"):
-                if extended: os = self.devs[devname]["distance"]
-                else: os = 0
+            if self.devs[devname].has_key("dimension") \
+            and self.devs[devname].has_key("distance") \
+            and self.devs[devname].has_key("orientation") :
+                if extended:
+                    os = self.devs[devname]["orientation"]
+                    os.size.x *= self.devs[devname]["distance"]
+                    os.size.x *= self.devs[devname]["distance"]
+                else: os = None
                 s = self.devs[devname]["dimension"].copy(offset=os)
                 s.name = devname
                 sensors.append(s)
