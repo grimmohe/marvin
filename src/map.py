@@ -398,7 +398,7 @@ class Router:
             a2 = Vector(position.point, endPoint=directionVector.getEndPoint()).getAngle()
             if not(a1 > a2 or abs(a1-a2) > 180):
                 direction = xmltemplate.DIRECTION_RIGHT
-        sensors = cb_getSensorList()
+        sensors = cb_getSensorList(position)
         sensorsTouching = []
         sensorsUntouched = []
         for s in sensors:
@@ -486,7 +486,7 @@ class Router:
 
         position.orientation = Vector(position.point, endPoint=destination).getAngle()
         #TODO: the collisions comming out of here are bullshit
-        distance = cb_getCollisions(position, cb_getSensorList())
+        distance = cb_getCollisions(position, cb_getSensorList(True))
         if len(distance):
             distanceC = distance[0]
         else:
@@ -622,11 +622,15 @@ class Map:
         direction = turn_point({"x": 0, "y": 1}, position.orientation)
         direction = Point(direction["x"], direction["y"])
 
+        positionedSensors = []
+        for s in sensors:
+            positionedSensors.append(s.copy(position.point, position.orientation))
+
         borders = self.borders.getAllBorders()
         for border in borders:
             distance = MAX_RANGE
             sensedby = None
-            for sensor in sensors:
+            for sensor in positionedSensors:
                 v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
                 v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
                 ratio1 = getVectorIntersectionRatio(v1, border)
