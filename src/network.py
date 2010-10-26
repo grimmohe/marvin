@@ -5,6 +5,7 @@ import threading
 import socket
 import callback as cb
 import sys
+import time
 
 BUFSIZE = 4096
 
@@ -43,6 +44,11 @@ class networkConnection(threading.Thread):
         self.socket = None
 
     def write(self,data):
+        # damn! wait until sock is available
+        # TODO: find better solution for this problem, anybody, anywhere, anytime, but should
+        while self.socket==None:
+            time.sleep(1)
+            
         if self.socket:
             try:
                 self.socket.send(data + "\n\n")
