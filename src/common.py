@@ -7,6 +7,7 @@ import re
 import network
 import xml.sax
 from copy import copy
+import callback as cb
 
 class Actionlog:
     """
@@ -471,6 +472,7 @@ class Connector(network.networkConnection):
 
     def run(self):
         if self.autoReconnect:
+            self.cbl["onExternDisconnection"].add(cb.CallbackCall(self.disconnection))
             if not self.tryConnectEndless():
                 return False
         else:
@@ -510,14 +512,13 @@ class Connector(network.networkConnection):
             network.networkConnection.disconnect(self, withDisco)
             self.connected = False
 
-    def setDataIncomingCb(self, cb):
-        self.cbDataIncome = cb
-
     def disconnection(self, connection):
         print self.name + ": disconnection..."
         self.connected = False
+        self.reader = None
         if self.autoReconnect:
             self.tryConnectEndless()
+        self.reader = network.networkConnectionReader(self)
         
     
 

@@ -4,6 +4,7 @@
 import threading
 import socket
 import callback as cb
+import sys
 
 BUFSIZE = 4096
 
@@ -27,7 +28,7 @@ class networkConnection(threading.Thread):
 
     def disconnect(self, withDisco):
         #print "disco netCon <" + self.name + ">"
-        if withDisco:
+        if withDisco and self.socket:
             self.write("DISCO")
         if self.reader:
             self.reader.stop = True
@@ -36,8 +37,9 @@ class networkConnection(threading.Thread):
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
                 self.socket.close()
-            except socket.error:
-                print "socket not clean closed, but who cares, its the end"
+            except:
+                print "socket.close: ", sys.exc_info()[0]
+
         self.socket = None
 
     def write(self,data):
@@ -78,6 +80,12 @@ class networkConnectionReader(threading.Thread):
 
     def run(self):
         self.awaitIncoming()
+        print "networkConnectionReader: leaving loop"
+        
+        # check whenever this was in shudown path
+        if not self.stop:
+            self.netConnection.receive("DISCO")
+
 
     def awaitIncoming(self):
         data = "" # in case of an exception, data would be unreferenced
@@ -86,7 +94,7 @@ class networkConnectionReader(threading.Thread):
                 data += self.netConnection.socket.recv(BUFSIZE)
             except socket.error:
                 print "Unfriendly connection reset"
-                return
+                return;
             if not data:
                 break
             if "\n\n" == data[-2:]:
