@@ -38,8 +38,6 @@ class Device:
         return False
 
     def write(self, data):
-        if data.find("reset") >= 0:
-            print "DEVICE OUTGOING RESET: "+data
         if not self.con.write(self.name + "#" + data):
             raise Exception("connection.write failed")
             return 0
