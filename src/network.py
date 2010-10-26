@@ -65,9 +65,6 @@ class networkConnection(threading.Thread):
             self.data = ''
         return data
 
-    def getCallback(self, name):
-        return self.cbl[name]
-
 class networkConnectionReader(threading.Thread):
 
     def __init__(self,netCon):

@@ -129,7 +129,6 @@ class ClientConnection(network.networkConnection):
     def __init__(self, server, client):
         network.networkConnection.__init__(self)
         self.server = server
-        self.clientContainer = None
         self.clientInfo = client[1]
         self.clientStuff = client
         self.socket = client[0]
@@ -143,9 +142,6 @@ class ClientConnection(network.networkConnection):
         self.log("disconnecting...")
         network.networkConnection.disconnect(self, withDisco)
         self.clientInfo = None
-        if self.clientContainer:
-            self.clientContainer.connection = None
-            self.clientContainer = None
         if self in self.server.clients:
             self.server.clients.remove(self)
         self.log(".. done")
