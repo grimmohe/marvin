@@ -61,4 +61,7 @@ class CallbackList:
     def call(self, name, attributes):
         if self.lookup(name):
             self.list[name].call(attributes)
+            
+    def add(self, callbacks):
+        self.list.update(callbacks)
      
