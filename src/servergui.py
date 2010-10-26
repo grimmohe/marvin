@@ -172,7 +172,7 @@ class ServerTabPage(TabPage):
 
 class ClientTabPage(TabPage):
 
-    def __init__(self, name, clientConnection):
+    def __init__(self, name, clientContainer):
         TabPage.__init__(self, name)
 
         # start stop buttons for toolbar
@@ -181,7 +181,7 @@ class ClientTabPage(TabPage):
         self.btndel = gtk.Button("Delete")
         self.btndel.connect("clicked", lambda w: self.delete())
 
-        self.mapvis = MapVisual(clientConnection.clientContainer.map, 200, 200)
+        self.mapvis = MapVisual(clientContainer.map, 200, 200)
         #self.mapvis = MapVisual(None, 200, 200)
 
         self.toolbar.pack_start(self.btndisco, False, 0)
@@ -194,8 +194,9 @@ class ClientTabPage(TabPage):
         self.mapvis.width 
 
         self.mainWidget.show_all()
-        self.clientConnection = clientConnection
-        self.clientConnection.clientContainer.cbMapRefresh = self.mapvisRefresh()
+        self.clientContainer = clientContainer
+        self.clientConnection = clientContainer.clientConnection
+        self.clientContainer.cbMapRefresh = self.mapvisRefresh()
         self.clientConnection.setLogger(self.logger)
 
     def disconnect(self):
@@ -203,8 +204,8 @@ class ClientTabPage(TabPage):
             self.clientConnection.disconnect(True)
 
     def close(self):
-        if self.clientConnection and self.clientConnection.clientContainer:
-            self.clientConnection.clientContainer.shutdown()
+        if self.clientConnection and self.clientContainer:
+            self.clientContainer.shutdown()
 
     def delete(self):
         if not guiinstance.removeClient(self.clientConnection):
@@ -447,11 +448,12 @@ class MainWindow(threading.Thread):
         else:
             self.showActiveItem(self.servers.values()[0].getDiv())
 
-    def addClient(self, attributes):
+    def addClientContainer(self, attributes):
         print "add client"
-        clientConnection = attributes["clientConnection"]
+        clientContainer = attributes["clientContainer"]
+        clientConnection = clientContainer.clientConnection
         clientConnection.cbl["onExternDisconnection"].add(cb.CallbackCall(self.removeClient, {"clientConnection": clientConnection}))
-        self.clients[clientConnection.getClientString()] = ClientTabPage(clientConnection.getClientString(), clientConnection)
+        self.clients[clientConnection.getClientString()] = ClientTabPage(clientConnection.getClientString(), clientContainer)
         self.tablist.add(clientConnection.getClientString(), lambda w: self.showClientTab(clientConnection.getClientString()))
         self.tablist.div.show_all()
 
