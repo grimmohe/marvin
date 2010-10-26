@@ -47,7 +47,7 @@ class Template:
             if not (baseSensor <> None and untouchedSensor <> None and direction in DIRECTION_KEYS):
                 raise Exception("there are parameters missing")
 
-            tki.add("direction", direction)
+            tki.add("direction", DIRECTIONS[direction])
             if direction == DIRECTION_LEFT:
                 tki.add("opposite-direction", DIRECTIONS[DIRECTION_RIGHT])
             else:
