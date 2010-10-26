@@ -94,7 +94,7 @@ class ActionlogEntry:
 
     def toXml(self):
         if type(self.value) in (int, float):
-            value = str(int(self.value - self.start_value))
+            value = str(self.value - self.start_value)
         else:
             value = str(self.value)
         return "<" + self.action + " value='" + value + "'" + "/>"
@@ -399,7 +399,7 @@ class Argument:
     def toXml(self):
         cReturn = ""
         if self.typ == self.ARG_STATIC:
-            cReturn = str(int(self.key))
+            cReturn = str(self.key)
         elif self.typ == self.ARG_STATE:
             cReturn = self.key
         return cReturn
