@@ -94,7 +94,7 @@ class ActionlogEntry:
 
     def toXml(self):
         if type(self.value) in (int, float):
-            value = str(int((self.value - self.start_value) * 100))
+            value = str(int(self.value - self.start_value))
         else:
             value = str(self.value)
         return "<" + self.action + " value='" + value + "'" + "/>"
@@ -112,7 +112,7 @@ class ActionlogXmlHandler(xml.sax.ContentHandler):
             for attr,val in attrs.items():
                 if attr == "value":
                     try:
-                        value = float(val) / 100
+                        value = float(val)
                     except ValueError:
                         value = val
             self.actionlog.actions.append(ActionlogEntry(name, value))
@@ -378,7 +378,7 @@ class Argument:
         # nur float (0.0)
         if re.match("^(-?[\d]+\.?[\d]*|-?[\d]*\.?[\d]+)$", arg, 0):
             arg_typ = self.ARG_STATIC
-            arg_key = float(arg) / 100
+            arg_key = float(arg)
         else:
             arg_typ = self.ARG_STATE
             arg_key = arg
@@ -399,7 +399,7 @@ class Argument:
     def toXml(self):
         cReturn = ""
         if self.typ == self.ARG_STATIC:
-            cReturn = str(int(self.key * 100))
+            cReturn = str(int(self.key))
         elif self.typ == self.ARG_STATE:
             cReturn = self.key
         return cReturn
