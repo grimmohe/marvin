@@ -296,7 +296,7 @@ class Simulator:
                 vector_ratio = ( math.pow(sensor_o[2]["y"], 2)
                                  / (math.pow(sensor_o[2]["x"], 2)
                                     + math.pow(sensor_o[2]["y"], 2)) )
-                for range in [0.0, .4, -.4, .6, -.6, 1.0, -1.0]:
+                for range in [0.0, .4, -.4, .5, .6, -.6, 1.0, -1.0]:
                     if status < 1.0:
                         break
                     # Sensor um range verschieben
