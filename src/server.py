@@ -503,6 +503,7 @@ class MarvinServer(Server):
     def __init__(self):
         Server.__init__(self, "MarvinServer",'127.0.0.1',29875)
         self.cbl["onNewClient"].add(cb.CallbackCall(self.addClient))
+        self.cbl.add({"onNewClientContainer": cb.Callback()})
         self.clients = []
 
     def __del__(self):
@@ -511,6 +512,7 @@ class MarvinServer(Server):
     def addClient(self, attributes):
         clientContainer=ClientContainer(attributes["clientConnection"])
         self.clients.append(clientContainer)
+        self.cbl.call("onNewClientContainer", {"clientContainer": clientContainer})
         if self.srvlis:
             self.srvlis.log("client added")
 
