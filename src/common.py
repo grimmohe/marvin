@@ -419,6 +419,9 @@ class Event:
         match = 0
         goon = 1
 
+        arg1 = None
+        arg2 = None
+
         if "g" in self.compare:
             arg1 = self.arg1.get(states)
             arg2 = self.arg2.get(states)
@@ -432,7 +435,10 @@ class Event:
             arg2 = self.arg2.get(states)
             match = match or arg1 == arg2
 
+        #print arg1, self.compare, arg2
+
         if match:
+            print "MATCH: ", arg1, self.compare, arg2
             goon = self.action.execute(states)
         return goon
 
@@ -479,8 +485,8 @@ class Connector(network.networkConnection):
             if not self.connect():
                 return False
         network.networkConnection.run(self)
-        return True 
-                
+        return True
+
 
     def tryConnectEndless(self):
         self.socket = None
@@ -490,7 +496,7 @@ class Connector(network.networkConnection):
                 self.cbDisconnect = self.disconnection
                 return True
             time.sleep(5)
-        
+
 
     def connect(self):
         sock = None
@@ -519,8 +525,8 @@ class Connector(network.networkConnection):
         if self.autoReconnect:
             self.tryConnectEndless()
         self.reader = network.networkConnectionReader(self)
-        
-    
+
+
 
 class SortedList(object):
 

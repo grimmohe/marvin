@@ -83,6 +83,7 @@ class State:
 
     def update(self, key, value, process=True):
         """ Erstellt/Aktualisiert einen Wert """
+        print "update:", key, value
         self.dict[key] = value
         self.actionlog.update(key, value)
         if process and self.cb_anyAction:
