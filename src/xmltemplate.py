@@ -13,7 +13,7 @@ $compare                    # g|l|e wird für vergleiche benutzt
 $target-angle               # zu erreichender winkel in grad
 $distance                   # distanz die gefahren werden soll
 $head-movement              # up|down bewegung der sensoren / des saugkopfes
-$head-target                # 0|100 ist ziel der bewegung von $head-movement
+$head-target                # 0|1 ist ziel der bewegung von $head-movement
 
 If a varaible contains a comma seperated list, the tag in which it is used will be repeated for
 each entry.
@@ -26,7 +26,7 @@ TEMPLATE_TURN_ANGLE = 8
 TEMPLATE_TURN_HIT = 16
 
 HEAD_UP = 0
-HEAD_DOWN = 100
+HEAD_DOWN = 1
 
 DIRECTION_LEFT = 0
 DIRECTION_RIGHT = 1

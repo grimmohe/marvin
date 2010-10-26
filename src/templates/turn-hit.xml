@@ -1,5 +1,5 @@
 <assignment id="$id" start="engine:turn=$direction" end="engine:turn=stop">
-	<event ifarg1="$untouched-sensor:distance" ifcompare="l" ifarg2="60" final="true"/>
+	<event ifarg1="$untouched-sensor:distance" ifcompare="l" ifarg2="0.6" final="true"/>
 	<event ifarg1="engine:turned" ifcompare="g" ifarg2="360" final="true"/>
 	<event ifarg1="engine:turned" ifcompare="l" ifarg2="-360" final="true"/>
 </assignment>
