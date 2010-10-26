@@ -381,6 +381,7 @@ class Router:
         direction is a Vector(), the loose end of a border.
         it has to discover in direction of the start point.
         """
+        turned = False
         direction = xmltemplate.DIRECTION_LEFT
         if directionVector:
             ratio = getVectorIntersectionRatio(Vector(position.point,
@@ -394,6 +395,8 @@ class Router:
                                 cb_getSensorList=cb_getSensorList,
                                 cb_addAction=cb_addAction)
                 self.actionHead(headUp=False, cb_addAction=cb_addAction)
+                turned = True
+
             a1 = Vector(position.point, endPoint=directionVector.getStartPoint()).getAngle()
             a2 = Vector(position.point, endPoint=directionVector.getEndPoint()).getAngle()
             if not(a1 > a2 or abs(a1-a2) > 180):
@@ -408,6 +411,11 @@ class Router:
                 sensorsTouching.append(s.name)
             else:
                 sensorsUntouched.append(s.name)
+        if turned:
+            cb_addAction(xmltemplate.TEMPLATE_TURN_HIT,
+                         direction=direction,
+                         baseSensor=sensorsTouching,
+                         untouchedSensor=[])
         cb_addAction(xmltemplate.TEMPLATE_DISCOVER,
                      direction=direction,
                      baseSensor=sensorsTouching,
