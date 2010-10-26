@@ -59,7 +59,7 @@ class ServerControl(threading.Thread):
         if not self.server:
             if self.tab.name == MARSRV:
                 self.server = server.MarvinServer()
-                self.server.cbl["onNewClient"].add(cb.CallbackCall(guiinstance.addClient))
+                self.server.cbl["onNewClientContainer"].add(cb.CallbackCall(guiinstance.addClientContainer))
             if self.tab.name == DEVSRV:
                 self.server = server.DeviceServer()
             self.server.setLogger(self.tab.logger)
