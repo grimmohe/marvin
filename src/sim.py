@@ -291,58 +291,70 @@ class Simulator:
         self.client.reset_head_status()
 
         for line in self.room.get_lines():
-            for sensor_o in self.client.get_head_lines(now):
-                status = 1.0
-                vector_ratio = ( math.pow(sensor_o[2]["y"], 2)
-                                 / (math.pow(sensor_o[2]["x"], 2)
-                                    + math.pow(sensor_o[2]["y"], 2)) )
-                for range in [0.0, .4, -.4, .5, .6, -.6, 1.0, -1.0]:
-                    if status < 1.0:
-                        break
-                    # Sensor um range verschieben
-                    x = math.sqrt(range * range * vector_ratio)
-                    y = math.sqrt(range * range * (1 - vector_ratio))
-                    if (sensor_o[2]["y"] > 0) <> (sensor_o[2]["x"] > 0):
-                        x = -x
-                        y = -y
-                    else:
-                        y = -y
-                    if range < 0.0:
-                        x = -x
-                        y = -y
+            for sensor in self.client.get_head_lines(now):
+                status = self.checkSensorStatus(sensor, line)
 
-                    sensor = ({"x": sensor_o[0]["x"]+x, "y": sensor_o[0]["y"]+y},
-                              {"x": sensor_o[1]["x"]+x, "y": sensor_o[1]["y"]+y},
-                              {"x": sensor_o[2]["x"],   "y": sensor_o[2]["y"]})
-
-                    v1 = {"x": line[0]["x"] - sensor[0]["x"],
-                          "y": line[0]["y"] - sensor[0]["y"]}
-                    v2 = {"x": sensor[0]["x"] - line[0]["x"],
-                          "y": sensor[0]["y"] - line[0]["y"]}
-                    ratio1 = getVectorIntersectionRatioSim(sensor[2], line[2], v1)
-                    ratio2 = getVectorIntersectionRatioSim(line[2], sensor[2], v2)
-                    if ratio1 and ratio2:
-                        if (0 <= ratio1 <= 1) and (0 <= ratio2 <= 1):
-                            # direkter Schnitt
-                            status = max(0, abs(range - .05))
-                    elif range == 0.0:
-                        # Parallel
-                        # Drehen
-                        angle = - get_angle(sensor[0], sensor[1])
-                        l1 = (turn_pointr(sensor[0], angle),
-                              turn_pointr(sensor[1], angle))
-                        l2 = (turn_pointr(line[0], angle),
-                              turn_pointr(line[1], angle))
-                        # Jetzt ist X bei beiden Punkten einer Linie gleich
-                        # Überschneiden sich die Linien auf Y?
-                        if (min(l1[0]["y"], l1[1]["y"]) < max(l2[0]["y"], l2[1]["y"])
-                            and
-                            max(l1[0]["y"], l1[1]["y"]) > min(l2[0]["y"], l2[1]["y"])):
-                            status = abs(l1[0]["x"] - l2[0]["x"])
-
-                sensor_o[0]["o"]["status"] = min(sensor_o[0]["o"]["status"], status)
+                sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], status)
         self.client.send_data(now)
         return 1
+
+    def checkSensorStatus(self, sensor, line):
+        status = 1.0
+
+        v1 = {"x": line[0]["x"] - sensor[0]["x"],
+              "y": line[0]["y"] - sensor[0]["y"]}
+        v2 = {"x": sensor[0]["x"] - line[0]["x"],
+              "y": sensor[0]["y"] - line[0]["y"]}
+        ratio1 = getVectorIntersectionRatioSim(sensor[2], line[2], v1)
+        ratio2 = getVectorIntersectionRatioSim(line[2], sensor[2], v2)
+
+        if ratio1 and ratio2:
+            if (0 <= ratio1 <= 1) and (0 <= ratio2 <= 1):
+                # direkter Schnitt
+                status = 0
+            else:
+            # Drehen
+                angle = - get_angle(sensor[0], sensor[1])
+                s = (turn_pointr(sensor[0], angle),
+                     turn_pointr(sensor[1], angle))
+                l = (turn_pointr(line[0], angle),
+                     turn_pointr(line[1], angle))
+                # nachdem s eine x-steigung von 0 hat, müssen sich die vektoren nur auf y schneiden
+                if (min(s[0]["y"], s[1]["y"]) < max(l[0]["y"], l[1]["y"])
+                    and
+                    max(s[0]["y"], s[1]["y"]) > min(l[0]["y"], l[1]["y"])):
+                    # was über steht kommt weg
+                    # nur x wird danach ausgewertet
+                    if l[0]["y"] > s[0]["y"]:
+                        l[0]["x"] += (l[1]["x"] - l[0]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[0]["y"] - s[0]["y"])
+                    if l[1]["y"] > s[0]["y"]:
+                        l[1]["x"] += (l[0]["x"] - l[1]["x"]) / (l[0]["y"] - l[1]["y"]) * (l[1]["y"] - s[0]["y"])
+
+                    if l[0]["y"] < s[1]["y"]:
+                        l[0]["x"] += (l[1]["x"] - l[0]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[0]["y"] - s[1]["y"])
+                    if l[1]["y"] < s[1]["y"]:
+                        l[1]["x"] += (l[0]["x"] - l[1]["x"]) / (l[0]["y"] - l[1]["y"]) * (l[1]["y"] - s[1]["y"])
+
+                    status = min(min(abs(s[0]["x"] - l[0]["x"]),
+                                     abs(s[1]["x"] - l[0]["x"])),
+                                 min(abs(s[0]["x"] - l[1]["x"]),
+                                     abs(s[1]["x"] - l[1]["x"])))
+        else:
+            # Parallel
+            # Drehen
+            angle = - get_angle(sensor[0], sensor[1])
+            l1 = (turn_pointr(sensor[0], angle),
+                  turn_pointr(sensor[1], angle))
+            l2 = (turn_pointr(line[0], angle),
+                  turn_pointr(line[1], angle))
+            # Jetzt ist X bei beiden Punkten einer Linie gleich
+            # Überschneiden sich die Linien auf Y?
+            if (min(l1[0]["y"], l1[1]["y"]) < max(l2[0]["y"], l2[1]["y"])
+                and
+                max(l1[0]["y"], l1[1]["y"]) > min(l2[0]["y"], l2[1]["y"])):
+                status = abs(l1[0]["x"] - l2[0]["x"])
+
+        return status
 
     def init_gui(self):
         """
