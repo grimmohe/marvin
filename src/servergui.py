@@ -13,6 +13,7 @@ import logger
 import time
 import gnomecanvas
 import map
+import ServerControl
 import callback as cb
 gtk.gdk.threads_init()
 
@@ -20,83 +21,6 @@ MARSRV = "MarvinServer"
 DEVSRV = "DeviceServer"
 
 guiinstance = None
-
-class ServerControl(threading.Thread):
-
-    def __init__(self, tab):
-        threading.Thread.__init__(self)
-        self.event_SwitchState = threading.Event()
-        self.tab = tab
-        self.stop = False
-        self.server = None
-
-    def run(self):
-        self.prints("running..")
-        self.ServerStart()
-        while not self.stop:
-            self.event_SwitchState.clear()
-            self.event_SwitchState.wait()
-            self.prints("event!")
-            if self.stop:
-                if self.server:
-                    self.ServerStop()
-                self.prints("leaving event loop")
-                return
-            if self.server:
-                self.ServerStop()
-            else:
-                self.ServerStart()
-
-
-    def ServerStop(self):
-        self.tab.logger.log("stop server " + self.tab.name)
-        if self.server:
-            self.server.shutdown()
-        self.server=None
-
-    def ServerStart(self):
-        self.tab.logger.log("start server " + self.tab.name)
-        if not self.server:
-            if self.tab.name == MARSRV:
-                self.server = server.MarvinServer()
-                self.server.cbl["onNewClientContainer"].add(cb.CallbackCall(guiinstance.addClientContainer))
-            if self.tab.name == DEVSRV:
-                self.server = server.DeviceServer()
-            self.server.setLogger(self.tab.logger)
-            if self.ServerRun(50):
-                self.tab.logger.log("done (" + self.server.name + ")")
-            else:
-                self.tab.logger.log("failed")
-
-
-    def ServerRun(self, maxTries):
-        curTry = 0
-        while curTry <= maxTries:
-            self.tab.logger.log( "try to run " + self.server.name + " (" + str(curTry) + "/" + str(maxTries) + ")")
-            if self.server.run():
-                return True
-            curTry += 1
-            time.sleep(5.0)
-        return False
-
-    def setStop(self, stop):
-        self.stop = stop
-
-    def isRunning(self):
-        if self.server:
-            return True
-        return False
-
-    def destroy(self):
-        self.prints("destroy")
-        if self.server:
-            self.server.srvlis.setLogger(None)
-        self.stop = True
-        self.event_SwitchState.set()
-        self.prints("done..")
-
-    def prints(self, msg):
-         print "ServerControl " + self.name + ": " + msg
 
 class TabPage:
 
@@ -150,7 +74,12 @@ class ServerTabPage(TabPage):
         self.toolbar.pack_end(self.btnstop, False, 0)
 
         self.mainWidget.show_all()
-        self.sc = ServerControl(self)
+        if name == MARSRV:
+            self.sc = ServerControl.ServerControl(name, ServerControl.SERVERTYPE_MARVINSRV)
+        else:
+            self.sc = ServerControl.ServerControl(name, ServerControl.SERVERTYPE_DEVICESRV)
+        self.sc.setLogger(self.logger)
+        self.sc.cbl["onRunning"].add(cb.CallbackCall(self.onServerRunning))
         self.sc.start()
 
     def serverStop(self):
@@ -169,6 +98,11 @@ class ServerTabPage(TabPage):
         self.logger = None
         self.logger = logger.logger()
         print "ServerTabPage closed"
+        
+    def onServerRunning(self, attributes):
+        if self.name == MARSRV:
+            self.sc.server.cbl["onNewClientContainer"].add(cb.CallbackCall(guiinstance.addClientContainer))
+        
 
 class ClientTabPage(TabPage):
 

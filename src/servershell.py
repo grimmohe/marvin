@@ -3,6 +3,7 @@
 
 import server
 import logger
+import ServerControl
 import time
 
 shellInstance = None
@@ -12,8 +13,8 @@ class Shell:
     def __init__(self):
         global shellInstance
         shellInstance = self
-        self.marvinsrv = None
-        self.devsrv = None
+        self.marvinsc = None
+        self.devsc = None
         self.exit = False
         self.tmplts = None
         self.logger = logger.logger()
@@ -45,12 +46,6 @@ class Shell:
         cmd = cmd.replace("  "," ").strip().split(" ")
         if "sft" == cmd[0]:
             self.processCommand("sf ../doc/test.xml")
-        elif "sf" == cmd[0]:
-            print "sending file: ", cmd[1]
-            if self.marvinsrv.srvlis.sendFile(cmd[1]) == 0:
-                print "send ok"
-            else:
-                print "send failed"
         elif "echo" == cmd[0]:
             print ' '.join(cmd)
         elif "exit" == cmd[0]:
@@ -59,12 +54,6 @@ class Shell:
             self.runServers()
         elif "stop" == cmd[0]:
             self.destroyServers()
-        elif "srv" == cmd[0]:
-            if self.marvinsrv:
-                self.marvinsrv.srvlis.serverCmd(cmd[1])
-        elif "dev" == cmd[0]:
-            if self.devsrv:
-                self.devsrv.srvlis.serverCmd(cmd[1])
         elif "help" == cmd[0]:
             print "command unkown: ",cmd[0]
             print "sf <file>"
@@ -77,32 +66,20 @@ class Shell:
         self.processCommand("echo close Shell")
 
     def destroyServers(self):
-        if self.marvinsrv:
-            self.marvinsrv.shutdown()
-        self.marvinsrv = None
-        if self.devsrv:
-            self.devsrv.srvlis.shutdown()
-        self.devsrv = None
+        if self.marvinsc and self.marvinsc.isRunning():
+            self.marvinsc.event_SwitchState.set()
+        self.marvinsc = None
+        if self.devsc and self.devsc.isRunning():
+            self.devsc.event_SwitchState.set()
+        self.devsc = None
 
     def runServers(self):
-        if not self.marvinsrv:
-            self.marvinsrv = server.MarvinServer()
-            self.runServer(self.marvinsrv, 50)
-        if not self.devsrv:
-            self.devsrv = server.DeviceServer()
-            self.runServer(self.devsrv, 50)
-
-    def runServer(self, srv, maxTries):
-        curTry = 0
-        srv.setLogger(self.logger)
-        while curTry <= maxTries:
-            print "try to run " + srv.name + " (" + str(curTry) + "/" + str(maxTries) + ")"
-            if srv.run():
-                return True
-            curTry += 1
-            time.sleep(5.0)
-        return False
-
+        if not self.marvinsc:
+            self.marvinsc = ServerControl.ServerControl("MarvinServer", ServerControl.SERVERTYPE_MARVINSRV)
+            self.marvinsc.start()
+        if not self.devsc:
+            self.devsc = ServerControl.ServerControl("DeviceServer", ServerControl.SERVERTYPE_DEVICESRV)
+            self.devsc.start()
 
 
 if __name__ == '__main__':
