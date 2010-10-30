@@ -6,6 +6,7 @@ import time
 import re
 import network
 import xml.sax
+import threading
 from copy import copy
 import callback as cb
 
@@ -474,13 +475,14 @@ class Connector(network.networkConnection):
         self.connected = False
         self.autoReconnect = autoReconnect
         self.deamon = True
+        self.connecting=False
+        self.evntConnected = threading.Event()
         self.start()
 
     def run(self):
         if self.autoReconnect:
             self.cbl["onExternDisconnection"].add(cb.CallbackCall(self.disconnection))
-            if not self.tryConnectEndless():
-                return False
+            self.tryConnectEndless()
         else:
             if not self.connect():
                 return False
@@ -502,14 +504,18 @@ class Connector(network.networkConnection):
         sock = None
         if not self.connected:
             try:
+                self.connecting=True
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.connect((self.host, self.port))
             except Exception, e:
                 print e.message
+                self.connecting=False
                 return False
             print self.name + ": connection established"
             self.socket = sock
             self.connected = True
+            self.evntConnected.set()
+            self.connecting=False
             return True
 
     def disconnect(self, withDisco):
@@ -527,6 +533,13 @@ class Connector(network.networkConnection):
         self.reader = network.networkConnectionReader(self)
 
 
+    def write(self, data):
+        if not self.connected: 
+            if (self.connecting or self.autoReconnect):
+                self.evntConnected.wait()
+            else:
+                raise Exception("writing into unconnected network connection failed")
+        return network.networkConnection.write(self, data)
 
 class SortedList(object):
 
