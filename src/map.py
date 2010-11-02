@@ -201,6 +201,12 @@ class BorderList:
     def __init__(self):
         self.borders = []
 
+    def __len__(self):
+        return self.count()
+
+    def __getitem__(self, index):
+        return self.get(index)
+
     def add(self, v=Vector()):
         if v and v.__class__.__name__ == "Vector":
             distance = v.len()
