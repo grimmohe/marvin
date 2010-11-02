@@ -180,7 +180,7 @@ class Cleaner:
         """ Schreibt die Sensordaten und Bewegungscounter """
         for sensor in self.head_form:
             if sensor["status"] < self.SENSOR_RANGE:
-                sensor["sensor"].write("distance=%f" % sensor["status"])
+                sensor["sensor"].write("distance=%.2f" % sensor["status"])
 
         if self.action & self.ACTION_DRIVE:
             self.engine.write("distance=%f" % (self.SPEED * (current_time
