@@ -66,14 +66,17 @@ class ClientContainer(threading.Thread):
                                                                             self.position.orientation,
                                                                             sensorOffset)
                                 v_end = self.devs[sdev]["dimension"].copy(newPos, self.position.orientation, sensorOffset)
-                                # sensor at start position
-                                self.map.borders.add(v_start)
+                                # point 1 start to end
+                                v1 = map.Vector().combine(v_start, v_end, map.Vector.START_POINT)
+                                # point 2 start to end
+                                v2 = map.Vector().combine(v_start, v_end, map.Vector.END_POINT)
+                                # the one on the outside wins
+                                if v_end.distanceMax(v1) > v_end.distanceMax(v2):
+                                    self.map.borders.add(v1)
+                                else:
+                                    self.map.borders.add(v2)
                                 # sensor on end position
                                 self.map.borders.add(v_end)
-                                # point 1 start to end
-                                self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.START_POINT))
-                                # point 2 start to end
-                                self.map.borders.add(map.Vector().combine(v_start, v_end, map.Vector.END_POINT))
                                 # area marked as cleaned
                                 #self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
                     self.position.point = newPos

@@ -126,9 +126,13 @@ class Vector:
         p4 = math.sqrt(math.pow(e1.x - e2.x, 2) + math.pow(e1.y - e2.y, 2))
         return (p1, p2, p3, p4)
 
-    def distance(self, v):
+    def distanceMin(self, v):
         c = self.compare(v)
         return min(c[0], min(c[1], min(c[2], c[3])))
+
+    def distanceMax(self, v):
+        c = self.compare(v)
+        return max(c[0], max(c[1], max(c[2], c[3])))
 
     def inRange(self, v):
         comp = self.compare(v)
