@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding=utf8
 
-import math
+from math import *
 
 def get_angle(point1, point2={"x": 0, "y": 0}):
     """ git den Winkel einer Strecke in Radianten """
@@ -9,33 +9,33 @@ def get_angle(point1, point2={"x": 0, "y": 0}):
     y = point1["y"] - point2["y"]
     factor = get_s({"x": x, "y": y})
     try:
-        alpha = math.asin(abs(x) / factor)
+        alpha = asin(abs(x) / factor)
     except ZeroDivisionError:
         alpha = 0.0
     if y < 0:
         if x > 0:
-            alpha = math.radians(180) - alpha
+            alpha = radians(180) - alpha
         else:
-            alpha += math.radians(180)
+            alpha += radians(180)
     elif x < 0:
-        alpha = math.radians(360) - alpha
-    return alpha + math.radians(360) % math.radians(360) #immer positiver Winkel
+        alpha = radians(360) - alpha
+    return alpha + radians(360) % radians(360) #immer positiver Winkel
 
 def get_s(point1, point2={"x": 0, "y": 0}):
     """ Distanz von 2 Punkten """
-    return math.sqrt( math.pow(point1["x"] - point2["x"], 2)
-                      + math.pow(point1["y"] - point2["y"], 2) )
+    return sqrt( pow(point1["x"] - point2["x"], 2)
+                      + pow(point1["y"] - point2["y"], 2) )
 
 def turn_point(point, degrees):
     """ wie turn_pointr, aber in grad """
-    return turn_pointr(point, math.radians(degrees))
+    return turn_pointr(point, radians(degrees))
 
 def turn_pointr(point, rad):
     """ Dreht einen Punkt auf der Systemachse """
     factor = get_s(point)
     alpha = get_angle(point) + rad
-    return { "x": round(math.sin(alpha) * factor, 5),
-             "y": round(math.cos(alpha) * factor, 5) }
+    return { "x": round(sin(alpha) * factor, 5),
+             "y": round(cos(alpha) * factor, 5) }
 
 def getVectorIntersectionRatioSim(v1, v2, v3):
     """
@@ -79,9 +79,34 @@ def getVectorIntersectionRatio(v1, v2):
     except ZeroDivisionError:
         return None # parallel
 
+def getHeightOnA(a, b ,c):
+    try:
+        return sqrt(2 * (pow(a, 2)*pow(b, 2)
+                         + pow(b, 2)*pow(c, 2)
+                         + pow(c, 2)*pow(a, 2))
+                    - (pow(a, 4) + pow(b, 4) + pow(c, 4))
+                      / 2*a)
+    except:
+        return .0
+
+def getVectorToPointDistance(vector, point):
+    """
+    returns the shortest dist out of h on vector(a) or, if a horny triangle, b or c
+    """
+    a = vector.len()
+    b = vector.getEndPoint().getDistanceTo(point)
+    c = vector.getStartPoint().getDistanceTo(point)
+    # horny
+    if max(b, c) > a:
+        return min(b, c)
+    # height on a
+    else:
+        return getHeightOnA(a, b, c)
+
+
 def roundup(n):
     """ round up, always! """
-    down = math.trunc(n)
+    down = trunc(n)
     if n - down > 0:
         down += 1
     return down

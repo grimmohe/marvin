@@ -3,8 +3,9 @@
 
 import math
 from numpy.ma.core import max
-from mathix import turn_point, roundup, getVectorIntersectionRatio, get_angle
-from common import SortedList
+from mathix import turn_point, roundup, getVectorIntersectionRatio, get_angle,\
+    getVectorToPointDistance
+from common import SortedList, Enumerator
 import xmltemplate
 
 """ global statics """
@@ -162,6 +163,7 @@ class Vector:
         return False
 
     def merge(self, v):
+        """ combine th 2 most distant points into this vector """
         comp = self.compare(v)
         max_dist = 0.0
         max_index = 0
@@ -169,7 +171,9 @@ class Vector:
             if comp[ii] > max_dist:
                 max_dist = comp[ii]
                 max_index = ii
-        if max_index == 0:
+        if self.len() > comp[max_index]:
+            pass
+        elif max_index == 0:
             self.setStartPoint(self.getStartPoint())
             self.setEndPoint(v.getStartPoint())
         elif max_index == 1:
@@ -668,33 +672,22 @@ class Map:
 
     def merge(self):
         """ merge borders that could be one """
-        ii = 0
-        doubleMax = MAX_VECTOR_LENGTH * 2
-        borders = self.borders.getAllBorders()
-        while ii < len(borders):
-            v1 = borders[ii]
-            aa = ii + 1
-            while aa < len(borders):
-                v2 = borders[aa]
-                max_dist = 0.0
-                count_in_range = 0
-                for distance in v1.compare(v2):
-                    max_dist = max(max_dist, distance)
-                    if distance <= MERGE_RANGE:
-                        count_in_range += 1
-                # die Vektoren liegen übereinander
-                if count_in_range == 2:
-                    self.borders.remove(borders.pop(aa))
-                # die Vektoren bilden eine Linie
-                elif (count_in_range == 1
-                      and (v1.len() + v2.len() - max_dist <= MERGE_RANGE)
-                      and max_dist < MAX_VECTOR_LENGTH):
+        enum = Enumerator(self.borders)
+        while enum.next():
+            v1 = enum.current()
+            subenum = Enumerator(self.borders)
+            while subenum.next():
+                v2 = subenum.current()
+                if v1 == v2: continue
+                distance = min(getVectorToPointDistance(v1, v2.getStartPoint()),
+                               getVectorToPointDistance(v1, v2.getEndPoint()))
+                if distance <= MERGE_RANGE:
                     v1.merge(v2)
-                    self.borders.remove(borders.pop(aa))
-                else:
-                    aa += 1
-            ii += 1
+                    subenum.prev()
+                    self.borders.remove(v2)
+
         """ now delete all borders in conflict with self.areas_unmerged """
+        """
         while len(self.areas_unmerged):
             area = self.areas_unmerged[0]
             ii = 0
@@ -708,6 +701,7 @@ class Map:
                 else:
                     ii += 1
             self.areas_unmerged.pop(0)
+        """
 
     def routeIsSet(self):
         return len(self.waypoints)
