@@ -23,7 +23,6 @@ class Shell:
         print "destroy Shell"
         self.destroyServers()
 
-
     def run(self):
         self.processCommand("start")
         print "run Shell"
@@ -67,10 +66,10 @@ class Shell:
 
     def destroyServers(self):
         if self.marvinsc and self.marvinsc.isRunning():
-            self.marvinsc.event_SwitchState.set()
+            self.marvinsc.destroy()
         self.marvinsc = None
         if self.devsc and self.devsc.isRunning():
-            self.devsc.event_SwitchState.set()
+            self.devsc.destroy()
         self.devsc = None
 
     def runServers(self):
