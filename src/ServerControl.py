@@ -20,7 +20,7 @@ class ServerControl(threading.Thread):
         self.logger=logger.logger()
         self.stop = False
         self.server = None
-        self.cbl= cb.CallbackList({"onRunning": cb.Callback()})
+        self.cbl= cb.CallbackList(["onRunning"])
 
     def run(self):
         self.prints("running..")

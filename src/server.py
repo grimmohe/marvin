@@ -132,7 +132,7 @@ class Server:
         self.name = name
         self.ip = ip
         self.port = port
-        self.cbl = cb.CallbackList({"onNewClient": cb.Callback()})
+        self.cbl = cb.CallbackList(["onNewClient"])
         self.srvlis = ServerListener(self)
 
     def __del__(self):
@@ -165,7 +165,7 @@ class MarvinServer(Server):
     def __init__(self):
         Server.__init__(self, "MarvinServer",'127.0.0.1',29875)
         self.cbl["onNewClient"].add(cb.CallbackCall(self.addClient))
-        self.cbl.add({"onNewClientContainer": cb.Callback()})
+        self.cbl.add(["onNewClientContainer"])
         self.clients = []
 
     def __del__(self):

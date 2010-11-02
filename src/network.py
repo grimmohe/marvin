@@ -13,8 +13,7 @@ class networkConnection(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        self.cbl = cb.CallbackList({"onDataIncoming": cb.Callback(), 
-                                    "onExternDisconnection": cb.Callback()})
+        self.cbl = cb.CallbackList(["onDataIncoming", "onExternDisconnection"])
         self.reader = None
         self.socket = None
         self.data = ''

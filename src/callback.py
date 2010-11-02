@@ -3,10 +3,8 @@
 
 class Callback:
     
-    def __init__(self, callback=None):
+    def __init__(self):
         self.cblist=[]
-        if callback:
-            self.add(callback)
         
     def call(self, attributes=None):
         for call in self.cblist:
@@ -39,29 +37,24 @@ class CallAttributes:
         else:
             self.attriblist = {}
 
-    def getValue(self, name):
-        return self.attriblist[name]
-    
 class CallbackList:
     
-    def __init__(self, callbacks):
-        if callbacks:
-            self.list = callbacks
-        else:
-            self.list = {}
-            
-    def lookup(self, name):
+    def __init__(self, callbackNames=None):
+        self.list = {}
+        if callbackNames:
+            self.add(callbackNames)
+    
+    def __getitem__(self, name):
         if self.list.has_key(name):
+            if not self.list[name]:
+                self.list[name] = Callback()
             return self.list[name]
         raise Exception("no callback with name: " + name)
     
-    def __getitem__(self, name):
-        return self.lookup(name)
-    
     def call(self, name, attributes):
-        if self.lookup(name):
+        if self.list[name]:
             self.list[name].call(attributes)
             
-    def add(self, callbacks):
-        self.list.update(callbacks)
-     
+    def add(self, callbackNames):
+        for callbackName in callbackNames: 
+            self.list.update({callbackName: None})        
