@@ -534,7 +534,7 @@ class Connector(network.networkConnection):
 
 
     def write(self, data):
-        if not self.connected: 
+        if not self.connected:
             if (self.connecting or self.autoReconnect):
                 self.evntConnected.wait()
             else:
@@ -593,3 +593,34 @@ class SortedList(object):
             return True
         return False
 
+class Enumerator:
+
+    def __init__(self, list=[]):
+        self.list = list
+        self.position = -1
+
+    def count(self):
+        return len(self.list)
+
+    def current(self):
+        if self.valid(): return self.list[self.position]
+        else: return None
+
+    def first(self):
+        self.position = 0
+        return self.current()
+
+    def next(self):
+        self.position += 1
+        return self.current()
+
+    def prev(self):
+        self.position -= 1
+        return self.current()
+
+    def last(self):
+        self.position = max(0, self.count()-1)
+        return self.current()
+
+    def valid(self):
+        return self.count() > self.position
