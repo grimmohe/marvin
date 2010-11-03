@@ -596,31 +596,41 @@ class SortedList(object):
 class Enumerator:
 
     def __init__(self, list=[]):
-        self.list = list
-        self.position = -1
+        self._list = list
+        self._item = None
 
-    def count(self):
-        return len(self.list)
+    def __current(self):
+        try:
+            return self._list.index(self._item)
+        except ValueError:
+            return -1
+
+    def __select(self, position):
+        if position > 0 \
+        and self._list \
+        and position < len(self._list):
+            self._item = self._list[position]
+        else:
+            self._item = None
+
+    def __count(self):
+        return len(self._list)
 
     def current(self):
-        if self.valid(): return self.list[self.position]
-        else: return None
+        return self._item
 
     def first(self):
-        self.position = 0
+        self.__select(0)
         return self.current()
 
     def next(self):
-        self.position += 1
+        self.__select(self.__current()+1)
         return self.current()
 
     def prev(self):
-        self.position -= 1
+        self.__select(self.__current()-1)
         return self.current()
 
     def last(self):
-        self.position = max(0, self.count()-1)
+        self.__select(self.__count()-1)
         return self.current()
-
-    def valid(self):
-        return self.count() > self.position
