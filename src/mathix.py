@@ -96,7 +96,7 @@ def getVectorToPointDistance(vector, point):
     a = vector.len()
     b = vector.getEndPoint().getDistanceTo(point)
     c = vector.getStartPoint().getDistanceTo(point)
-    # horny
+    # horny #TODO: the right way to identify a horny triangle is to actualy check on the angle
     if max(b, c) > a:
         return min(b, c)
     # height on a

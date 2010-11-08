@@ -292,6 +292,8 @@ class BorderList:
             ret.append(ep)
         return ret
 
+    def index(self, v):
+        return self.borders.index(v)
 
     def remove(self, v):
         self.borders.remove(v)
@@ -687,7 +689,7 @@ class Map:
                     self.borders.remove(v2)
 
         """ now delete all borders in conflict with self.areas_unmerged """
-        """
+        """ coming soon (tm)
         while len(self.areas_unmerged):
             area = self.areas_unmerged[0]
             ii = 0

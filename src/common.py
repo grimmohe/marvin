@@ -606,7 +606,7 @@ class Enumerator:
             return -1
 
     def __select(self, position):
-        if position > 0 \
+        if position >= 0 \
         and self._list \
         and position < len(self._list):
             self._item = self._list[position]
