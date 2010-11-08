@@ -81,12 +81,13 @@ def getVectorIntersectionRatio(v1, v2):
 
 def getHeightOnA(a, b ,c):
     try:
-        return sqrt(2 * (pow(a, 2)*pow(b, 2)
-                         + pow(b, 2)*pow(c, 2)
-                         + pow(c, 2)*pow(a, 2))
-                    - (pow(a, 4) + pow(b, 4) + pow(c, 4))
-                      / 2*a)
-    except:
+        h = sqrt(2 * (pow(a, 2)*pow(b, 2)
+                      + pow(b, 2)*pow(c, 2)
+                      + pow(c, 2)*pow(a, 2))
+                 - (pow(a, 4) + pow(b, 4) + pow(c, 4))) \
+                 / (2*a)
+        return h
+    except: #zero division
         return .0
 
 def getVectorToPointDistance(vector, point):
