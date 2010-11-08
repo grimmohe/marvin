@@ -127,6 +127,18 @@ class Vector:
         p4 = math.sqrt(math.pow(e1.x - e2.x, 2) + math.pow(e1.y - e2.y, 2))
         return (p1, p2, p3, p4)
 
+    def compareGetMaxMin(self, v):
+        c = self.compare(v)
+        iMax = c.index(max(c)) #index of max distance
+        if iMax == 0:
+            return (self.getStartPoint(), v.getStartPoint(), self.getEndPoint(), v.getEndPoint())
+        elif iMax == 1:
+            return (self.getStartPoint(), v.getEndPoint(), self.getEndPoint(), v.getStartPoint())
+        elif iMax == 2:
+            return (self.getEndPoint(), v.getStartPoint(), self.getStartPoint(), v.getEndPoint())
+        elif iMax == 3:
+            return (self.getEndPoint(), v.getEndPoint(), self.getStartPoint(), v.getStartPoint())
+
     def distanceMin(self, v):
         c = self.compare(v)
         return min(c[0], min(c[1], min(c[2], c[3])))
@@ -684,9 +696,13 @@ class Map:
                 distance = min(getVectorToPointDistance(v1, v2.getStartPoint()),
                                getVectorToPointDistance(v1, v2.getEndPoint()))
                 if distance <= MERGE_RANGE:
-                    v1.merge(v2)
-                    subenum.prev()
-                    self.borders.remove(v2)
+                    comp = v1.compareGetMaxMin(v2)
+                    distance = min(getVectorToPointDistance(Vector(comp[0], endPoint=comp[1]), comp[2]),
+                                   getVectorToPointDistance(Vector(comp[0], endPoint=comp[1]), comp[3]))
+                    if distance <= MERGE_RANGE:
+                        v1.merge(v2)
+                        subenum.prev()
+                        self.borders.remove(v2)
 
         """ now delete all borders in conflict with self.areas_unmerged """
         """ coming soon (tm)
