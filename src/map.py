@@ -283,8 +283,8 @@ class BorderList:
             if loose[0] or loose[1]:
                 looseEnds.append(v)
             ii += 1
-        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point)
-                                              - position.point.getDistanceTo(v2.point)))
+        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.getEndPoint())
+                                              - position.point.getDistanceTo(v2.getEndPoint())))
         return looseEnds
 
     def getLooseEndPoints(self, border=Vector()):
