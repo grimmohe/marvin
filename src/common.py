@@ -20,6 +20,7 @@ class Actionlog:
 
     """ fortlaufendes update """
     SERIAL = ("engine:distance", "engine:turned")
+    SERIAL_BREAK = ("engine:drive", "engine:turn")
 
     def __init__(self):
         self.clear()
@@ -32,6 +33,8 @@ class Actionlog:
 
     def getActionValue(self, action):
         for entry in self.actions:
+            if entry.action in self.SERIAL_BREAK:
+                break
             if entry.action == action:
                 return entry.value
         return None
@@ -74,7 +77,7 @@ class Actionlog:
                     # Engine nicht angehalten. Es kamen nur andere Events dazwischen. Damit die
                     # Distanz ab der Sensoränderung dokumentiert ist, wird der erste Wert als
                     # Startwert übernommen.
-                    if last_value and ((last_value > 0 and last_value <= value) or (last_value < 0 and last_value >= value)):
+                    if last_value <> None and ((last_value > 0 and last_value <= value) or (last_value < 0 and last_value >= value)):
                         start_value = last_value
                 elif last_value == value:
                     return 1

@@ -4,7 +4,6 @@
 import map
 import xmltemplate
 import threading
-import server
 import callback as cb
 import common
 
