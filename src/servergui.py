@@ -130,7 +130,7 @@ class ClientTabPage(TabPage):
         self.mainWidget.show_all()
         self.clientContainer = clientContainer
         self.clientConnection = clientContainer.clientConnection
-        self.clientContainer.cbMapRefresh = self.mapvisRefresh()
+        self.clientContainer.cbMapRefresh = self.mapvisRefresh
         self.clientConnection.setLogger(self.logger)
 
     def disconnect(self):
@@ -170,6 +170,11 @@ class MapVisual:
             """ some rtesting stuff ifnot map is set """
             print "using test map"
             self.map = map.Map()
+            self.map.borders.add(map.Vector(map.Point(-20,-20), map.Point(0,40)))
+            self.map.borders.add(map.Vector(map.Point(-20,20), map.Point(40,0)))
+            self.map.borders.add(map.Vector(map.Point(20,20), map.Point(0,-40)))
+            self.map.borders.add(map.Vector(map.Point(20,-20), map.Point(-40,0)))
+            """
             self.map.borders.add(map.Vector(map.Point(0,0), map.Point(0,10)))
             self.map.borders.add(map.Vector(map.Point(0,10), map.Point(10,10)))
             self.map.borders.add(map.Vector(map.Point(10,10), map.Point(10,0)))
@@ -191,7 +196,7 @@ class MapVisual:
             #T
             self.map.borders.add(map.Vector(map.Point(5.5,3), map.Point(6.5,3)))
             self.map.borders.add(map.Vector(map.Point(6,3), map.Point(6,4)))
-
+            """
 
     def getDiv(self):
         return self.area
@@ -201,7 +206,7 @@ class MapVisual:
 
     def update(self, arg1="", arg2="", arg3="", arg4="", arg5="", user_data=""):
         print "MapVisual update"
-        minx = miny = maxx = maxy = 0
+        minx = miny = maxx = maxy = xoffset = yoffset = 0
         drw = self.area.root()
 
         print "rect dimmensions: w: " + str(self.width) + " h: " + str(self.height)
@@ -213,35 +218,84 @@ class MapVisual:
                 y1=-50,
                 y2=self.height)
 
-
         for vec in self.map.borders.getAllBorders():
-            if minx > vec.point.x:
-                minx = vec.point.x
-            if miny > vec.point.y:
-                miny = vec.point.y
+            sp=vec.getStartPoint()
+            ep=vec.getEndPoint()
+            
+            # calc bbox
+            # x
+            if sp.x < ep.x:
+                if minx > sp.x:
+                    minx = sp.x
+            else:
+                if minx > ep.x:
+                    minx = ep.x
 
-            if maxx < vec.size.x:
-                maxx = vec.size.x
-            if maxy < vec.size.y:
-                maxy = vec.size.y
+            if sp.x > ep.x:
+                if maxx < sp.x:
+                    maxx = sp.x
+            else:
+                if maxx < ep.x:
+                    maxx = ep.x
 
-        ratiox = ((maxx - minx) / self.width)
-        ratioy = ((maxy - miny) / self.height)
+            # y
+            if sp.y < ep.y:
+                if miny > sp.y:
+                    miny = sp.y
+            else:
+                if miny > ep.y:
+                    miny = ep.y
+
+            if sp.y > ep.y:
+                if maxy < sp.y:
+                    maxy = sp.y
+            else:
+                if maxy < ep.y:
+                    maxy = ep.y
+
+        ratiox = ((maxx - minx) / (self.width - 2))
+        ratioy = ((maxy - miny) / (self.height - 2))
+        
+        if ratiox > ratioy:
+            ratioy = ratiox;
+        else:
+            ratiox = ratioy;
+        
+        if minx < 0:
+            xoffset = (minx / ratiox)*-1
+        if miny < 0:
+            yoffset = (miny / ratioy)*-1
+            
         count = 0
         colors = ["red","blue", "yellow"]
         
+        print "minx: " + str(minx)
+        print "maxx: " + str(maxx)
+        print "diff: " + str(maxx - minx)
+        print "miny: " + str(miny)
+        print "maxy: " + str(maxy)
+        print "diff: " + str(maxy - miny)
+        print "ratiox: " + str(ratiox)
+        print "ratioy: " + str(ratioy)
         # avoid zero deivision
         if ratiox == 0 or ratioy == 0:
+            print "avoid zero division"
             return;
+
+        count = 0
         
         for vec in self.map.borders.getAllBorders():
 
-            x1 = (vec.point.x / ratiox) - 50
-            x2 = (vec.size.x / ratiox) - 50
-            y1 = (vec.point.y / ratioy) - 50
-            y2 = (vec.size.y / ratioy) - 50
+            ep=vec.getEndPoint()
+            print "1: x1: " + str(vec.point.x) + ", y1: " + str(vec.point.y) + ",x2: " + str(ep.x) + ", y2: " + str(ep.y) + ", color: " + colors[count]
+            
+
+            x1 = ((vec.point.x / ratiox) + xoffset ) - 50
+            x2 = (ep.x / ratiox) + xoffset - 50
+            y1 = (vec.point.y / ratioy) + yoffset - 50
+            y2 = (ep.y / ratioy) + yoffset - 50
                 
-            print "x1: " + str(x1) + ", y1: " + str(y1) + ",x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
+            print "2: x1: " + str(x1) + ", y1: " + str(y1) + ",x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
             drw.add("GnomeCanvasLine",
                 fill_color=colors[count],
                 width_units=1.0,
