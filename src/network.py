@@ -12,6 +12,7 @@ BUFSIZE = 4096
 class networkConnection(threading.Thread):
 
     def __init__(self):
+        print "networkConnection init"
         threading.Thread.__init__(self)
         self.cbl = cb.CallbackList(["onDataIncoming", "onExternDisconnection"])
         self.reader = None
@@ -24,15 +25,15 @@ class networkConnection(threading.Thread):
 
     def run(self):
         #print "run netCon <" + self.name + ">"
+        print "["+self.name+"] networkConnection running..."
         self.reader = networkConnectionReader(self)
 
     def disconnect(self, withDisco):
-        #print "disco netCon <" + self.name + ">"
         if withDisco and self.socket:
             self.write("DISCO")
         if self.reader:
             self.reader.stop = True
-        self.reader = None
+        print "[" + self.name + "] networkConnection: close socket"
         if self.socket:
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
@@ -40,6 +41,7 @@ class networkConnection(threading.Thread):
             except:
                 print "socket.close: ", sys.exc_info()[0]
 
+        self.reader = None
         self.socket = None
 
     def write(self,data):
@@ -79,8 +81,9 @@ class networkConnectionReader(threading.Thread):
         self.clientCon = None
 
     def run(self):
+        #print "["+self.name+"("+self.netConnection.name+")] networkConnectionReader running..."
         self.awaitIncoming()
-        print "networkConnectionReader: leaving loop"
+        #print "["+self.name+"("+self.netConnection.name+")] networkConnectionReader leaving loop..."
         
         # check whenever this was in shudown path
         if not self.stop:
@@ -90,6 +93,7 @@ class networkConnectionReader(threading.Thread):
     def awaitIncoming(self):
         data = "" # in case of an exception, data would be unreferenced
         while not self.stop and self.netConnection.socket:
+            #print "["+self.name+"("+self.netConnection.name+")] networkConnectionReader loop..."
             try:
                 data += self.netConnection.socket.recv(BUFSIZE)
             except socket.error:

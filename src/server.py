@@ -34,6 +34,7 @@ class ServerListener(threading.Thread):
         return True
 
     def run(self):
+        print "["+self.name+"] ServerListener running..."        
         self.listening = 1
         while self.listening and self.socket:
             self.listenForConnectionRequests()
@@ -83,7 +84,7 @@ class ServerListener(threading.Thread):
                 return
 
     def log(self, msg):
-        self.logger.log("["+self.name+"][" + self.serverInstance.name + "] " + msg)
+        self.logger.log("["+self.name+"][" + self.serverInstance.name + "] Server: " + msg)
 
     def setLogger(self, logger):
         if logger:
@@ -93,13 +94,14 @@ class ServerListener(threading.Thread):
 class ClientConnection(network.networkConnection):
 
     def __init__(self, server, client):
+        print "ClientConnection init"
         network.networkConnection.__init__(self)
         self.server = server
         self.clientInfo = client[1]
         self.clientStuff = client
         self.socket = client[0]
-        self.start()
         self.logger = logger.logger()
+        self.start()
 
     def __del__(self):
         self.disconnect(True)
@@ -118,7 +120,7 @@ class ClientConnection(network.networkConnection):
         return "[<unknown>]"
 
     def log(self, msg):
-        self.logger.log(self.getClientString() + " " + msg)
+        self.logger.log("["+self.name+"] "+self.getClientString() + " " + msg)
 
     def setLogger(self, logger):
         if logger:

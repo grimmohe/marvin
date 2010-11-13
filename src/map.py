@@ -211,7 +211,7 @@ class Vector:
         p2 = self.getEndPoint()
         self.setStartPoint(p2)
         self.setEndPoint(p1)
-
+        
 class BorderList:
 
     def __init__(self):

@@ -155,7 +155,7 @@ class ClientContainer(threading.Thread):
             #TODO: Oh, panic!(TM)
 
     def run(self):
-        print "start run"
+        print "["+self.name+"] ClientContainer running..."
         while not self.stop:
             print "start wait"
             self.actionlogNew.clear()
@@ -174,6 +174,7 @@ class ClientContainer(threading.Thread):
                 if not self.map.routeIsSet():
                     self.fill()
                 self.sendAssignments()
+        print "ClientContainer: leaving event loop"
 
     def fill(self):
         """ yea... grimm, what to do here? self.map has no route, now FILLLLLL it! """

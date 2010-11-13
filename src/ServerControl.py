@@ -23,16 +23,17 @@ class ServerControl(threading.Thread):
         self.cbl= cb.CallbackList(["onRunning"])
 
     def run(self):
-        self.prints("running..")
+        self.log("running..")
         self.ServerStart()
         while not self.stop:
             self.event_SwitchState.clear()
             self.event_SwitchState.wait()
-            self.prints("event!")
+            self.log("event!")
             if self.stop:
+                self.log("stopping...")
                 if self.server:
                     self.ServerStop()
-                self.prints("leaving event loop")
+                self.log("leaving event loop")
                 return
             if self.server:
                 self.ServerStop()
@@ -55,7 +56,7 @@ class ServerControl(threading.Thread):
                 self.server = server.DeviceServer()
             self.server.setLogger(self.logger)
             if self.ServerRun(50):
-                self.log("done (" + self.server.name + ")")
+                self.log("done")
             else:
                 self.log("failed")
 
@@ -80,18 +81,17 @@ class ServerControl(threading.Thread):
         return False
 
     def destroy(self):
-        self.prints("destroy")
+        self.setLogger(logger.logger())
+        self.server.setLogger(self.logger)
+        self.log("destroy")
         if self.server:
             self.server.srvlis.setLogger(None)
         self.stop = True
         self.event_SwitchState.set()
-        self.prints("done..")
-
-    def prints(self, msg):
-         print "ServerControl " + self.name + ": " + msg
+        self.log("done..")
          
     def log(self, msg):
-        self.logger.log("["+self.servername+"]"+msg)
+        self.logger.log("["+self.name+"]["+self.servername+"] ServerControl: "+msg)
 
     def setLogger(self, logger):
         if logger:
