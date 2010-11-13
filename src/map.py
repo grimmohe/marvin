@@ -283,8 +283,8 @@ class BorderList:
             if loose[0] or loose[1]:
                 looseEnds.append(v)
             ii += 1
-        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.point)
-                                              - position.point.getDistanceTo(v2.point)))
+        looseEnds.sort(cmp=lambda v1, v2: int(position.point.getDistanceTo(v1.getEndPoint())
+                                              - position.point.getDistanceTo(v2.getEndPoint())))
         return looseEnds
 
     def getLooseEndPoints(self, border=Vector()):
@@ -560,10 +560,10 @@ class Router:
                          baseSensor=sensorsTouching,
                          untouchedSensor=sensorsUntouched,
                          direction=hitDirection)
-            if destAngle:
-                position.orientation = destAngle
             if goAngle:
                 position.orientation += goAngle
+            if destAngle:
+                position.orientation = destAngle
         else:
             if not (position and (goAngle <> None or destAngle <> None)):
                 raise Exception()
@@ -575,11 +575,14 @@ class Router:
                 destAngle = position.orientation + goAngle
                 if goAngle > 0: direction = xmltemplate.DIRECTION_RIGHT
             else:
+                goAngle = (360 + destAngle - position.orientation) % 360
                 direction = self._getDirection(position.orientation, destAngle)
+                if direction == xmltemplate.DIRECTION_LEFT:
+                    goAngle -= 360
 
             cb_addAction(xmltemplate.TEMPLATE_TURN_ANGLE,
                          direction=direction,
-                         targetAngle=destAngle)
+                         targetAngle=goAngle)
 
     #TODO: prepare is never called
     def prepare(self, borders=BorderList()):
