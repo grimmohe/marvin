@@ -411,7 +411,6 @@ class Router:
                 self.actionHead(headUp=True, cb_addAction=cb_addAction)
                 self.actionTurn(position,
                                 goAngle=180,
-                                headUp=True,
                                 cb_getSensorList=cb_getSensorList,
                                 cb_addAction=cb_addAction)
                 self.actionHead(headUp=False, cb_addAction=cb_addAction)
@@ -526,7 +525,7 @@ class Router:
         self.routes.append(route)
 
 
-    def actionTurn(self, position, headUp=False, goAngle=None, destAngle=None,
+    def actionTurn(self, position, goAngle=None, destAngle=None,
                    hitSensorNames=None, hitDirection=None, cb_getSensorList=None, cb_addAction=None):
         """
         turn the device to a destined or relative angle while the head is up or not.
@@ -559,8 +558,6 @@ class Router:
         else:
             if not (position and (goAngle <> None or destAngle <> None)):
                 raise Exception()
-            if headUp:
-                self.actionHead(headUp=True, cb_addAction=cb_addAction)
 
             direction = xmltemplate.DIRECTION_LEFT
             if goAngle:
