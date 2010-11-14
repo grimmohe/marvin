@@ -25,13 +25,13 @@ class Cleaner:
 
     def __init__(self):
         self.head_form     = ( {"x": -20.0, "y":  0.0, "sensor": None, "id": "left",
-                                "status": 1.0}
+                                "status": 1.0, "lastsend": 1.0}
                              , {"x": -20.0, "y": 20.0, "sensor": None, "id": "front",
-                                "status": 1.0}
+                                "status": 1.0, "lastsend": 1.0}
                              , {"x":  20.0, "y": 20.0, "sensor": None, "id": "right",
-                                "status": 1.0}
+                                "status": 1.0, "lastsend": 1.0}
                              , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
-                                "status": 1.0} )
+                                "status": 1.0, "lastsend": 1.0} )
 
         self.head          = None
         self.engine        = None
@@ -179,8 +179,12 @@ class Cleaner:
     def send_data(self, current_time):
         """ Schreibt die Sensordaten und Bewegungscounter """
         for sensor in self.head_form:
-            if sensor["status"] < self.SENSOR_RANGE:
-                sensor["sensor"].write("distance=%.2f" % sensor["status"])
+            status = min(sensor["status"], self.SENSOR_RANGE)
+            if sensor["sensor"] \
+            and (status <> sensor["lastsend"]
+                 or status < self.SENSOR_RANGE):
+                sensor["lastsend"] = status
+                sensor["sensor"].write("distance=%.2f" % status)
 
         if self.action & self.ACTION_DRIVE:
             self.engine.write("distance=%f" % (self.SPEED * (current_time
