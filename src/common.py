@@ -227,7 +227,7 @@ class Assignment:
         """ aktiviert das Assignment """
         self.active = True
         self.starttime = time.time()
-        print "Assignment.start", self.id, "Count Subs:", len(self.subAssignments)
+        print "\nAssignment.start", self.id, "Count Subs:", len(self.subAssignments)
         if self.startAction:
             self.startAction.execute(states)
         if len(self.subAssignments):
@@ -442,7 +442,12 @@ class Event:
         #print arg1, self.compare, arg2
 
         if match:
-            print "MATCH: ", arg1, self.compare, arg2
+            try:
+                print "MATCH:", arg1, self.compare, arg2
+                print "=====>", self.arg1.key
+                print "=====>", self.arg2.key
+            except:
+                pass
             goon = self.action.execute(states)
         return goon
 
