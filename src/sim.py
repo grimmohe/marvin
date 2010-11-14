@@ -421,6 +421,20 @@ class Simulator:
                   self.point(line[0]["x"], line[0]["y"]),
                   self.point(line[1]["x"], line[1]["y"]),
                   1 )
+        # systeminformationen ausgeben
+        font = pygame.font.SysFont("Arial", 10)
+        posY = 10
+        for s in self.client.head_form:
+            if s["id"]:
+                text = "%0s: %1f" % (s["id"], s["status"])
+                text = font.render(text, 1, (255, 255, 255))
+                self.gui_window.blit(text, (10, posY))
+                posY += 15
+
+        text = "orientation: %0f" % (self.client.get_cur_orientation(current_time))
+        text = font.render(text, 1, (255, 255, 255))
+        self.gui_window.blit(text, (10, posY))
+
         pygame.display.update()
 
     def point(self, x, y):
