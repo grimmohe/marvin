@@ -85,7 +85,6 @@ class Template:
 
             tki.add("direction", DIRECTIONS[direction])
             if direction == DIRECTION_LEFT:
-                targetAngle = -360 + (targetAngle % 360)
                 tki.add("compare", "le")
             else:
                 tki.add("compare", "ge")

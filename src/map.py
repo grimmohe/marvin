@@ -396,14 +396,6 @@ class Router:
         p = turn_point({"x": 0, "y": c}, wa)
         return Point(collision.x + p["x"], collision.y + p["y"])
 
-    def _getDirection(self, aCurrent, aDest):
-        aDest += (360 - aCurrent) % 360
-        if aDest > 180:
-            direction = xmltemplate.DIRECTION_LEFT
-        else:
-            direction = xmltemplate.DIRECTION_RIGHT
-        return direction
-
     def actionDiscover(self, position, directionVector, cb_getSensorList, cb_addAction):
         """
         direction is a Vector(), the loose end of a border.
@@ -576,9 +568,9 @@ class Router:
                 if goAngle > 0: direction = xmltemplate.DIRECTION_RIGHT
             else:
                 goAngle = (360 + destAngle - position.orientation) % 360
-                direction = self._getDirection(position.orientation, destAngle)
-                if direction == xmltemplate.DIRECTION_LEFT:
+                if goAngle > 180:
                     goAngle -= 360
+                    direction = xmltemplate.DIRECTION_LEFT
 
             cb_addAction(xmltemplate.TEMPLATE_TURN_ANGLE,
                          direction=direction,
