@@ -20,7 +20,6 @@ class Actionlog:
 
     """ fortlaufendes update """
     SERIAL = ("engine:distance", "engine:turned")
-    SERIAL_BREAK = ("engine:drive", "engine:turn")
 
     def __init__(self):
         self.clear()
@@ -35,8 +34,6 @@ class Actionlog:
         for entry in self.actions:
             if entry.action == action:
                 return entry.value
-            if action in self.SERIAL and entry.action in self.SERIAL_BREAK:
-                break
         return None
 
     def quit(self):
@@ -69,12 +66,21 @@ class Actionlog:
         if not (action in self.IGNORE):
             if len(self.actions) and self.actions[0].action == action:
                 self.actions[0].value = value
+
             else:
                 start_value = self.getActionValue(action)
+
                 if start_value == value:
                     return 1
-                if start_value == None or not action in self.SERIAL:
+
+                if start_value == None \
+                or not action in self.SERIAL:
                     start_value = 0.0
+
+                if action in self.SERIAL \
+                and (0 < start_value > value or 0 > start_value < value):
+                    start_value = 0.0
+
                 self.actions.insert(0, ActionlogEntry(action, value, start_value))
         return 1
 
