@@ -272,7 +272,7 @@ class Simulator:
     Physiksimulator für den Client
     """
 
-    def __init__(self):
+    def __init__(self, bare=False):
         self.gui_size_x     = 1
         self.gui_y_offset   = 0
         self.gui_size_y     = 1
@@ -281,9 +281,9 @@ class Simulator:
         self.gui_window     = None
 
         self.runit          = False
-
-        self.client        = Cleaner()
-        self.room          = Room("data/room.xy")
+        if not bare:
+            self.client        = Cleaner()
+            self.room          = Room("data/room.xy")
 
     def __del__(self):
         print "sim stop"
