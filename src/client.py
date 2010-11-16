@@ -83,7 +83,6 @@ class State:
 
     def update(self, key, value, process=True):
         """ Erstellt/Aktualisiert einen Wert """
-        print "update:", key, value
         self.dict[key] = value
         self.actionlog.update(key, value)
         if process and self.cb_anyAction:
@@ -227,7 +226,7 @@ class Client:
     def process(self):
         if (not self.process_active) and self.assignment:
             self.process_active = True
-            self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
+            #self.stateholder.update("running", time.time() - self.assignment.starttime, process=False)
             self.assignment.process(self.stateholder)
             self.process_active = False
 

@@ -25,13 +25,13 @@ class Cleaner:
 
     def __init__(self):
         self.head_form     = ( {"x": -20.0, "y":  0.0, "sensor": None, "id": "left",
-                                "status": 1.0}
+                                "status": 1.0, "lastsend": 1.0}
                              , {"x": -20.0, "y": 20.0, "sensor": None, "id": "front",
-                                "status": 1.0}
+                                "status": 1.0, "lastsend": 1.0}
                              , {"x":  20.0, "y": 20.0, "sensor": None, "id": "right",
-                                "status": 1.0}
+                                "status": 1.0, "lastsend": 1.0}
                              , {"x":  20.0, "y":  0.0, "sensor": None, "id": "",
-                                "status": 1.0} )
+                                "status": 1.0, "lastsend": 1.0} )
 
         self.head          = None
         self.engine        = None
@@ -179,8 +179,12 @@ class Cleaner:
     def send_data(self, current_time):
         """ Schreibt die Sensordaten und Bewegungscounter """
         for sensor in self.head_form:
-            if sensor["status"] < self.SENSOR_RANGE:
-                sensor["sensor"].write("distance=%.2f" % sensor["status"])
+            status = min(sensor["status"], self.SENSOR_RANGE)
+            if sensor["sensor"] \
+            and (status <> sensor["lastsend"]
+                 or status < self.SENSOR_RANGE):
+                sensor["lastsend"] = status
+                sensor["sensor"].write("distance=%.2f" % status)
 
         if self.action & self.ACTION_DRIVE:
             self.engine.write("distance=%f" % (self.SPEED * (current_time
@@ -328,12 +332,12 @@ class Simulator:
                     if l[0]["y"] > s[0]["y"]:
                         l[0]["x"] += (l[1]["x"] - l[0]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[0]["y"] - s[0]["y"])
                     if l[1]["y"] > s[0]["y"]:
-                        l[1]["x"] += (l[0]["x"] - l[1]["x"]) / (l[0]["y"] - l[1]["y"]) * (l[1]["y"] - s[0]["y"])
+                        l[1]["x"] += (l[0]["x"] - l[1]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[1]["y"] - s[0]["y"])
 
                     if l[0]["y"] < s[1]["y"]:
                         l[0]["x"] += (l[1]["x"] - l[0]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[0]["y"] - s[1]["y"])
                     if l[1]["y"] < s[1]["y"]:
-                        l[1]["x"] += (l[0]["x"] - l[1]["x"]) / (l[0]["y"] - l[1]["y"]) * (l[1]["y"] - s[1]["y"])
+                        l[1]["x"] += (l[0]["x"] - l[1]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[1]["y"] - s[1]["y"])
 
                     status = min(min(abs(s[0]["x"] - l[0]["x"]),
                                      abs(s[1]["x"] - l[0]["x"])),
@@ -421,6 +425,20 @@ class Simulator:
                   self.point(line[0]["x"], line[0]["y"]),
                   self.point(line[1]["x"], line[1]["y"]),
                   1 )
+        # systeminformationen ausgeben
+        font = pygame.font.SysFont("Arial", 10)
+        posY = 10
+        for s in self.client.head_form:
+            if s["id"]:
+                text = "%0s: %1f" % (s["id"], s["status"])
+                text = font.render(text, 1, (255, 255, 255))
+                self.gui_window.blit(text, (10, posY))
+                posY += 15
+
+        text = "orientation: %0f" % (self.client.get_cur_orientation(current_time))
+        text = font.render(text, 1, (255, 255, 255))
+        self.gui_window.blit(text, (10, posY))
+
         pygame.display.update()
 
     def point(self, x, y):

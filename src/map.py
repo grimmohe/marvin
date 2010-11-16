@@ -396,14 +396,6 @@ class Router:
         p = turn_point({"x": 0, "y": c}, wa)
         return Point(collision.x + p["x"], collision.y + p["y"])
 
-    def _getDirection(self, aCurrent, aDest):
-        aDest += (360 - aCurrent) % 360
-        if aDest > 180:
-            direction = xmltemplate.DIRECTION_LEFT
-        else:
-            direction = xmltemplate.DIRECTION_RIGHT
-        return direction
-
     def actionDiscover(self, position, directionVector, cb_getSensorList, cb_addAction):
         """
         direction is a Vector(), the loose end of a border.
@@ -419,7 +411,6 @@ class Router:
                 self.actionHead(headUp=True, cb_addAction=cb_addAction)
                 self.actionTurn(position,
                                 goAngle=180,
-                                headUp=True,
                                 cb_getSensorList=cb_getSensorList,
                                 cb_addAction=cb_addAction)
                 self.actionHead(headUp=False, cb_addAction=cb_addAction)
@@ -534,7 +525,7 @@ class Router:
         self.routes.append(route)
 
 
-    def actionTurn(self, position, headUp=False, goAngle=None, destAngle=None,
+    def actionTurn(self, position, goAngle=None, destAngle=None,
                    hitSensorNames=None, hitDirection=None, cb_getSensorList=None, cb_addAction=None):
         """
         turn the device to a destined or relative angle while the head is up or not.
@@ -567,8 +558,6 @@ class Router:
         else:
             if not (position and (goAngle <> None or destAngle <> None)):
                 raise Exception()
-            if headUp:
-                self.actionHead(headUp=True, cb_addAction=cb_addAction)
 
             direction = xmltemplate.DIRECTION_LEFT
             if goAngle:
@@ -576,9 +565,9 @@ class Router:
                 if goAngle > 0: direction = xmltemplate.DIRECTION_RIGHT
             else:
                 goAngle = (360 + destAngle - position.orientation) % 360
-                direction = self._getDirection(position.orientation, destAngle)
-                if direction == xmltemplate.DIRECTION_LEFT:
+                if goAngle > 180:
                     goAngle -= 360
+                    direction = xmltemplate.DIRECTION_LEFT
 
             cb_addAction(xmltemplate.TEMPLATE_TURN_ANGLE,
                          direction=direction,

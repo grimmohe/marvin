@@ -20,7 +20,6 @@ class Actionlog:
 
     """ fortlaufendes update """
     SERIAL = ("engine:distance", "engine:turned")
-    SERIAL_BREAK = ("engine:drive", "engine:turn")
 
     def __init__(self):
         self.clear()
@@ -33,8 +32,6 @@ class Actionlog:
 
     def getActionValue(self, action):
         for entry in self.actions:
-            if entry.action in self.SERIAL_BREAK:
-                break
             if entry.action == action:
                 return entry.value
         return None
@@ -69,18 +66,20 @@ class Actionlog:
         if not (action in self.IGNORE):
             if len(self.actions) and self.actions[0].action == action:
                 self.actions[0].value = value
+
             else:
-                start_value = 0.0
-                last_value = self.getActionValue(action)
-                if action in self.SERIAL:
-                    # Wenn der letzte Wert von engine:distance < dem aktuellen Update, hat die
-                    # Engine nicht angehalten. Es kamen nur andere Events dazwischen. Damit die
-                    # Distanz ab der Sensoränderung dokumentiert ist, wird der erste Wert als
-                    # Startwert übernommen.
-                    if last_value <> None and ((last_value > 0 and last_value <= value) or (last_value < 0 and last_value >= value)):
-                        start_value = last_value
-                elif last_value == value:
+                start_value = self.getActionValue(action)
+
+                if start_value == value:
                     return 1
+
+                if start_value == None \
+                or not action in self.SERIAL:
+                    start_value = 0.0
+
+                if action in self.SERIAL \
+                and (0 < start_value > value or 0 > start_value < value):
+                    start_value = 0.0
 
                 self.actions.insert(0, ActionlogEntry(action, value, start_value))
         return 1
@@ -227,7 +226,7 @@ class Assignment:
         """ aktiviert das Assignment """
         self.active = True
         self.starttime = time.time()
-        print "Assignment.start", self.id, "Count Subs:", len(self.subAssignments)
+        print "\nAssignment.start", self.id, "Count Subs:", len(self.subAssignments)
         if self.startAction:
             self.startAction.execute(states)
         if len(self.subAssignments):
@@ -442,7 +441,12 @@ class Event:
         #print arg1, self.compare, arg2
 
         if match:
-            print "MATCH: ", arg1, self.compare, arg2
+            try:
+                print "MATCH:", arg1, self.compare, arg2
+                print "=====>", self.arg1.key
+                print "=====>", self.arg2.key
+            except:
+                pass
             goon = self.action.execute(states)
         return goon
 
