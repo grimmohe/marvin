@@ -15,6 +15,7 @@ import gnomecanvas
 import map
 import ServerControl
 import callback as cb
+import gtk.gdk as gdk
 gtk.gdk.threads_init()
 
 MARSRV = "MarvinServer"
@@ -256,7 +257,7 @@ class MapVisual:
         ratiox = ((maxx - minx) / (self.width - 2))
         ratioy = ((maxy - miny) / (self.height - 2))
         
-        if ratiox > ratioy:
+        if ratiox < ratioy:
             ratioy = ratiox;
         else:
             ratiox = ratioy;
@@ -308,6 +309,7 @@ class MapVisual:
                 count = 0
             else:
                 count += 1
+        gdk.threads_leave()
 
 class TabBox:
 
