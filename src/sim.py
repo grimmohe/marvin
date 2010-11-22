@@ -308,14 +308,18 @@ class Simulator:
         return 1
 
     def checkSensorStatus(self, sensor, line):
+
+        def _getRatio(sensor, line):
+            v1 = {"x": line[0]["x"] - sensor[0]["x"],
+                  "y": line[0]["y"] - sensor[0]["y"]}
+            v2 = {"x": sensor[0]["x"] - line[0]["x"],
+                  "y": sensor[0]["y"] - line[0]["y"]}
+            return (getVectorIntersectionRatioSim(sensor[2], line[2], v1),
+                    getVectorIntersectionRatioSim(line[2], sensor[2], v2))
+
         status = 1.0
 
-        v1 = {"x": line[0]["x"] - sensor[0]["x"],
-              "y": line[0]["y"] - sensor[0]["y"]}
-        v2 = {"x": sensor[0]["x"] - line[0]["x"],
-              "y": sensor[0]["y"] - line[0]["y"]}
-        ratio1 = getVectorIntersectionRatioSim(sensor[2], line[2], v1)
-        ratio2 = getVectorIntersectionRatioSim(line[2], sensor[2], v2)
+        ratio1, ratio2 = _getRatio(sensor, line)
 
         if ratio1 and ratio2:
             if (0 <= ratio1 <= 1) and (0 <= ratio2 <= 1):
@@ -324,30 +328,23 @@ class Simulator:
             else:
             # Drehen
                 angle = - get_angle(sensor[0], sensor[1])
-                s = (turn_pointr(sensor[0], angle),
-                     turn_pointr(sensor[1], angle))
-                l = (turn_pointr(line[0], angle),
-                     turn_pointr(line[1], angle))
+                s = [turn_pointr(sensor[0], angle),
+                     turn_pointr(sensor[1], angle)]
+                s.append({"x": s[1]["x"] - s[0]["x"], "y": s[1]["y"] - s[0]["y"]})
+                l = [turn_pointr(line[0], angle),
+                     turn_pointr(line[1], angle)]
+                l.append({"x": l[1]["x"] - l[0]["x"], "y": l[1]["y"] - l[0]["y"]})
                 # nachdem s eine x-steigung von 0 hat, müssen sich die vektoren nur auf y schneiden
                 if (min(s[0]["y"], s[1]["y"]) < max(l[0]["y"], l[1]["y"])
                     and
                     max(s[0]["y"], s[1]["y"]) > min(l[0]["y"], l[1]["y"])):
-                    # was über steht kommt weg
-                    # nur x wird danach ausgewertet
-                    if l[0]["y"] > s[0]["y"]:
-                        l[0]["x"] += (l[1]["x"] - l[0]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[0]["y"] - s[0]["y"])
-                    if l[1]["y"] > s[0]["y"]:
-                        l[1]["x"] += (l[0]["x"] - l[1]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[1]["y"] - s[0]["y"])
+                    borderY = min(max(s[0]["y"], s[1]["y"]), max(l[0]["y"], l[1]["y"]))
+                    maxr1 = _getRatio(({"x": s[0]["x"], "y": borderY}, {"x": s[0]["x"] + 1, "y": borderY}, {"x": 1.0, "y": 0.0}), l)[0]
+                    borderY = max(min(s[0]["y"], s[1]["y"]), min(l[0]["y"], l[1]["y"]))
+                    minr1 = _getRatio(({"x": s[0]["x"], "y": borderY}, {"x": s[0]["x"] + 1, "y": borderY}, {"x": 1.0, "y": 0.0}), l)[0]
 
-                    if l[0]["y"] < s[1]["y"]:
-                        l[0]["x"] += (l[1]["x"] - l[0]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[0]["y"] - s[1]["y"])
-                    if l[1]["y"] < s[1]["y"]:
-                        l[1]["x"] += (l[0]["x"] - l[1]["x"]) / (l[1]["y"] - l[0]["y"]) * (l[1]["y"] - s[1]["y"])
+                    status = min(abs(maxr1), abs(minr1))
 
-                    status = min(min(abs(s[0]["x"] - l[0]["x"]),
-                                     abs(s[1]["x"] - l[0]["x"])),
-                                 min(abs(s[0]["x"] - l[1]["x"]),
-                                     abs(s[1]["x"] - l[1]["x"])))
         else:
             # Parallel
             # Drehen
