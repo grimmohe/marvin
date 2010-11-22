@@ -13,9 +13,7 @@ class TestSimulator(unittest.TestCase):
         point.append({"x": point[1]["x"] - point[0]["x"], "y": point[1]["y"] - point[0]["y"]})
         return point
 
-    def testCheckSensorStatus(self):
-        sim = Simulator(True)
-        sensor = self._prepare([{"x": 21, "y": 50}, {"x": 7, "y": 37}])
+    def _testCheckSensorStatus(self, sim, sensor):
 
         border = self._prepare([{"x": 0, "y": 0}, {"x": 0, "y": 100}])
         self.failIf(sim.checkSensorStatus(sensor, border) < 1.0)
@@ -35,14 +33,23 @@ class TestSimulator(unittest.TestCase):
         border = self._prepare([{"x": 100, "y": 0}, {"x": 0, "y": 0}])
         self.failIf(sim.checkSensorStatus(sensor, border) < 1.0)
 
-        """
-        0;0
-        0;100
-        75;100
-        75;75
-        100;75
-        100;0
-        """
+        border = self._prepare([{"x": 100, "y": 0}, {"x": 0, "y": 0}])
+        self.failIf(sim.checkSensorStatus(sensor, border) < 1.0)
+
+
+    def testCheckSensorStatus(self):
+        sim = Simulator(True)
+
+        sensor = self._prepare([{"x": 48.74, "y": 78.85}, {"x": 19.28, "y": 51.80}])
+        self._testCheckSensorStatus(sim, sensor)
+
+        sensor = self._prepare([{"x": 21.01, "y": 51.32}, {"x": 6.61, "y": 65.20}])
+        self._testCheckSensorStatus(sim, sensor)
+
+        sensor = self._prepare([{"x": 1.0, "y": 51.32}, {"x": 1.0, "y": 65.20}])
+        self._testCheckSensorStatus(sim, sensor)
+
+
 
 
 if __name__ == "__main__":
