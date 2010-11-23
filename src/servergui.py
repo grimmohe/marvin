@@ -214,9 +214,9 @@ class MapVisual:
 
         drw.add("GnomeCanvasRect",
                 fill_color='black',
-                x1=-50,
+                x1=0,
                 x2=self.width,
-                y1=-50,
+                y1=0,
                 y2=self.height)
 
         for vec in self.map.borders.getAllBorders():
@@ -254,10 +254,13 @@ class MapVisual:
                 if maxy < ep.y:
                     maxy = ep.y
 
-        ratiox = ((maxx - minx) / (self.width - 2))
-        ratioy = ((maxy - miny) / (self.height - 2))
+        ratiox = ((maxx - minx) / (self.width))
+        ratioy = ((maxy - miny) / (self.height))
+
+        print "ratiox: " + str(ratiox)
+        print "ratioy: " + str(ratioy)
         
-        if ratiox < ratioy:
+        if ratiox > ratioy:
             ratioy = ratiox;
         else:
             ratiox = ratioy;
@@ -288,28 +291,24 @@ class MapVisual:
         for vec in self.map.borders.getAllBorders():
 
             ep=vec.getEndPoint()
-            print "1: x1: " + str(vec.point.x) + ", y1: " + str(vec.point.y) + ",x2: " + str(ep.x) + ", y2: " + str(ep.y) + ", color: " + colors[count]
+            print "1: x1: " + str(vec.point.x) + ", y1: " + str(vec.point.y) + ", x2: " + str(ep.x) + ", y2: " + str(ep.y) + ", color: " + colors[count]
             
 
-            x1 = ((vec.point.x / ratiox) + xoffset ) - 50
-            x2 = (ep.x / ratiox) + xoffset - 50
-            y1 = (vec.point.y / ratioy) + yoffset - 50
-            y2 = (ep.y / ratioy) + yoffset - 50
+            x1 = ((vec.point.x / ratiox) + xoffset )
+            x2 = (ep.x / ratiox) + xoffset
+            y1 = (vec.point.y / ratioy) + yoffset
+            y2 = (ep.y / ratioy) + yoffset
                 
-            print "2: x1: " + str(x1) + ", y1: " + str(y1) + ",x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
+            print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
             drw.add("GnomeCanvasLine",
                 fill_color=colors[count],
                 width_units=1.0,
-                points=[x1,
-                        y1,
-                        x2,
-                        y2])
+                points=[x1, y1, x2, y2])
 
             if count == 2:
                 count = 0
             else:
                 count += 1
-        gdk.threads_leave()
 
 class TabBox:
 
