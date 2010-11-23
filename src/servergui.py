@@ -158,6 +158,28 @@ class ClientTabPage(TabPage):
     def mapvisRefresh(self):
         self.mapvis.update()
 
+class BBox:
+    
+    def __init__(self):
+        self.minx = 0
+        self.miny = 0
+        self.maxx = 0
+        self.maxy = 0
+        
+    def addPoint(self, x, y):
+        if self.minx > x:
+            self.minx = x
+
+        if self.maxx < x:
+            self.maxx = x
+    
+        if self.miny > y:
+            self.miny = y
+
+        if self.maxy < y:
+            self.maxy = y
+
+
 class MapVisual:
 
     def __init__(self, _map, height, width):
@@ -165,6 +187,7 @@ class MapVisual:
         self.map = _map
         self.height = height
         self.width = width
+        self.drw = None
         self.area.set_size_request(height, width)
         self.area.connect("draw-background", self.update)
         if not self.map:
@@ -208,67 +231,55 @@ class MapVisual:
     def update(self, arg1="", arg2="", arg3="", arg4="", arg5="", user_data=""):
         print "MapVisual update"
         minx = miny = maxx = maxy = xoffset = yoffset = 0
-        drw = self.area.root()
+        self.drw = self.area.root()
+        self.ratiox=0
+        self.ratioy=0
+        self.offsetx=0
+        self.offsety=0
 
         print "rect dimmensions: w: " + str(self.width) + " h: " + str(self.height)
 
-        drw.add("GnomeCanvasRect",
+        self.drw.add("GnomeCanvasRect",
                 fill_color='black',
                 x1=0,
                 x2=self.width,
                 y1=0,
                 y2=self.height)
+        
+        bbox = BBox() 
 
         for vec in self.map.borders.getAllBorders():
             sp=vec.getStartPoint()
             ep=vec.getEndPoint()
             
-            # calc bbox
-            # x
-            if sp.x < ep.x:
-                if minx > sp.x:
-                    minx = sp.x
-            else:
-                if minx > ep.x:
-                    minx = ep.x
+            bbox.addPoint(sp.x, sp.y)
+            bbox.addPoint(ep.x, ep.y)
 
-            if sp.x > ep.x:
-                if maxx < sp.x:
-                    maxx = sp.x
-            else:
-                if maxx < ep.x:
-                    maxx = ep.x
+        for area in self.map.areas:
+            bbox.addPoint(area.p1.x, area.p1.y)
+            bbox.addPoint(area.p2.x, area.p2.y)
+            bbox.addPoint(area.p3.x, area.p3.y)
 
-            # y
-            if sp.y < ep.y:
-                if miny > sp.y:
-                    miny = sp.y
-            else:
-                if miny > ep.y:
-                    miny = ep.y
-
-            if sp.y > ep.y:
-                if maxy < sp.y:
-                    maxy = sp.y
-            else:
-                if maxy < ep.y:
-                    maxy = ep.y
-
-        ratiox = ((maxx - minx) / (self.width))
-        ratioy = ((maxy - miny) / (self.height))
-
-        print "ratiox: " + str(ratiox)
-        print "ratioy: " + str(ratioy)
+        minx = bbox.minx
+        miny = bbox.miny
+        maxx = bbox.maxx
+        maxy = bbox.maxy
         
-        if ratiox > ratioy:
-            ratioy = ratiox;
+        self.ratiox = ((maxx - minx) / (self.width))
+        self.ratioy = ((maxy - miny) / (self.height))
+
+        print "ratiox: " + str(self.ratiox)
+        print "ratioy: " + str(self.ratioy)
+        
+        if self.ratiox > self.ratioy:
+            self.ratioy = self.ratiox;
         else:
-            ratiox = ratioy;
+            self.ratiox = self.ratioy;
         
         if minx < 0:
-            xoffset = (minx / ratiox)*-1
+            self.offsetx = (minx / self.ratiox)*-1
         if miny < 0:
-            yoffset = (miny / ratioy)*-1
+            self.offsety = (miny / self.ratioy)*-1
             
         count = 0
         colors = ["red","blue", "yellow"]
@@ -279,36 +290,48 @@ class MapVisual:
         print "miny: " + str(miny)
         print "maxy: " + str(maxy)
         print "diff: " + str(maxy - miny)
-        print "ratiox: " + str(ratiox)
-        print "ratioy: " + str(ratioy)
+        print "ratiox: " + str(self.ratiox)
+        print "ratioy: " + str(self.ratioy)
         # avoid zero deivision
-        if ratiox == 0 or ratioy == 0:
+        if self.ratiox == 0 or self.ratioy == 0:
             print "avoid zero division"
             return;
 
         count = 0
         
         for vec in self.map.borders.getAllBorders():
-
             ep=vec.getEndPoint()
-            print "1: x1: " + str(vec.point.x) + ", y1: " + str(vec.point.y) + ", x2: " + str(ep.x) + ", y2: " + str(ep.y) + ", color: " + colors[count]
-            
-
-            x1 = ((vec.point.x / ratiox) + xoffset )
-            x2 = (ep.x / ratiox) + xoffset
-            y1 = (vec.point.y / ratioy) + yoffset
-            y2 = (ep.y / ratioy) + yoffset
-                
-            print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + colors[count]
-            drw.add("GnomeCanvasLine",
-                fill_color=colors[count],
-                width_units=1.0,
-                points=[x1, y1, x2, y2])
-
+            self.drawLine(vec.point.x, vec.point.y, ep.x, ep.y,colors[count])
             if count == 2:
                 count = 0
             else:
                 count += 1
+
+        for area in self.map.areas:
+            ep=vec.getEndPoint()
+            self.drawLine(area.p1.x, area.p1.y, area.p2.x, area.p2.y, colors[count])
+            self.drawLine(area.p2.x, area.p2.y, area.p3.x, area.p3.y, colors[count])
+            self.drawLine(area.p3.x, area.p3.y, area.p1.x, area.p1.y, colors[count])
+            if count == 2:
+                count = 0
+            else:
+                count += 1                
+                
+    def drawLine(self, x1, y1, x2, y2, coleur):
+        print "1: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + coleur
+        
+        x1 = (x1 / self.ratiox) + self.offsetx
+        x2 = (x2 / self.ratiox) + self.offsetx
+        y1 = (y1 / self.ratioy) + self.offsety
+        y2 = (y2 / self.ratioy) + self.offsety
+            
+        print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + coleur
+        self.drw.add("GnomeCanvasLine",
+            fill_color=coleur,
+            width_units=1.0,
+            points=[x1, y1, x2, y2])
+
+
 
 class TabBox:
 
