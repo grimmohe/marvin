@@ -20,6 +20,7 @@ class Actionlog:
 
     """ fortlaufendes update """
     SERIAL = ("engine:distance", "engine:turned")
+    SERIAL_BREAK = ("engine:halt")
 
     def __init__(self):
         self.clear()
@@ -34,6 +35,8 @@ class Actionlog:
         for entry in self.actions:
             if entry.action == action:
                 return entry.value
+            if entry.action in self.SERIAL_BREAK:
+                break
         return None
 
     def quit(self):

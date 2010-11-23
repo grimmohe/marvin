@@ -7,8 +7,6 @@ import threading
 import callback as cb
 import common
 
-#TODO: head move=up is to often send
-#TODO: actionlog shows a turn of 182 but sim still looks the same
 #TODO: commanding to move towards a wall when already touching it is bad
 #TODO: the assignment structure is way too inflexible
 
@@ -77,7 +75,6 @@ class ClientContainer(threading.Thread):
                                 # sensor on end position
                                 self.map.borders.add(v_end)
                                 # area marked as cleaned
-                                #self.map.addArea(v_start.getStartPoint(), v_start.getEndPoint(), v_end.getStartPoint())
                     self.position.point = newPos
             else:
                 if not self.devs.has_key(dev):
