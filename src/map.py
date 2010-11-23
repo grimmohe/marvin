@@ -600,7 +600,7 @@ class Map:
         self.borders = BorderList()
         self.waypoints = []
 
-    def addArea(self, p1, p2, p3):
+    def addArea(self, position, distance, radius):
         """
         Adding/merging an area to the map.
         We expect p1 to be connected to p2 and p3 rectangular.
@@ -609,11 +609,21 @@ class Map:
             return Point(root.x + (size1.x * multi1) + (size2.x * multi2),
                          root.y + (size2.y * multi2) + (size2.y * multi2))
         def appendWhereNeeded(area):
-            self.areas.append(area)
+            """ appends the new area to both lists """
             self.areas_unmerged.append(area)
+            self.areas.append(area)
 
-        distance12 = p1.getDistanceTo(p2)
-        distance13 = p1.getDistanceTo(p3)
+        pleft = turn_point({"x": 0.0, "y": radius}, position.orientation - 90)
+        p1 = Point(pleft["x"] + position.point.x, pleft["y"] + position.point.y)
+
+        p2 = turn_point({"x": 0.0, "y": radius}, position.orientation + 90)
+        p2 = Point(p2["x"] + position.point.x, p2["y"] + position.point.y)
+
+        p3 = position.getPointInDistance(distance)
+        p3 = Point(pleft["x"] + p3.x, pleft["y"] + p3.y)
+
+        distance12 = radius * 2
+        distance13 = distance
         max12 = roundup(distance12 / MAX_VECTOR_LENGTH)
         max13 = roundup(distance13 / MAX_VECTOR_LENGTH)
         size12 = Point(p2.x - p1.x, p2.y - p1.y)
@@ -696,22 +706,20 @@ class Map:
                         subenum.prev()
                         self.borders.remove(v2)
 
-        """ now delete all borders in conflict with self.areas_unmerged """
-        """ coming soon (tm)
+        """ delete all borders in conflict with self.areas_unmerged """
         while len(self.areas_unmerged):
             area = self.areas_unmerged[0]
             ii = 0
             while ii < self.borders.count():
                 vector = self.borders.get(ii)
-                if area.p1.getDistanceTo(vector.point) > doubleMax:
+                if area.p1.getDistanceTo(vector.point) > MERGE_RANGE*2:
                     ii += 1
                     continue
                 if area.intersects(vector):
-                    self.borders.remove(borders.pop(ii))
+                    self.borders.remove(vector)
                 else:
                     ii += 1
             self.areas_unmerged.pop(0)
-        """
 
     def routeIsSet(self):
         return len(self.waypoints)
