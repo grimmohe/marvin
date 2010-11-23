@@ -75,7 +75,9 @@ class ClientContainer(threading.Thread):
                                     self.map.borders.add(v2)
                                 # sensor on end position
                                 self.map.borders.add(v_end)
-                                # area marked as cleaned
+                    # area marked as cleaned
+                    self.map.addArea(self.position, action.value, self.devs["self"]["radius"])
+                    # finally accept the new position
                     self.position.point = newPos
             else:
                 if not self.devs.has_key(dev):
