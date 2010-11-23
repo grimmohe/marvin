@@ -190,6 +190,7 @@ class MapVisual:
         self.drw = None
         self.area.set_size_request(height, width)
         self.area.connect("draw-background", self.update)
+        self.lock=False
         if not self.map:
             """ some rtesting stuff ifnot map is set """
             print "using test map"
@@ -229,6 +230,11 @@ class MapVisual:
         self.update()
 
     def update(self, arg1="", arg2="", arg3="", arg4="", arg5="", user_data=""):
+        
+        if self.lock:
+            return
+        
+        self.lock=True
         print "MapVisual update"
         minx = miny = maxx = maxy = xoffset = yoffset = 0
         self.drw = self.area.root()
@@ -239,6 +245,9 @@ class MapVisual:
 
         print "rect dimmensions: w: " + str(self.width) + " h: " + str(self.height)
 
+        for item in self.drw.item_list:
+            self.drw.item_list.remove(item)
+        
         self.drw.add("GnomeCanvasRect",
                 fill_color='black',
                 x1=0,
@@ -282,7 +291,7 @@ class MapVisual:
             self.offsety = (miny / self.ratioy)*-1
             
         count = 0
-        colors = ["red","blue", "yellow"]
+        colors = ["red","blue", "green"]
         
         print "minx: " + str(minx)
         print "maxx: " + str(maxx)
@@ -295,9 +304,12 @@ class MapVisual:
         # avoid zero deivision
         if self.ratiox == 0 or self.ratioy == 0:
             print "avoid zero division"
+            self.lock=False
             return;
 
         count = 0
+
+        print "draw borders"
         
         for vec in self.map.borders.getAllBorders():
             ep=vec.getEndPoint()
@@ -307,6 +319,8 @@ class MapVisual:
             else:
                 count += 1
 
+        print "draw areas"
+
         for area in self.map.areas:
             ep=vec.getEndPoint()
             self.drawLine(area.p1.x, area.p1.y, area.p2.x, area.p2.y, colors[count])
@@ -315,7 +329,10 @@ class MapVisual:
             if count == 2:
                 count = 0
             else:
-                count += 1                
+                count += 1 
+        
+        print "done printing"    
+        self.lock=False           
                 
     def drawLine(self, x1, y1, x2, y2, coleur):
         print "1: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + coleur
@@ -324,14 +341,21 @@ class MapVisual:
         x2 = (x2 / self.ratiox) + self.offsetx
         y1 = (y1 / self.ratioy) + self.offsety
         y2 = (y2 / self.ratioy) + self.offsety
-            
+
         print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + coleur
-        self.drw.add("GnomeCanvasLine",
+
+        if (x1 < 0 or x1 > self.width or x2 < 0 or x2 > self.width 
+            or y1 < 0 or y1 > self.height or y2 < 0 or y2 > self.height):
+            print "error, coord out of range"
+            return
+                    
+        item = self.drw.add("GnomeCanvasLine",
             fill_color=coleur,
-            width_units=1.0,
+            width_pixels=1,
             points=[x1, y1, x2, y2])
-
-
+        
+        if not item:
+            print "item not valid"
 
 class TabBox:
 
