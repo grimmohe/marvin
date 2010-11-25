@@ -625,19 +625,16 @@ class Map:
         size1 = Point(0, distance).getTurned(position.orientation)
         size2 = Point(radius*2, 0).getTurned(position.orientation)
 
-        distance1 = distance
-        distance2 = radius * 2
-
-        max1 = roundup(distance1 / MAX_VECTOR_LENGTH)
-        max2 = roundup(distance2 / MAX_VECTOR_LENGTH)
+        max1 = roundup(distance / MAX_VECTOR_LENGTH)
+        max2 = roundup(radius * 2 / MAX_VECTOR_LENGTH)
 
         for run1 in range(max1):
-            multiplierMin1 = run1 / max1
-            multiplierMax1 = (run1 + 1) / max1
+            multiplierMin1 = run1 / float(max1)
+            multiplierMax1 = (run1 + 1) / float(max1)
 
             for run2 in range(max2):
-                multiplierMin2 = run2 / max2
-                multiplierMax2 = (run2 + 1) / max2
+                multiplierMin2 = run2 / float(max2)
+                multiplierMax2 = (run2 + 1) / float(max2)
 
                 appendWhereNeeded(Area(getTweenPoint(p, size1, size2, multiplierMin1, multiplierMin2),
                                        getTweenPoint(p, size1, size2, multiplierMin1, multiplierMax2),
