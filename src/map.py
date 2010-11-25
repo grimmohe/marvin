@@ -608,14 +608,15 @@ class Map:
         Adding/merging an area to the map.
         We expect p1 to be connected to p2 and p3 rectangular.
         """
+
         def getTweenPoint(root, size1, size2, multi1, multi2):
             return Point(root.x + (size1.x * multi1) + (size2.x * multi2),
-                         root.y + (size2.y * multi2) + (size2.y * multi2))
+                         root.y + (size1.y * multi1) + (size2.y * multi2))
         def appendWhereNeeded(area):
             """ appends the new area to both lists """
             self.areas.append(area)
 
-        if distance == 0:
+        if distance == 0 or radius == 0:
             return
 
         p = Point(-radius, 0).getTurned(position.orientation)
