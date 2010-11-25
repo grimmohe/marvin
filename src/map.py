@@ -31,6 +31,10 @@ class Point(object):
         self.x = float(x)
         self.y = float(y)
 
+    def add(self, point):
+        self.x += point.x
+        self.y += point.y
+
     def getDistanceTo(self, p2):
         return math.sqrt(math.pow(self.x - p2.x, 2) + math.pow(self.y - p2.y, 2))
 
