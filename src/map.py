@@ -659,28 +659,39 @@ class Map:
                 return -1
 
         collisions = []
-        direction = turn_point({"x": 0, "y": 1}, position.orientation)
-        direction = Point(direction["x"], direction["y"])
+        direction = Point(0, 1).getTurned(position.orientation)
+        odirection = Point(0, -1).getTurned(position.orientation)
 
         positionedSensors = []
         for s in sensors:
-            positionedSensors.append(s.copy(position.point, position.orientation))
+            positionedSensors.append((s, s.copy(position.point, position.orientation)))
 
         borders = self.borders.getAllBorders()
         for border in borders:
             distance = MAX_RANGE
             sensedby = None
             for sensor in positionedSensors:
-                v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
-                v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
-                ratio1 = getVectorIntersectionRatio(v1, border)
-                ratio2 = getVectorIntersectionRatio(v2, border)
-                if ratio1 and ratio2 \
-                   and ( 0 <= ratio1[1] <= 1 or 0 <= ratio2[1] <= 1 or ((ratio1[1]>=0) <> (ratio2[1]>=0)) ) \
-                   and min(ratio1[0], ratio2[0]) >= min_distance:
-                    distance = min(distance, min(ratio1[0], ratio2[0]))
-                    sensedby = sensor
+                # sensor direction vectors
+                sdir1 = Vector(sensor[1].getStartPoint().getTurned(position.orientation), direction)
+                sdir2 = Vector(sensor[1].getEndPoint().getTurned(position.orientation), direction)
+                # border opposite direction vectors
+                bdir1 = Vector(border.getStartPoint(), odirection)
+                bdir2 = Vector(border.getEndPoint(), odirection)
+                # collision ratios
+                ratios = ( getVectorIntersectionRatio(sdir1, border),
+                           getVectorIntersectionRatio(sdir2, border),
+                           getVectorIntersectionRatio(bdir1, sensor[1]),
+                           getVectorIntersectionRatio(bdir2, sensor[1]) )
+                # find the closest one
+                for ratio in ratios:
+                    if ratio \
+                    and 0 < ratio[0] < distance \
+                    and 0 <= ratio[1] <= 1:
+                        distance = ratio[0]
+                        sensedby = sensor[0]
+
             if sensedby:
+                # position where marvin will collide
                 p = Point(position.point.x + direction.x * distance,
                           position.point.y + direction.y * distance)
                 collisions.append((distance, sensedby, p))
