@@ -426,6 +426,7 @@ class Simulator:
         try:
             self.init_gui()
             self.runit = True
+            step = 0.01
             while self.runit:
                 timestamp = time.time()
                 # Kollisionskontrolle
@@ -433,7 +434,13 @@ class Simulator:
                 # GUI
                 self.update_gui(timestamp)
                 # warten, aber bitte alle 0.01 aufwachen
-                time.sleep(max(0, 0.01 - (time.time() - timestamp)))
+                # wenns gar länger dauert, mach langsamer
+                now = time.time()
+                diff = now - timestamp - step
+                if diff > .0:
+                    self.client.starttime += diff
+                else:
+                    time.sleep(max(0, diff + step))
         except KeyboardInterrupt:
             pass
         pygame.quit()
