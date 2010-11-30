@@ -165,19 +165,26 @@ class BBox:
         self.miny = 0
         self.maxx = 0
         self.maxy = 0
-        
+        self.displaySize = (1, 1)
+
     def addPoint(self, x, y):
         if self.minx > x:
             self.minx = x
 
         if self.maxx < x:
             self.maxx = x
-    
+
         if self.miny > y:
             self.miny = y
 
         if self.maxy < y:
             self.maxy = y
+
+    def adjust(self, x, y):
+        factor = min((float(self.displaySize[0]) / (self.maxx - self.minx)),
+                     (float(self.displaySize[1]) / (self.maxy - self.miny)))
+        return (self.displaySize[1] - int((x - self.minx) * factor),
+                int((y - self.miny) * factor))
 
 
 class MapVisual(gtk.DrawingArea):
