@@ -56,12 +56,13 @@ class networkConnection(threading.Thread):
         return False
 
     def receive(self, data):
-        if data == "DISCO":
-            self.disconnect(False)
-            self.cbl.call("onExternDisconnection", {"networkConnection": self})
-            return
-        self.data = data
-        self.cbl["onDataIncoming"].call({"networkConnection": self, "data": data})
+        if len(data):
+            if data == "DISCO":
+                self.disconnect(False)
+                self.cbl.call("onExternDisconnection", {"networkConnection": self})
+                return
+            self.data = data
+            self.cbl["onDataIncoming"].call({"networkConnection": self, "data": data})
 
     def read(self,flushData=False):
         data = self.data
@@ -84,11 +85,10 @@ class networkConnectionReader(threading.Thread):
         #print "["+self.name+"("+self.netConnection.name+")] networkConnectionReader running..."
         self.awaitIncoming()
         #print "["+self.name+"("+self.netConnection.name+")] networkConnectionReader leaving loop..."
-        
+
         # check whenever this was in shudown path
         if not self.stop:
             self.netConnection.receive("DISCO")
-
 
     def awaitIncoming(self):
         data = "" # in case of an exception, data would be unreferenced
@@ -101,7 +101,9 @@ class networkConnectionReader(threading.Thread):
                 return;
             if not data:
                 break
-            if "\n\n" == data[-2:]:
+            datalist = data.split("\n\n")
+            if len(datalist) > 1:
                 if self.netConnection:
-                    self.netConnection.receive(data.strip("\n"))
-                data=""
+                    data = datalist.pop() #last index is empty or incomplete
+                    for s in datalist:
+                        self.netConnection.receive(s)

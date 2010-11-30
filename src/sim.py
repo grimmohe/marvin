@@ -297,70 +297,43 @@ class Simulator:
         """
         Die Kollisionsprüfung. Löst das Senden von Sensordaten aus.
         """
+
         self.client.reset_head_status()
 
-        for line in self.room.get_lines():
-            for sensor in self.client.get_head_lines(now):
-                status = self.checkSensorStatus(sensor, line)
+        for sensor in self.client.get_head_lines(now):
+            direction = turn_pointr({"x": 0, "y": 1}, get_angle(sensor[2]) + math.radians(90))
+            sd1 = (sensor[0], {"x": sensor[0]["x"] + direction["x"], "y": sensor[0]["y"] + direction["y"]}, direction)
+            sd2 = (sensor[1], {"x": sensor[1]["x"] + direction["x"], "y": sensor[1]["y"] + direction["y"]}, direction)
 
-                sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], status)
+            status = 1.0
+
+            for line in self.room.get_lines():
+                ld1 = (line[0], {"x": line[0]["x"] + direction["x"], "y": line[0]["y"] + direction["y"]}, direction)
+                ld2 = (line[1], {"x": line[1]["x"] + direction["x"], "y": line[1]["y"] + direction["y"]}, direction)
+
+                rl = (self.getRatio(sd1, line),
+                      self.getRatio(sd2, line),
+                      self.getRatio(ld1, sensor),
+                      self.getRatio(ld2, sensor))
+
+                for r in rl:
+                    if r[0] \
+                    and r[1] \
+                    and 0 < abs(r[0]) < status \
+                    and 0 <= r[1] <= 1:
+                        status = abs(r[0])
+
+            sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], status)
         self.client.send_data(now)
         return 1
 
-    def checkSensorStatus(self, sensor, line):
-
-        def _getRatio(sensor, line):
-            v1 = {"x": line[0]["x"] - sensor[0]["x"],
-                  "y": line[0]["y"] - sensor[0]["y"]}
-            v2 = {"x": sensor[0]["x"] - line[0]["x"],
-                  "y": sensor[0]["y"] - line[0]["y"]}
-            return (getVectorIntersectionRatioSim(sensor[2], line[2], v1),
-                    getVectorIntersectionRatioSim(line[2], sensor[2], v2))
-
-        status = 1.0
-
-        ratio1, ratio2 = _getRatio(sensor, line)
-
-        if ratio1 and ratio2:
-            if (0 <= ratio1 <= 1) and (0 <= ratio2 <= 1):
-                # direkter Schnitt
-                status = 0
-            else:
-            # Drehen
-                angle = - get_angle(sensor[0], sensor[1])
-                s = [turn_pointr(sensor[0], angle),
-                     turn_pointr(sensor[1], angle)]
-                s.append({"x": s[1]["x"] - s[0]["x"], "y": s[1]["y"] - s[0]["y"]})
-                l = [turn_pointr(line[0], angle),
-                     turn_pointr(line[1], angle)]
-                l.append({"x": l[1]["x"] - l[0]["x"], "y": l[1]["y"] - l[0]["y"]})
-                # nachdem s eine x-steigung von 0 hat, müssen sich die vektoren nur auf y schneiden
-                if (min(s[0]["y"], s[1]["y"]) < max(l[0]["y"], l[1]["y"])
-                    and
-                    max(s[0]["y"], s[1]["y"]) > min(l[0]["y"], l[1]["y"])):
-                    borderY = min(max(s[0]["y"], s[1]["y"]), max(l[0]["y"], l[1]["y"]))
-                    maxr1 = _getRatio(({"x": s[0]["x"], "y": borderY}, {"x": s[0]["x"] + 1, "y": borderY}, {"x": 1.0, "y": 0.0}), l)[0]
-                    borderY = max(min(s[0]["y"], s[1]["y"]), min(l[0]["y"], l[1]["y"]))
-                    minr1 = _getRatio(({"x": s[0]["x"], "y": borderY}, {"x": s[0]["x"] + 1, "y": borderY}, {"x": 1.0, "y": 0.0}), l)[0]
-
-                    status = min(abs(maxr1), abs(minr1))
-
-        else:
-            # Parallel
-            # Drehen
-            angle = - get_angle(sensor[0], sensor[1])
-            l1 = (turn_pointr(sensor[0], angle),
-                  turn_pointr(sensor[1], angle))
-            l2 = (turn_pointr(line[0], angle),
-                  turn_pointr(line[1], angle))
-            # Jetzt ist X bei beiden Punkten einer Linie gleich
-            # Überschneiden sich die Linien auf Y?
-            if (min(l1[0]["y"], l1[1]["y"]) < max(l2[0]["y"], l2[1]["y"])
-                and
-                max(l1[0]["y"], l1[1]["y"]) > min(l2[0]["y"], l2[1]["y"])):
-                status = abs(l1[0]["x"] - l2[0]["x"])
-
-        return status
+    def getRatio(self, sensor, line):
+        v1 = {"x": line[0]["x"] - sensor[0]["x"],
+              "y": line[0]["y"] - sensor[0]["y"]}
+        v2 = {"x": sensor[0]["x"] - line[0]["x"],
+              "y": sensor[0]["y"] - line[0]["y"]}
+        return (getVectorIntersectionRatioSim(sensor[2], line[2], v1),
+                getVectorIntersectionRatioSim(line[2], sensor[2], v2))
 
     def init_gui(self):
         """
@@ -453,6 +426,7 @@ class Simulator:
         try:
             self.init_gui()
             self.runit = True
+            step = 0.01
             while self.runit:
                 timestamp = time.time()
                 # Kollisionskontrolle
@@ -460,7 +434,13 @@ class Simulator:
                 # GUI
                 self.update_gui(timestamp)
                 # warten, aber bitte alle 0.01 aufwachen
-                time.sleep(max(0, 0.01 - (time.time() - timestamp)))
+                # wenns gar länger dauert, mach langsamer
+                now = time.time()
+                diff = now - timestamp - step
+                if diff > .0:
+                    self.client.starttime += diff
+                else:
+                    time.sleep(max(0, diff + step))
         except KeyboardInterrupt:
             pass
         pygame.quit()

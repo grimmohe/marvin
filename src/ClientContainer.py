@@ -34,7 +34,6 @@ class ClientContainer(threading.Thread):
             # contains action and value
             dev, key = action.action.lower().split(":")
 
-
             if dev == "engine" and self.devs.has_key(dev):
                 if key == "turned":
                     self.position.orientation += action.value
@@ -48,34 +47,37 @@ class ClientContainer(threading.Thread):
                          and self.devs["head"].has_key("position")
                          and self.devs["head"]["position"] ):
                         for sdev in self.devs:
-                            if ( self.devs[sdev].has_key("touch")
-                                 and self.devs[sdev]["touch"]
-                                 and self.devs[sdev].has_key("dimension")
-                                 and self.devs[sdev]["dimension"] ):
-                                sensorOffset = None
-                                if self.devs[sdev].has_key("orientation") \
-                                   and self.devs[sdev].has_key("distance"):
-                                    sensorOffset = self.devs[sdev]["orientation"].copy(orientation=self.position.orientation)
-                                    sensorOffset.size.x *= self.devs[sdev]["distance"]
-                                    sensorOffset.size.y *= self.devs[sdev]["distance"]
-                                # here the sensor vector is copied to start and end point of the movement
-                                v_start = self.devs[sdev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
-                                                                            self.position.orientation,
-                                                                            sensorOffset)
-                                v_end = self.devs[sdev]["dimension"].copy(newPos, self.position.orientation, sensorOffset)
-                                # point 1 start to end
-                                v1 = map.Vector().combine(v_start, v_end, map.Vector.START_POINT)
-                                # point 2 start to end
-                                v2 = map.Vector().combine(v_start, v_end, map.Vector.END_POINT)
-                                # the one on the outside wins
-                                if v_end.distanceMax(v1) > v_end.distanceMax(v2):
-                                    self.map.borders.add(v1)
-                                else:
-                                    self.map.borders.add(v2)
-                                # sensor on end position
-                                self.map.borders.add(v_end)
-                    # area marked as cleaned
-                    self.map.addArea(self.position, action.value, self.devs["self"]["radius"])
+                            maxY = .0
+                            if self.devs[sdev].has_key("dimension") \
+                            and self.devs[sdev]["dimension"]:
+                                maxY = max(maxY, self.devs[sdev]["dimension"].getStartPoint().y, self.devs[sdev]["dimension"].getEndPoint().y)
+
+                                if self.devs[sdev].has_key("touch") \
+                                and self.devs[sdev]["touch"] :
+                                    sensorOffset = None
+                                    if self.devs[sdev].has_key("orientation") \
+                                    and self.devs[sdev].has_key("distance"):
+                                        sensorOffset = self.devs[sdev]["orientation"].copy(orientation=self.position.orientation)
+                                        sensorOffset.size.x *= self.devs[sdev]["distance"]
+                                        sensorOffset.size.y *= self.devs[sdev]["distance"]
+                                    # here the sensor vector is copied to start and end point of the movement
+                                    v_start = self.devs[sdev]["dimension"].copy(map.Point(self.position.point.x, self.position.point.y),
+                                                                                self.position.orientation,
+                                                                                sensorOffset)
+                                    v_end = self.devs[sdev]["dimension"].copy(newPos, self.position.orientation, sensorOffset)
+                                    # point 1 start to end
+                                    v1 = map.Vector().combine(v_start, v_end, map.Vector.START_POINT)
+                                    # point 2 start to end
+                                    v2 = map.Vector().combine(v_start, v_end, map.Vector.END_POINT)
+                                    # the one on the outside wins
+                                    if v_end.distanceMax(v1) > v_end.distanceMax(v2):
+                                        self.map.borders.add(v1)
+                                    else:
+                                        self.map.borders.add(v2)
+                                    # sensor on end position
+                                    self.map.borders.add(v_end)
+                        # area marked as cleaned
+                        self.map.addArea(self.position, action.value + maxY, self.devs["self"]["radius"])
                     # finally accept the new position
                     self.position.point = newPos
             else:

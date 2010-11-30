@@ -31,6 +31,10 @@ class Point(object):
         self.x = float(x)
         self.y = float(y)
 
+    def add(self, point):
+        self.x += point.x
+        self.y += point.y
+
     def getDistanceTo(self, p2):
         return math.sqrt(math.pow(self.x - p2.x, 2) + math.pow(self.y - p2.y, 2))
 
@@ -211,7 +215,7 @@ class Vector:
         p2 = self.getEndPoint()
         self.setStartPoint(p2)
         self.setEndPoint(p1)
-        
+
 class BorderList:
 
     def __init__(self):
@@ -596,7 +600,6 @@ class Map:
 
     def __init__(self):
         self.areas = []
-        self.areas_unmerged = []
         self.borders = BorderList()
         self.waypoints = []
 
@@ -605,41 +608,40 @@ class Map:
         Adding/merging an area to the map.
         We expect p1 to be connected to p2 and p3 rectangular.
         """
+
         def getTweenPoint(root, size1, size2, multi1, multi2):
             return Point(root.x + (size1.x * multi1) + (size2.x * multi2),
-                         root.y + (size2.y * multi2) + (size2.y * multi2))
+                         root.y + (size1.y * multi1) + (size2.y * multi2))
         def appendWhereNeeded(area):
             """ appends the new area to both lists """
-            self.areas_unmerged.append(area)
             self.areas.append(area)
 
-        pleft = turn_point({"x": 0.0, "y": radius}, position.orientation - 90)
-        p1 = Point(pleft["x"] + position.point.x, pleft["y"] + position.point.y)
+        if distance == 0 or radius == 0:
+            return
 
-        p2 = turn_point({"x": 0.0, "y": radius}, position.orientation + 90)
-        p2 = Point(p2["x"] + position.point.x, p2["y"] + position.point.y)
+        p = Point(-radius, 0).getTurned(position.orientation)
+        p.add(position.point)
 
-        p3 = position.getPointInDistance(distance)
-        p3 = Point(pleft["x"] + p3.x, pleft["y"] + p3.y)
+        size1 = Point(0, distance).getTurned(position.orientation)
+        size2 = Point(radius*2, 0).getTurned(position.orientation)
 
-        distance12 = radius * 2
-        distance13 = distance
-        max12 = roundup(distance12 / MAX_VECTOR_LENGTH)
-        max13 = roundup(distance13 / MAX_VECTOR_LENGTH)
-        size12 = Point(p2.x - p1.x, p2.y - p1.y)
-        size13 = Point(p3.x - p1.x, p3.y - p1.y)
-        for run12 in range(max12):
-            multiplierMin12 = run12 / max12
-            multiplierMax12 = (run12 + 1) / max12
-            for run13 in range(max13):
-                multiplierMin13 = run13 / max13
-                multiplierMax13 = (run13 + 1) / max13
-                appendWhereNeeded(Area(getTweenPoint(p1, size12, size13, multiplierMin12, multiplierMin13),
-                                       getTweenPoint(p1, size12, size13, multiplierMin12, multiplierMax13),
-                                       getTweenPoint(p1, size12, size13, multiplierMax12, multiplierMin13)))
-                appendWhereNeeded(Area(getTweenPoint(p1, size12, size13, multiplierMax12, multiplierMax13),
-                                       getTweenPoint(p1, size12, size13, multiplierMin12, multiplierMax13),
-                                       getTweenPoint(p1, size12, size13, multiplierMax12, multiplierMin13)))
+        max1 = roundup(distance / MAX_VECTOR_LENGTH)
+        max2 = roundup(radius * 2 / MAX_VECTOR_LENGTH)
+
+        for run1 in range(max1):
+            multiplierMin1 = run1 / float(max1)
+            multiplierMax1 = (run1 + 1) / float(max1)
+
+            for run2 in range(max2):
+                multiplierMin2 = run2 / float(max2)
+                multiplierMax2 = (run2 + 1) / float(max2)
+
+                appendWhereNeeded(Area(getTweenPoint(p, size1, size2, multiplierMin1, multiplierMin2),
+                                       getTweenPoint(p, size1, size2, multiplierMin1, multiplierMax2),
+                                       getTweenPoint(p, size1, size2, multiplierMax1, multiplierMin2)))
+                appendWhereNeeded(Area(getTweenPoint(p, size1, size2, multiplierMax1, multiplierMax2),
+                                       getTweenPoint(p, size1, size2, multiplierMin1, multiplierMax2),
+                                       getTweenPoint(p, size1, size2, multiplierMax1, multiplierMin2)))
 
     def addWaypoint(self, wp=WayPoint(0, 0)):
         """ add a waypoint to current waypoints """
@@ -657,28 +659,39 @@ class Map:
                 return -1
 
         collisions = []
-        direction = turn_point({"x": 0, "y": 1}, position.orientation)
-        direction = Point(direction["x"], direction["y"])
+        direction = Point(0, 1).getTurned(position.orientation)
+        odirection = Point(0, -1).getTurned(position.orientation)
 
         positionedSensors = []
         for s in sensors:
-            positionedSensors.append(s.copy(position.point, position.orientation))
+            positionedSensors.append((s, s.copy(position.point, position.orientation)))
 
         borders = self.borders.getAllBorders()
         for border in borders:
             distance = MAX_RANGE
             sensedby = None
             for sensor in positionedSensors:
-                v1 = Vector(sensor.getStartPoint().getTurned(position.orientation), direction)
-                v2 = Vector(sensor.getEndPoint().getTurned(position.orientation), direction)
-                ratio1 = getVectorIntersectionRatio(v1, border)
-                ratio2 = getVectorIntersectionRatio(v2, border)
-                if ratio1 and ratio2 \
-                   and ( 0 <= ratio1[1] <= 1 or 0 <= ratio2[1] <= 1 or ((ratio1[1]>=0) <> (ratio2[1]>=0)) ) \
-                   and min(ratio1[0], ratio2[0]) >= min_distance:
-                    distance = min(distance, min(ratio1[0], ratio2[0]))
-                    sensedby = sensor
+                # sensor direction vectors
+                sdir1 = Vector(sensor[1].getStartPoint().getTurned(position.orientation), direction)
+                sdir2 = Vector(sensor[1].getEndPoint().getTurned(position.orientation), direction)
+                # border opposite direction vectors
+                bdir1 = Vector(border.getStartPoint(), odirection)
+                bdir2 = Vector(border.getEndPoint(), odirection)
+                # collision ratios
+                ratios = ( getVectorIntersectionRatio(sdir1, border),
+                           getVectorIntersectionRatio(sdir2, border),
+                           getVectorIntersectionRatio(bdir1, sensor[1]),
+                           getVectorIntersectionRatio(bdir2, sensor[1]) )
+                # find the closest one
+                for ratio in ratios:
+                    if ratio \
+                    and 0 < ratio[0] < distance \
+                    and 0 <= ratio[1] <= 1:
+                        distance = ratio[0]
+                        sensedby = sensor[0]
+
             if sensedby:
+                # position where marvin will collide
                 p = Point(position.point.x + direction.x * distance,
                           position.point.y + direction.y * distance)
                 collisions.append((distance, sensedby, p))
@@ -706,20 +719,12 @@ class Map:
                         subenum.prev()
                         self.borders.remove(v2)
 
-        """ delete all borders in conflict with self.areas_unmerged """
-        while len(self.areas_unmerged):
-            area = self.areas_unmerged[0]
-            ii = 0
-            while ii < self.borders.count():
-                vector = self.borders.get(ii)
-                if area.p1.getDistanceTo(vector.point) > MERGE_RANGE*2:
-                    ii += 1
-                    continue
-                if area.intersects(vector):
+        """ delete all borders in conflict with self.areas """
+        for area in self.areas:
+            for vector in self.borders.borders:
+                if area.p1.getDistanceTo(vector.point) <= MERGE_RANGE*2 \
+                and area.intersects(vector):
                     self.borders.remove(vector)
-                else:
-                    ii += 1
-            self.areas_unmerged.pop(0)
 
     def routeIsSet(self):
         return len(self.waypoints)

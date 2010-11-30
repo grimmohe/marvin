@@ -55,6 +55,11 @@ class TestAreaIntersections(unittest.TestCase):
         vector = Vector(Point(1, -3), Point(7, -1))
         self.failIf(area.intersects(vector))
 
+    def testIntersectionWithin_Field1(self):
+        area = Area(Point(-20, 29.44527), Point(20, 29.44527), Point(-20, 58.37973))
+        vector = Vector(Point(-19.46, 58.23), Point(5.15, 22.67))
+        self.failUnless(area.intersects(vector))
+
 class TestMapGetCollisions(unittest.TestCase):
 
     def testGetCollisionsNone(self):
