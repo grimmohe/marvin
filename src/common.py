@@ -71,18 +71,17 @@ class Actionlog:
                 self.actions[0].value = value
 
             else:
-                start_value = self.getActionValue(action)
+                if action in self.SERIAL_BREAK:
+                    start_value = .0
+                else:
+                    start_value = self.getActionValue(action)
 
-                if start_value == value:
-                    return 1
+                    if start_value == value:
+                        return 1
 
-                if start_value == None \
-                or not action in self.SERIAL:
-                    start_value = 0.0
-
-                if action in self.SERIAL \
-                and (0 < start_value > value or 0 > start_value < value):
-                    start_value = 0.0
+                    if start_value == None \
+                    or not action in self.SERIAL:
+                        start_value = .0
 
                 self.actions.insert(0, ActionlogEntry(action, value, start_value))
         return 1
