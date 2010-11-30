@@ -16,6 +16,7 @@ import map
 import ServerControl
 import callback as cb
 import gtk.gdk as gdk
+import math
 gtk.gdk.threads_init()
 
 MARSRV = "MarvinServer"
@@ -123,10 +124,8 @@ class ClientTabPage(TabPage):
         self.toolbar.pack_start(self.btndel, False, 0)
 
         self.mainWidget.resize(1,2)
-        self.mainWidget.attach(self.mapvis.getDiv(), 1,2,0,1, 0, 0, 0, 0)
-
-        #self.mapvis.run()
-        self.mapvis.width 
+        #self.mainWidget.attach(self.mapvis, 1,2,0,1, 0, 0, 0, 0)
+        self.mainWidget.attach(self.mapvis, 1,2,0,1, gtk.FILL, gtk.FILL, 0, 0)
 
         self.mainWidget.show_all()
         self.clientContainer = clientContainer
@@ -156,7 +155,8 @@ class ClientTabPage(TabPage):
         return self.mainWidget
 
     def mapvisRefresh(self):
-        self.mapvis.update()
+        #self.mapvis.expose()
+        gtk.Widget.queue_draw(self.mapvis)
 
 class BBox:
     
@@ -180,17 +180,18 @@ class BBox:
             self.maxy = y
 
 
-class MapVisual:
+class MapVisual(gtk.DrawingArea):
 
     def __init__(self, _map, height, width):
-        self.area = gnomecanvas.Canvas(aa=True)
+        gtk.DrawingArea.__init__(self)
+        self.connect("expose_event", self.expose)
         self.map = _map
         self.height = height
         self.width = width
-        self.drw = None
-        self.area.set_size_request(height, width)
-        self.area.connect("draw-background", self.update)
+        self.set_size_request(height, width)
+        self.context = None
         self.lock=False
+        
         if not self.map:
             """ some rtesting stuff ifnot map is set """
             print "using test map"
@@ -222,22 +223,44 @@ class MapVisual:
             self.map.borders.add(map.Vector(map.Point(5.5,3), map.Point(6.5,3)))
             self.map.borders.add(map.Vector(map.Point(6,3), map.Point(6,4)))
             """
+        
+    def expose(self, widget, event):
+        print "expose"
+        self.context = widget.window.cairo_create()
+        self.context.rectangle(event.area.x, event.area.y,
+                       event.area.width, event.area.height)
+        
+        self.context.clip()
+        
+        self.draw(self.context)
+        
+        return False
 
-    def getDiv(self):
-        return self.area
+    def draw(self, context):
+        print "draw"
+        rect = self.get_allocation()
+        
+        x=0
+        y=0
+        width=rect.width
+        height=rect.height
+        print x, y, width, height
+        
+        self.update()
 
     def show(self):
         self.update()
 
     def update(self, arg1="", arg2="", arg3="", arg4="", arg5="", user_data=""):
-        
-        if self.lock:
+
+        if not self.context or self.lock:
+            print "silent return"
             return
         
         self.lock=True
         print "MapVisual update"
         minx = miny = maxx = maxy = xoffset = yoffset = 0
-        self.drw = self.area.root()
+        #self.drw = self.area.root()
         self.ratiox=0
         self.ratioy=0
         self.offsetx=0
@@ -245,16 +268,27 @@ class MapVisual:
 
         print "rect dimmensions: w: " + str(self.width) + " h: " + str(self.height)
 
-        for item in self.drw.item_list:
-            self.drw.item_list.remove(item)
-        
+        #for item in self.drw.item_list:
+        #    self.drw.item_list.remove(item)
+            
+        """        
         self.drw.add("GnomeCanvasRect",
                 fill_color='black',
                 x1=0,
                 x2=self.width,
                 y1=0,
                 y2=self.height)
+        """
         
+        self.context.new_path();
+        self.context.rectangle(0,0,self.width, self.height) 
+        self.context.close_path();
+        
+        self.context.set_source_rgb(0, 0, 0)
+        self.context.fill_preserve()
+        self.context.set_source_rgb(0, 0, 0)
+        self.context.stroke()
+                
         bbox = BBox() 
 
         for vec in self.map.borders.getAllBorders():
@@ -313,7 +347,7 @@ class MapVisual:
         
         for vec in self.map.borders.getAllBorders():
             ep=vec.getEndPoint()
-            self.drawLine(vec.point.x, vec.point.y, ep.x, ep.y,colors[count])
+            self.drawLine(vec.point.x, vec.point.y, ep.x, ep.y,0)
             if count == 2:
                 count = 0
             else:
@@ -323,9 +357,9 @@ class MapVisual:
 
         for area in self.map.areas:
             ep=vec.getEndPoint()
-            self.drawLine(area.p1.x, area.p1.y, area.p2.x, area.p2.y, colors[count])
-            self.drawLine(area.p2.x, area.p2.y, area.p3.x, area.p3.y, colors[count])
-            self.drawLine(area.p3.x, area.p3.y, area.p1.x, area.p1.y, colors[count])
+            self.drawLine(area.p1.x, area.p1.y, area.p2.x, area.p2.y, 1)
+            self.drawLine(area.p2.x, area.p2.y, area.p3.x, area.p3.y, 1)
+            self.drawLine(area.p3.x, area.p3.y, area.p1.x, area.p1.y, 1)
             if count == 2:
                 count = 0
             else:
@@ -335,20 +369,21 @@ class MapVisual:
         self.lock=False           
                 
     def drawLine(self, x1, y1, x2, y2, coleur):
-        print "1: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + coleur
+        print "1: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
         
         x1 = (x1 / self.ratiox) + self.offsetx
         x2 = (x2 / self.ratiox) + self.offsetx
         y1 = (y1 / self.ratioy) + self.offsety
         y2 = (y2 / self.ratioy) + self.offsety
 
-        print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2) + ", color: " + coleur
+        print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
 
         if (x1 < 0 or x1 > self.width or x2 < 0 or x2 > self.width 
             or y1 < 0 or y1 > self.height or y2 < 0 or y2 > self.height):
             print "error, coord out of range"
             return
-                    
+        
+        """            
         item = self.drw.add("GnomeCanvasLine",
             fill_color=coleur,
             width_pixels=1,
@@ -356,7 +391,28 @@ class MapVisual:
         
         if not item:
             print "item not valid"
+        """
+        
+        self.context.new_path()
+        self.context.move_to(int(x1),int(y1))
+        self.context.line_to(int(x2),int(y2))
+        self.context.close_path()
+        
+        if coleur == 0:
+            r=0
+            g=0
+            b=1
+        else:
+            r=0
+            g=1
+            b=0 
 
+        self.context.set_source_rgb(r, g, b)
+        self.context.fill_preserve()
+        self.context.set_source_rgb(r, g, b)
+        self.context.stroke()
+        
+        
 class TabBox:
 
     def __init__(self):
