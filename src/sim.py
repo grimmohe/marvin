@@ -61,6 +61,7 @@ class Cleaner:
 
     def reset(self):
         self.head_down     = False
+        self.jobs          = []
         self.position      = {"x": 20.5, "y": 20.5}
         self.starttime     = 0.0
         self.action        = 0
@@ -70,44 +71,48 @@ class Cleaner:
 
     def cb_engine(self, data):
         """ Callback für die Motorsteuerung """
-        data = string.split(data, "=")
-        now = time.time()
-        if data[0] == "drive":
-            self.set_position(now)
-            if data[1] == "1":
-                print "drive 1"
-                self.action = (self.action | self.ACTION_DRIVE)
-            else:
-                print "drive n"
-                self.action = self.ACTION_HALTED
-                self.send_data(now)
-                self.engine.write("halt=0")
-        elif data[0] == "turn":
-            self.set_position(now)
-            if data[1] == "left":
-                print "turn left"
-                self.action = self.ACTION_TURN_LEFT
-            elif data[1] == "right":
-                print "turn right"
-                self.action = self.ACTION_TURN_RIGHT
-            else:
-                print "turn stop"
-                self.action = self.ACTION_HALTED
-                self.send_data(now)
-                self.engine.write("halt=0")
-        elif data[0] == "reset":
-            self.reset()
+        self.jobs.append(data)
+        print data
 
     def cb_head(self, data):
         """ Callback für Saugkopf(/Head-)steuerung """
-        data = string.split(data, "=")
-        print "head does: ", data
-        if data[0] == "move":
-            if data[1] == "up":
-                self.head_down = False
-            elif data[1] == "down":
-                self.head_down = True
-            self.head.write("position=%s" % ["up", "down"][self.head_down])
+        self.jobs.append(data)
+
+    def execute(self, current_time):
+        """ Ausführen der angefallenen Jobs """
+        if self.jobs:
+            print "execute jobs"
+        while self.jobs:
+            data = string.split(self.jobs[0], "=")
+            self.jobs.pop(0)
+
+            if data[0] == "drive":
+                self.set_position(current_time)
+                if data[1] == "1":
+                    self.action = (self.action | self.ACTION_DRIVE)
+                else:
+                    self.action = self.ACTION_HALTED
+                    self.engine.write("halt=0")
+
+            elif data[0] == "turn":
+                self.set_position(current_time)
+                if data[1] == "left":
+                    self.action = self.ACTION_TURN_LEFT
+                elif data[1] == "right":
+                    self.action = self.ACTION_TURN_RIGHT
+                else:
+                    self.action = self.ACTION_HALTED
+                    self.engine.write("halt=0")
+
+            elif data[0] == "move":
+                if data[1] == "up":
+                    self.head_down = False
+                elif data[1] == "down":
+                    self.head_down = True
+                self.head.write("position=%s" % ["up", "down"][self.head_down])
+
+            elif data[0] == "reset":
+                self.reset()
 
     def set_position(self, current_time):
         """
@@ -324,7 +329,11 @@ class Simulator:
                         status = abs(r[0])
 
             sensor[0]["o"]["status"] = min(sensor[0]["o"]["status"], status)
+
         self.client.send_data(now)
+
+        self.client.execute(now)
+
         return 1
 
     def getRatio(self, sensor, line):
