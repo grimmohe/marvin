@@ -412,12 +412,10 @@ class Router:
                                                       Point(0, 1).getTurned(position.orientation)),
                                                directionVector)
             if ratio and ratio[0] > 0:
-                self.actionHead(headUp=True, cb_addAction=cb_addAction)
                 self.actionTurn(position,
                                 goAngle=180,
                                 cb_getSensorList=cb_getSensorList,
                                 cb_addAction=cb_addAction)
-                self.actionHead(headUp=False, cb_addAction=cb_addAction)
                 turned = True
 
             a1 = Vector(position.point, endPoint=directionVector.getStartPoint()).getAngle()
@@ -573,9 +571,15 @@ class Router:
                     goAngle -= 360
                     direction = xmltemplate.DIRECTION_LEFT
 
+            cb_addAction(xmltemplate.TEMPLATE_HEAD,
+                         headMovement=xmltemplate.HEAD_UP)
+
             cb_addAction(xmltemplate.TEMPLATE_TURN_ANGLE,
                          direction=direction,
                          targetAngle=goAngle)
+
+            cb_addAction(xmltemplate.TEMPLATE_HEAD,
+                         headMovement=xmltemplate.HEAD_DOWN)
 
     #TODO: prepare is never called
     def prepare(self, borders=BorderList()):
