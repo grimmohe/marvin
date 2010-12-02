@@ -72,7 +72,6 @@ class Cleaner:
     def cb_engine(self, data):
         """ Callback für die Motorsteuerung """
         self.jobs.append(data)
-        print data
 
     def cb_head(self, data):
         """ Callback für Saugkopf(/Head-)steuerung """
@@ -81,9 +80,10 @@ class Cleaner:
     def execute(self, current_time):
         """ Ausführen der angefallenen Jobs """
         if self.jobs:
-            print "execute jobs"
+            print "== execute jobs =="
         while self.jobs:
             data = string.split(self.jobs[0], "=")
+            print self.jobs[0]
             self.jobs.pop(0)
 
             if data[0] == "drive":
