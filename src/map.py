@@ -725,10 +725,13 @@ class Map:
 
         """ delete all borders in conflict with self.areas """
         for area in self.areas:
-            for vector in self.borders.borders:
-                if area.p1.getDistanceTo(vector.point) <= MERGE_RANGE*2 \
-                and area.intersects(vector):
+            ii = 0
+            while ii < self.borders.count():
+                vector = self.borders.get(ii)
+                if area.intersects(vector):
                     self.borders.remove(vector)
+                else:
+                    ii+=1
 
     def routeIsSet(self):
         return len(self.waypoints)
