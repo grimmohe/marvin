@@ -8,14 +8,14 @@
 
 		<assignment id="1" start="engine:drive=1" end="engine:drive=0">
 			<!-- rechts/links mit einer distanz von .4 <> .6 halten -->
-			<event ifarg1="$base-sensor:distance" ifcompare="ge" ifarg2="0.6" then="a#=2" final="true"/>
-			<event ifarg1="$base-sensor:distance" ifcompare="le" ifarg2="0.4" then="a#=3" final="true"/>
+			<event ifarg1="$base-sensor:distance" ifcompare="g" ifarg2="0.6" then="a#=2" final="true"/>
+			<event ifarg1="$base-sensor:distance" ifcompare="l" ifarg2="0.4" then="a#=3" final="true"/>
 		</assignment>
 		<assignment id="2" start="engine:turn=$direction" end="engine:turn=stop">
-			<event ifarg1="$base-sensor:distance" ifcompare="le" ifarg2="0.6" then="a#=1" final="true"/>
+			<event ifarg1="$base-sensor:distance" ifcompare="le" ifarg2="0.5" then="a#=1" final="true"/>
 		</assignment>
 		<assignment id="3" start="engine:turn=$opposite-direction" end="engine:turn=stop">
-			<event ifarg1="$base-sensor:distance" ifcompare="ge" ifarg2="0.4" then="a#=1" final="true"/>
+			<event ifarg1="$base-sensor:distance" ifcompare="ge" ifarg2="0.5" then="a#=1" final="true"/>
 		</assignment>
 	</assignment>
 </assignment>
