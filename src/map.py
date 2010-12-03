@@ -326,6 +326,7 @@ class Area:
 
     def intersects(self, vector):
         """ returns True, if vector is intersecting or within the area """
+
         size12 = Point(self.p2.x - self.p1.x, self.p2.y - self.p1.y)
         size13 = Point(self.p3.x - self.p1.x, self.p3.y - self.p1.y)
         size23 = Point(self.p3.x - self.p2.x, self.p3.y - self.p2.y)
@@ -334,30 +335,15 @@ class Area:
         ratio13 = getVectorIntersectionRatio(Vector(self.p1, size13), vector)
         ratio23 = getVectorIntersectionRatio(Vector(self.p2, size23), vector)
 
-        intersecting = False
-
-        if ratio12 and ratio13 and 0<=ratio12[0]<=1 and 0<=ratio13[0]<=1:
-            intersecting = (0<=ratio12[1]<=1
-                            or
-                            0<=ratio13[1]<=1
-                            or
-                            ((ratio12[1]<0) <> (ratio13[1]<0)))
-        if ratio23 and 0<=ratio23[0]<=1 and ratio12 and 0<=ratio12[0]<=1:
-            intersecting = (intersecting
-                            or
-                            0<=ratio23[1]<=1
-                            or
-                            0<=ratio12[1]<=1
-                            or
-                            ((ratio23[1]<0) <> (ratio12[1]<0)))
-        if ratio23 and 0<=ratio23[0]<=1 and ratio13 and 0<=ratio13[0]<=1:
-            intersecting = (intersecting
-                            or
-                            0<=ratio23[1]<=1
-                            or
-                            0<=ratio13[1]<=1
-                            or
-                            ((ratio23[1]<0) <> (ratio13[1]>0)))
+        intersecting = (ratio12 and 0<=ratio12[0]<=1 and 0<=ratio12[1]<=1) \
+                    or (ratio13 and 0<=ratio13[0]<=1 and 0<=ratio13[1]<=1) \
+                    or (ratio23 and 0<=ratio23[0]<=1 and 0<=ratio23[1]<=1) \
+                    or (ratio12 and ratio13 and 0<=ratio12[0]<=1 and 0<=ratio13[0]<=1
+                        and (ratio12[1]<0) <> (ratio13[1]<0)) \
+                    or (ratio12 and ratio23 and 0<=ratio12[0]<=1 and 0<=ratio23[0]<=1
+                        and (ratio12[1]<0) <> (ratio23[1]<0)) \
+                    or (ratio13 and ratio23 and 0<=ratio13[0]<=1 and 0<=ratio23[0]<=1
+                        and (ratio13[1]<0) <> (ratio23[1]<0))
 
         return intersecting
 
@@ -437,6 +423,7 @@ class Router:
                          direction=direction,
                          baseSensor=sensorsTouching,
                          untouchedSensor=[])
+
         cb_addAction(xmltemplate.TEMPLATE_DISCOVER,
                      direction=direction,
                      baseSensor=sensorsTouching,
