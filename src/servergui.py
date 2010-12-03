@@ -125,7 +125,7 @@ class ClientTabPage(TabPage):
 
         self.mainWidget.resize(1,2)
         #self.mainWidget.attach(self.mapvis, 1,2,0,1, 0, 0, 0, 0)
-        self.mainWidget.attach(self.mapvis, 1,2,0,1, gtk.FILL, gtk.FILL, 0, 0)
+        self.mainWidget.attach(self.mapvis, 1,2,0,1, gtk.EXPAND, gtk.EXPAND, 0, 0)
 
         self.mainWidget.show_all()
         self.clientContainer = clientContainer
@@ -181,10 +181,10 @@ class BBox:
             self.maxy = y
 
     def adjust(self, x, y):
-        factor = min((float(self.displaySize[0]) / (self.maxx - self.minx)),
-                     (float(self.displaySize[1]) / (self.maxy - self.miny)))
-        return (self.displaySize[1] - int((x - self.minx) * factor),
-                int((y - self.miny) * factor))
+        factor = min((float(self.displaySize[0]) / (self.maxx - self.minx + 4)),
+                     (float(self.displaySize[1]) / (self.maxy - self.miny + 4)))
+        return (int((x - self.minx + 2) * factor),
+                self.displaySize[1] - int((y - self.miny + 2) * factor))
 
 
 class MapVisual(gtk.DrawingArea):
@@ -297,6 +297,7 @@ class MapVisual(gtk.DrawingArea):
         self.context.stroke()
                 
         bbox = BBox() 
+        bbox.displaySize=(200,200)
 
         for vec in self.map.borders.getAllBorders():
             sp=vec.getStartPoint()
@@ -314,10 +315,10 @@ class MapVisual(gtk.DrawingArea):
         miny = bbox.miny
         maxx = bbox.maxx
         maxy = bbox.maxy
-        
+        """
         self.ratiox = ((maxx - minx) / (self.width))
         self.ratioy = ((maxy - miny) / (self.height))
-
+        
         print "ratiox: " + str(self.ratiox)
         print "ratioy: " + str(self.ratioy)
         
@@ -330,10 +331,7 @@ class MapVisual(gtk.DrawingArea):
             self.offsetx = (minx / self.ratiox)*-1
         if miny < 0:
             self.offsety = (miny / self.ratioy)*-1
-            
-        count = 0
-        colors = ["red","blue", "green"]
-        
+    
         print "minx: " + str(minx)
         print "maxx: " + str(maxx)
         print "diff: " + str(maxx - minx)
@@ -349,41 +347,36 @@ class MapVisual(gtk.DrawingArea):
             return;
 
         count = 0
+        """
+        
+        print "draw areas"
+
+        for area in self.map.areas:
+            self.drawLine(area.p1.x, area.p1.y, area.p2.x, area.p2.y, 1, bbox)
+            self.drawLine(area.p2.x, area.p2.y, area.p3.x, area.p3.y, 1, bbox)
+            self.drawLine(area.p3.x, area.p3.y, area.p1.x, area.p1.y, 1, bbox)
 
         print "draw borders"
         
         for vec in self.map.borders.getAllBorders():
             ep=vec.getEndPoint()
-            self.drawLine(vec.point.x, vec.point.y, ep.x, ep.y,0)
-            if count == 2:
-                count = 0
-            else:
-                count += 1
-
-        print "draw areas"
-
-        for area in self.map.areas:
-            ep=vec.getEndPoint()
-            self.drawLine(area.p1.x, area.p1.y, area.p2.x, area.p2.y, 1)
-            self.drawLine(area.p2.x, area.p2.y, area.p3.x, area.p3.y, 1)
-            self.drawLine(area.p3.x, area.p3.y, area.p1.x, area.p1.y, 1)
-            if count == 2:
-                count = 0
-            else:
-                count += 1 
+            self.drawLine(vec.point.x, vec.point.y, ep.x, ep.y,0, bbox)
         
         print "done printing"    
         self.lock=False           
                 
-    def drawLine(self, x1, y1, x2, y2, coleur):
-        print "1: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
+    def drawLine(self, x1, y1, x2, y2, coleur, bbox):
+        #print "1: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
         
+        x1,y1=bbox.adjust(x1, y1)
+        x2,y2=bbox.adjust(x2, y2)
+        """
         x1 = (x1 / self.ratiox) + self.offsetx
         x2 = (x2 / self.ratiox) + self.offsetx
         y1 = (y1 / self.ratioy) + self.offsety
         y2 = (y2 / self.ratioy) + self.offsety
-
-        print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
+        """
+        #print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
 
         if (x1 < 0 or x1 > self.width or x2 < 0 or x2 > self.width 
             or y1 < 0 or y1 > self.height or y2 < 0 or y2 > self.height):
@@ -414,6 +407,8 @@ class MapVisual(gtk.DrawingArea):
             g=1
             b=0 
 
+        
+        #self.context.set_line_width(1)
         self.context.set_source_rgb(r, g, b)
         self.context.fill_preserve()
         self.context.set_source_rgb(r, g, b)
