@@ -57,7 +57,7 @@ class ClientContainer(threading.Thread):
                                     sensorOffset = None
                                     if self.devs[sdev].has_key("orientation") \
                                     and self.devs[sdev].has_key("distance"):
-                                        sensorOffset = self.devs[sdev]["orientation"].copy(orientation=self.position.orientation)
+                                        sensorOffset = self.devs[sdev]["orientation"].copy()
                                         sensorOffset.size.x *= self.devs[sdev]["distance"]
                                         sensorOffset.size.y *= self.devs[sdev]["distance"]
                                     # here the sensor vector is copied to start and end point of the movement
