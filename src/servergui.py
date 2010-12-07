@@ -11,12 +11,12 @@ import server
 import loggerGtk
 import logger
 import time
-import gnomecanvas
 import map
 import ServerControl
 import callback as cb
 import gtk.gdk as gdk
 import math
+import cairo
 gtk.gdk.threads_init()
 
 MARSRV = "MarvinServer"
@@ -125,7 +125,7 @@ class ClientTabPage(TabPage):
 
         self.mainWidget.resize(1,2)
         #self.mainWidget.attach(self.mapvis, 1,2,0,1, 0, 0, 0, 0)
-        self.mainWidget.attach(self.mapvis, 1,2,0,1, gtk.EXPAND, gtk.EXPAND, 0, 0)
+        self.mainWidget.attach(self.mapvis, 1,2,0,1, gtk.FILL|gtk.EXPAND, gtk.FILL|gtk.EXPAND, 0, 0)
 
         self.mainWidget.show_all()
         self.clientContainer = clientContainer
@@ -198,6 +198,8 @@ class MapVisual(gtk.DrawingArea):
         self.set_size_request(height, width)
         self.context = None
         self.lock=False
+        self.renderWidth = 1024
+        self.renderHeight = 1024
         
         if not self.map:
             """ some rtesting stuff ifnot map is set """
@@ -207,29 +209,30 @@ class MapVisual(gtk.DrawingArea):
             self.map.borders.add(map.Vector(map.Point(-20,20), map.Point(40,0)))
             self.map.borders.add(map.Vector(map.Point(20,20), map.Point(0,-40)))
             self.map.borders.add(map.Vector(map.Point(20,-20), map.Point(-40,0)))
-        
+
     def expose(self, widget, event):
-        print "expose"
-        self.context = widget.window.cairo_create()
-        self.context.rectangle(event.area.x, event.area.y,
-                       event.area.width, event.area.height)
-        
-        self.context.clip()
-        
-        self.draw(self.context)
+        print "expose", event.area.width, event.area.height
+        resized = ((self.height != event.area.height) or (self.width != event.area.width))
+        resized = False;
+        self.width = min(event.area.width, event.area.height) 
+        self.height = self.width
+
+        print "resized:", resized
+        if not resized:        
+            self.context = widget.window.cairo_create()
+            self.context.set_antialias(cairo.ANTIALIAS_NONE)
+            self.context.set_line_width(1.0)
+            self.context.rectangle(0,0,self.width, self.height) 
+            self.context.clip()
+            self.draw(self.context)
+
+        #self.context.scale(self.width, self.height)
         
         return False
 
     def draw(self, context):
         print "draw"
         rect = self.get_allocation()
-        
-        x=0
-        y=0
-        width=rect.width
-        height=rect.height
-        print x, y, width, height
-        
         self.update()
 
     def show(self):
@@ -242,27 +245,9 @@ class MapVisual(gtk.DrawingArea):
             return
         
         self.lock=True
+        
         print "MapVisual update"
-        minx = miny = maxx = maxy = xoffset = yoffset = 0
-        #self.drw = self.area.root()
-        self.ratiox=0
-        self.ratioy=0
-        self.offsetx=0
-        self.offsety=0
-
         print "rect dimmensions: w: " + str(self.width) + " h: " + str(self.height)
-
-        #for item in self.drw.item_list:
-        #    self.drw.item_list.remove(item)
-            
-        """        
-        self.drw.add("GnomeCanvasRect",
-                fill_color='black',
-                x1=0,
-                x2=self.width,
-                y1=0,
-                y2=self.height)
-        """
         
         self.context.new_path();
         self.context.rectangle(0,0,self.width, self.height) 
@@ -274,7 +259,7 @@ class MapVisual(gtk.DrawingArea):
         self.context.stroke()
                 
         bbox = BBox() 
-        bbox.displaySize=(200,200)
+        bbox.displaySize=(self.height, self.width)
 
         for vec in self.map.borders.getAllBorders():
             sp=vec.getStartPoint()
