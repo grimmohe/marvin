@@ -327,6 +327,9 @@ class Area:
     def intersects(self, vector):
         """ returns True, if vector is intersecting or within the area """
 
+        r = []
+        ret = (False, [])
+
         size12 = Point(self.p2.x - self.p1.x, self.p2.y - self.p1.y)
         size13 = Point(self.p3.x - self.p1.x, self.p3.y - self.p1.y)
         size23 = Point(self.p3.x - self.p2.x, self.p3.y - self.p2.y)
@@ -335,17 +338,37 @@ class Area:
         ratio13 = getVectorIntersectionRatio(Vector(self.p1, size13), vector)
         ratio23 = getVectorIntersectionRatio(Vector(self.p2, size23), vector)
 
-        intersecting = (ratio12 and 0<=ratio12[0]<=1 and 0<=ratio12[1]<=1) \
-                    or (ratio13 and 0<=ratio13[0]<=1 and 0<=ratio13[1]<=1) \
-                    or (ratio23 and 0<=ratio23[0]<=1 and 0<=ratio23[1]<=1) \
-                    or (ratio12 and ratio13 and 0<=ratio12[0]<=1 and 0<=ratio13[0]<=1
-                        and (ratio12[1]<0) <> (ratio13[1]<0)) \
-                    or (ratio12 and ratio23 and 0<=ratio12[0]<=1 and 0<=ratio23[0]<=1
-                        and (ratio12[1]<0) <> (ratio23[1]<0)) \
-                    or (ratio13 and ratio23 and 0<=ratio13[0]<=1 and 0<=ratio23[0]<=1
-                        and (ratio13[1]<0) <> (ratio23[1]<0))
 
-        return intersecting
+
+        if (ratio12 and 0<=ratio12[0]<=1):
+            r.append(ratio12[1])
+        if (ratio13 and 0<=ratio13[0]<=1):
+            r.append(ratio13[1])
+        if (ratio23 and 0<=ratio23[0]<=1):
+            r.append(ratio23[1])
+
+        if r:
+            r.sort()
+
+            # vector is surrounded by this area
+            if r[0] <= 0 and r[-1] >= 1:
+                ret = (True, [])
+
+            # partwise overlapping
+            else:
+                rt = [ratio for ratio in r if 0<ratio<1]
+
+                addition = MERGE_RANGE / vector.len()
+
+                if len(rt) == 2:
+                    ret = (True, [(.0, rt[0]-addition), (rt[1]+addition, 1.0)])
+                elif len(rt) == 1:
+                    if r[0] < .0:
+                        ret = (True, [(rt[0]+addition, 1.0)])
+                    elif r[-1] > 1.0:
+                        ret = (True, [(.0, rt[0]-addition)])
+
+        return ret
 
 class Router:
 
@@ -691,6 +714,26 @@ class Map:
         return collisions
 
     def merge(self):
+
+        """ delete all borders in conflict with self.areas """
+        print "=== merge ==="
+        for area in self.areas:
+            ii = 0
+            while ii < self.borders.count():
+                vector = self.borders.get(ii)
+                intersection = area.intersects(vector)
+                if intersection[0]:
+                    for hangover in intersection[1]:
+                        v = Vector(Point(vector.point.x + vector.size.x * hangover[0],
+                                         vector.point.y + vector.size.y * hangover[0]),
+                                   endPoint=Point(vector.point.x + vector.size.x * hangover[1],
+                                                  vector.point.y + vector.size.y * hangover[1]))
+                        self.borders.add(v)
+
+                    self.borders.remove(vector)
+                else:
+                    ii+=1
+
         """ merge borders that could be one """
         enum = Enumerator(self.borders)
         while enum.next():
@@ -709,16 +752,6 @@ class Map:
                         v1.merge(v2)
                         subenum.prev()
                         self.borders.remove(v2)
-
-        """ delete all borders in conflict with self.areas """
-        for area in self.areas:
-            ii = 0
-            while ii < self.borders.count():
-                vector = self.borders.get(ii)
-                if area.intersects(vector):
-                    self.borders.remove(vector)
-                else:
-                    ii+=1
 
     def routeIsSet(self):
         return len(self.waypoints)
