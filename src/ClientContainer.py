@@ -89,7 +89,7 @@ class ClientContainer(threading.Thread):
                     if self.devs[dev]["touch"]:
                         sensorOffset = None
                         if self.devs[dev].has_key("orientation"):
-                            sensorOffset = self.devs[dev]["orientation"].copy(orientation=self.position.orientation)
+                            sensorOffset = self.devs[dev]["orientation"].copy()
                             sensorOffset.size.x *= action.value
                             sensorOffset.size.y *= action.value
                         self.map.borders.add(self.devs[dev]["dimension"].copy(map.Point(self.position.point.x,
