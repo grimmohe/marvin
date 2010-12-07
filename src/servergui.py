@@ -207,29 +207,6 @@ class MapVisual(gtk.DrawingArea):
             self.map.borders.add(map.Vector(map.Point(-20,20), map.Point(40,0)))
             self.map.borders.add(map.Vector(map.Point(20,20), map.Point(0,-40)))
             self.map.borders.add(map.Vector(map.Point(20,-20), map.Point(-40,0)))
-            """
-            self.map.borders.add(map.Vector(map.Point(0,0), map.Point(0,10)))
-            self.map.borders.add(map.Vector(map.Point(0,10), map.Point(10,10)))
-            self.map.borders.add(map.Vector(map.Point(10,10), map.Point(10,0)))
-            self.map.borders.add(map.Vector(map.Point(0,0), map.Point(10,5)))
-            #T
-            self.map.borders.add(map.Vector(map.Point(0.5,3), map.Point(1.5,3)))
-            self.map.borders.add(map.Vector(map.Point(1,3), map.Point(1,4)))
-            #E
-            self.map.borders.add(map.Vector(map.Point(2,3), map.Point(3,3)))
-            self.map.borders.add(map.Vector(map.Point(2,3.5), map.Point(3,3.5)))
-            self.map.borders.add(map.Vector(map.Point(2,4), map.Point(3,4)))
-            self.map.borders.add(map.Vector(map.Point(2,3), map.Point(2,4)))
-            #S
-            self.map.borders.add(map.Vector(map.Point(4,3), map.Point(5,3)))
-            self.map.borders.add(map.Vector(map.Point(4,3), map.Point(4,3.5)))
-            self.map.borders.add(map.Vector(map.Point(4,3.5), map.Point(5,3.5)))
-            self.map.borders.add(map.Vector(map.Point(5,3.5), map.Point(5,4)))
-            self.map.borders.add(map.Vector(map.Point(4,4), map.Point(5,4)))
-            #T
-            self.map.borders.add(map.Vector(map.Point(5.5,3), map.Point(6.5,3)))
-            self.map.borders.add(map.Vector(map.Point(6,3), map.Point(6,4)))
-            """
         
     def expose(self, widget, event):
         print "expose"
@@ -259,7 +236,7 @@ class MapVisual(gtk.DrawingArea):
         self.update()
 
     def update(self, arg1="", arg2="", arg3="", arg4="", arg5="", user_data=""):
-
+        
         if not self.context or self.lock:
             print "silent return"
             return
@@ -315,39 +292,6 @@ class MapVisual(gtk.DrawingArea):
         miny = bbox.miny
         maxx = bbox.maxx
         maxy = bbox.maxy
-        """
-        self.ratiox = ((maxx - minx) / (self.width))
-        self.ratioy = ((maxy - miny) / (self.height))
-        
-        print "ratiox: " + str(self.ratiox)
-        print "ratioy: " + str(self.ratioy)
-        
-        if self.ratiox > self.ratioy:
-            self.ratioy = self.ratiox;
-        else:
-            self.ratiox = self.ratioy;
-        
-        if minx < 0:
-            self.offsetx = (minx / self.ratiox)*-1
-        if miny < 0:
-            self.offsety = (miny / self.ratioy)*-1
-    
-        print "minx: " + str(minx)
-        print "maxx: " + str(maxx)
-        print "diff: " + str(maxx - minx)
-        print "miny: " + str(miny)
-        print "maxy: " + str(maxy)
-        print "diff: " + str(maxy - miny)
-        print "ratiox: " + str(self.ratiox)
-        print "ratioy: " + str(self.ratioy)
-        # avoid zero deivision
-        if self.ratiox == 0 or self.ratioy == 0:
-            print "avoid zero division"
-            self.lock=False
-            return;
-
-        count = 0
-        """
         
         print "draw areas"
 
@@ -370,28 +314,12 @@ class MapVisual(gtk.DrawingArea):
         
         x1,y1=bbox.adjust(x1, y1)
         x2,y2=bbox.adjust(x2, y2)
-        """
-        x1 = (x1 / self.ratiox) + self.offsetx
-        x2 = (x2 / self.ratiox) + self.offsetx
-        y1 = (y1 / self.ratioy) + self.offsety
-        y2 = (y2 / self.ratioy) + self.offsety
-        """
         #print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
 
         if (x1 < 0 or x1 > self.width or x2 < 0 or x2 > self.width 
             or y1 < 0 or y1 > self.height or y2 < 0 or y2 > self.height):
             print "error, coord out of range"
             return
-        
-        """            
-        item = self.drw.add("GnomeCanvasLine",
-            fill_color=coleur,
-            width_pixels=1,
-            points=[x1, y1, x2, y2])
-        
-        if not item:
-            print "item not valid"
-        """
         
         self.context.new_path()
         self.context.move_to(int(x1),int(y1))
@@ -406,7 +334,6 @@ class MapVisual(gtk.DrawingArea):
             r=0
             g=1
             b=0 
-
         
         #self.context.set_line_width(1)
         self.context.set_source_rgb(r, g, b)
