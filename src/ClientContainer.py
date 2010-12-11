@@ -15,6 +15,8 @@ class ClientContainer(threading.Thread):
     def __init__(self, clientConnection):
         threading.Thread.__init__(self)
         self.position = map.Position()
+        self.xExtent = {"min": .0, "max":.0}
+        self.yExtent = {"min": .0, "max":.0}
         self.map = map.Map()
         self.devs = {}
         self.clientConnection = clientConnection
@@ -22,24 +24,30 @@ class ClientContainer(threading.Thread):
         self.actionlogData = ""
         self.actionlogNew = threading.Event()
         self.stop = False
-        self.x = 0
-        self.y = 0
         self.cbMapRefresh = None
         self.template = xmltemplate.Template()
         self.start()
 
     def assimilateActions(self, actionlog):
         """ turn the cliens action log into a map and if send, get some other infos """
+
+        self.moveStartPosition = None
+
+        self.map.areaMoveStep(self.position)
+
         for action in actionlog.actions:
             # contains action and value
             dev, key = action.action.lower().split(":")
 
             if dev == "engine" and self.devs.has_key(dev):
                 if key == "turned":
+                    self.map.areaMoveStep(self.position, radius=self.devs["self"]["radius"], yExtent=self.yExtent["max"])
+
                     self.position.orientation += action.value
                     for dev in self.devs.values():
                         if dev.has_key("touch"):
                             dev["touch"] = False
+
                 elif key == "distance":
                     newPos = self.position.getPointInDistance(action.value)
 
@@ -47,11 +55,8 @@ class ClientContainer(threading.Thread):
                          and self.devs["head"].has_key("position")
                          and self.devs["head"]["position"] ):
                         for sdev in self.devs:
-                            maxY = .0
                             if self.devs[sdev].has_key("dimension") \
                             and self.devs[sdev]["dimension"]:
-                                maxY = max(maxY, self.devs[sdev]["dimension"].getStartPoint().y, self.devs[sdev]["dimension"].getEndPoint().y)
-
                                 if self.devs[sdev].has_key("touch") \
                                 and self.devs[sdev]["touch"] :
                                     sensorOffset = None
@@ -76,10 +81,9 @@ class ClientContainer(threading.Thread):
                                         self.map.borders.add(v2)
                                     # sensor on end position
                                     self.map.borders.add(v_end)
-                        # area marked as cleaned
-                        self.map.addArea(self.position, action.value + maxY, self.devs["self"]["radius"])
                     # finally accept the new position
                     self.position.point = newPos
+
             else:
                 if not self.devs.has_key(dev):
                     self.devs[dev] = {}
@@ -99,11 +103,18 @@ class ClientContainer(threading.Thread):
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
+                    self.xExtent["min"] = min(self.xExtent["min"], self.devs[dev][key].getStartPoint().x, self.devs[dev][key].getEndPoint().x)
+                    self.xExtent["max"] = max(self.xExtent["max"], self.devs[dev][key].getStartPoint().x, self.devs[dev][key].getEndPoint().x)
+                    self.yExtent["min"] = min(self.yExtent["min"], self.devs[dev][key].getStartPoint().y, self.devs[dev][key].getEndPoint().y)
+                    self.yExtent["max"] = max(self.yExtent["max"], self.devs[dev][key].getStartPoint().y, self.devs[dev][key].getEndPoint().y)
                 elif key == "orientation":
                     size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(0, 0), map.Point(size_x, size_y))
                 elif key in ("radius", "position"):
                     self.devs[dev][key] = float(action.value)
+
+        self.map.areaMoveStep(self.position, radius=self.devs["self"]["radius"], yExtent=self.yExtent["max"])
+
         self.map.merge()
 
         if self.cbMapRefresh:

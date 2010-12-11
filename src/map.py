@@ -616,6 +616,7 @@ class Map:
         self.areas = []
         self.borders = BorderList()
         self.waypoints = []
+        self.moveStartPosition = None
 
     def addArea(self, position, distance, radius):
         """
@@ -660,6 +661,15 @@ class Map:
     def addWaypoint(self, wp=WayPoint(0, 0)):
         """ add a waypoint to current waypoints """
         self.waypoints.append(wp)
+
+    def areaMoveStep(self, position, radius=0, yExtent=0):
+        if self.moveStartPosition:
+            distance = self.moveStartPosition.point.getDistanceTo(position.point)
+
+            if distance:
+                self.addArea(self.moveStartPosition, distance + yExtent, radius)
+
+        self.moveStartPosition = position.copy()
 
     def clearWaypoints(self):
         self.waypoints = []
