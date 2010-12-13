@@ -4,66 +4,8 @@ Created on 10.08.2010
 @author: christoph
 '''
 import unittest
-from map import Area, Map, Point, Position, Vector, BorderList, Router
+from map import Map, Point, Position, Vector, VectorList, Router
 from common import SortedList
-
-
-class TestAreaIntersections(unittest.TestCase):
-
-    def testIntersectionFull(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(1, -3), Point(1, 10))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionHalf_1213(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(3, -1), Point(-2, 2))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionHalf_1223(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(3, -1), Point(0, 2))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionHalf_1323(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(-2, 2), Point(3, 1))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionWithin_1213(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(1, 2), Point(1, -1))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionWithin_1223(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(2, 1), Point(1, 1))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionWithin_1323(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(1, 2), Point(1, 1))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionWithin_HitAll(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(1, 1), Point(1, 1))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionNone(self):
-        area = Area(Point(0, 0), Point(5, 0), Point(0, 5))
-        vector = Vector(Point(1, -3), Point(7, -1))
-        self.failIf(area.intersects(vector)[0])
-
-    def testIntersectionWithin(self):
-        area = Area(Point(-20, 15), Point(20, 15), Point(-20, 40))
-        vector = Vector(Point(-15, 17), Point(5, 10))
-        self.failUnless(area.intersects(vector)[0])
-
-    def testIntersectionOutside_Field1(self):
-        area = Area(Point(-20, 29.44527), Point(20, 29.44527), Point(-20, 58.37973))
-        vector = Vector(Point(-19.46, 58.23), Point(5.15, 22.67))
-        self.failIf(area.intersects(vector)[0])
 
 class TestMapGetCollisions(unittest.TestCase):
 

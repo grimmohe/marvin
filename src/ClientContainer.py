@@ -33,16 +33,12 @@ class ClientContainer(threading.Thread):
 
         self.moveStartPosition = None
 
-        self.map.areaMoveStep(self.position)
-
         for action in actionlog.actions:
             # contains action and value
             dev, key = action.action.lower().split(":")
 
             if dev == "engine" and self.devs.has_key(dev):
                 if key == "turned":
-                    self.map.areaMoveStep(self.position, radius=self.devs["self"]["radius"], yExtent=self.yExtent["max"])
-
                     self.position.orientation += action.value
                     for dev in self.devs.values():
                         if dev.has_key("touch"):
@@ -112,8 +108,6 @@ class ClientContainer(threading.Thread):
                     self.devs[dev][key] = map.Vector(map.Point(0, 0), map.Point(size_x, size_y))
                 elif key in ("radius", "position"):
                     self.devs[dev][key] = float(action.value)
-
-        self.map.areaMoveStep(self.position, radius=self.devs["self"]["radius"], yExtent=self.yExtent["max"])
 
         self.map.merge()
 

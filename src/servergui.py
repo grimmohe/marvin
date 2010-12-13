@@ -100,11 +100,11 @@ class ServerTabPage(TabPage):
         self.logger = None
         self.logger = logger.logger()
         print "ServerTabPage closed"
-        
+
     def onServerRunning(self, attributes):
         if self.name == MARSRV:
             self.sc.server.cbl["onNewClientContainer"].add(cb.CallbackCall(guiinstance.addClientContainer))
-        
+
 
 class ClientTabPage(TabPage):
 
@@ -159,7 +159,7 @@ class ClientTabPage(TabPage):
         gtk.Widget.queue_draw(self.mapvis)
 
 class BBox:
-    
+
     def __init__(self):
         self.minx = 0
         self.miny = 0
@@ -200,7 +200,7 @@ class MapVisual(gtk.DrawingArea):
         self.lock=False
         self.renderWidth = 1024
         self.renderHeight = 1024
-        
+
         if not self.map:
             """ some rtesting stuff ifnot map is set """
             print "using test map"
@@ -214,20 +214,20 @@ class MapVisual(gtk.DrawingArea):
         print "expose", event.area.width, event.area.height
         resized = ((self.height != event.area.height) or (self.width != event.area.width))
         resized = False;
-        self.width = min(event.area.width, event.area.height) 
+        self.width = min(event.area.width, event.area.height)
         self.height = self.width
 
         print "resized:", resized
-        if not resized:        
+        if not resized:
             self.context = widget.window.cairo_create()
             self.context.set_antialias(cairo.ANTIALIAS_NONE)
             self.context.set_line_width(1.0)
-            self.context.rectangle(0,0,self.width, self.height) 
+            self.context.rectangle(0,0,self.width, self.height)
             self.context.clip()
             self.draw(self.context)
 
         #self.context.scale(self.width, self.height)
-        
+
         return False
 
     def draw(self, context):
@@ -239,78 +239,60 @@ class MapVisual(gtk.DrawingArea):
         self.update()
 
     def update(self, arg1="", arg2="", arg3="", arg4="", arg5="", user_data=""):
-        
+
         if not self.context or self.lock:
             print "silent return"
             return
-        
+
         self.lock=True
-        
+
         print "MapVisual update"
         print "rect dimmensions: w: " + str(self.width) + " h: " + str(self.height)
-        
+
         self.context.new_path();
-        self.context.rectangle(0,0,self.width, self.height) 
+        self.context.rectangle(0,0,self.width, self.height)
         self.context.close_path();
-        
+
         self.context.set_source_rgb(0, 0, 0)
         self.context.fill_preserve()
         self.context.set_source_rgb(0, 0, 0)
         self.context.stroke()
-                
-        bbox = BBox() 
+
+        bbox = BBox()
         bbox.displaySize=(self.height, self.width)
 
         for vec in self.map.borders.getAllBorders():
             sp=vec.getStartPoint()
             ep=vec.getEndPoint()
-            
+
             bbox.addPoint(sp.x, sp.y)
             bbox.addPoint(ep.x, ep.y)
 
-        for area in self.map.areas:
-            bbox.addPoint(area.p1.x, area.p1.y)
-            bbox.addPoint(area.p2.x, area.p2.y)
-            bbox.addPoint(area.p3.x, area.p3.y)
-
-        minx = bbox.minx
-        miny = bbox.miny
-        maxx = bbox.maxx
-        maxy = bbox.maxy
-        
-        print "draw areas"
-
-        for area in self.map.areas:
-            self.drawLine(area.p1.x, area.p1.y, area.p2.x, area.p2.y, 1, bbox)
-            self.drawLine(area.p2.x, area.p2.y, area.p3.x, area.p3.y, 1, bbox)
-            self.drawLine(area.p3.x, area.p3.y, area.p1.x, area.p1.y, 1, bbox)
-
         print "draw borders"
-        
         for vec in self.map.borders.getAllBorders():
             ep=vec.getEndPoint()
             self.drawLine(vec.point.x, vec.point.y, ep.x, ep.y,0, bbox)
-        
-        print "done printing"    
-        self.lock=False           
-                
+
+        print "done printing"
+        self.lock=False
+
     def drawLine(self, x1, y1, x2, y2, coleur, bbox):
         #print "1: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
-        
+
         x1,y1=bbox.adjust(x1, y1)
         x2,y2=bbox.adjust(x2, y2)
         #print "2: x1: " + str(x1) + ", y1: " + str(y1) + ", x2: " + str(x2) + ", y2: " + str(y2)
 
-        if (x1 < 0 or x1 > self.width or x2 < 0 or x2 > self.width 
+        if (x1 < 0 or x1 > self.width or x2 < 0 or x2 > self.width
             or y1 < 0 or y1 > self.height or y2 < 0 or y2 > self.height):
             print "error, coord out of range"
             return
-        
+
         self.context.new_path()
         self.context.move_to(int(x1),int(y1))
         self.context.line_to(int(x2),int(y2))
         self.context.close_path()
-        
+
         if coleur == 0:
             r=0
             g=0
@@ -318,15 +300,15 @@ class MapVisual(gtk.DrawingArea):
         else:
             r=0
             g=1
-            b=0 
-        
+            b=0
+
         #self.context.set_line_width(1)
         self.context.set_source_rgb(r, g, b)
         self.context.fill_preserve()
         self.context.set_source_rgb(r, g, b)
         self.context.stroke()
-        
-        
+
+
 class TabBox:
 
     def __init__(self):

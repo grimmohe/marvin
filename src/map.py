@@ -313,62 +313,7 @@ class BorderList:
 
     def remove(self, v):
         self.borders.remove(v)
-
-class Area:
-    """
-    Triangle of Points
-    """
-
-    def __init__(self, p1, p2, p3):
-        self.p1 = p1
-        self.p2 = p2
-        self.p3 = p3
-
-    def intersects(self, vector):
-        """ returns True, if vector is intersecting or within the area """
-
-        r = []
-        ret = (False, [])
-
-        size12 = Point(self.p2.x - self.p1.x, self.p2.y - self.p1.y)
-        size13 = Point(self.p3.x - self.p1.x, self.p3.y - self.p1.y)
-        size23 = Point(self.p3.x - self.p2.x, self.p3.y - self.p2.y)
-
-        ratio12 = getVectorIntersectionRatio(Vector(self.p1, size12), vector)
-        ratio13 = getVectorIntersectionRatio(Vector(self.p1, size13), vector)
-        ratio23 = getVectorIntersectionRatio(Vector(self.p2, size23), vector)
-
-
-
-        if (ratio12 and 0<=ratio12[0]<=1):
-            r.append(ratio12[1])
-        if (ratio13 and 0<=ratio13[0]<=1):
-            r.append(ratio13[1])
-        if (ratio23 and 0<=ratio23[0]<=1):
-            r.append(ratio23[1])
-
-        if r:
-            r.sort()
-
-            # vector is surrounded by this area
-            if r[0] <= 0 and r[-1] >= 1:
-                ret = (True, [])
-
-            # partwise overlapping
-            else:
-                rt = [ratio for ratio in r if 0<ratio<1]
-
-                addition = MERGE_RANGE / vector.len()
-
-                if len(rt) == 2:
-                    ret = (True, [(.0, rt[0]-addition), (rt[1]+addition, 1.0)])
-                elif len(rt) == 1:
-                    if r[0] < .0:
-                        ret = (True, [(rt[0]+addition, 1.0)])
-                    elif r[-1] > 1.0:
-                        ret = (True, [(.0, rt[0]-addition)])
-
-        return ret
+        self.vectors.remove(v)
 
 class Router:
 
@@ -618,58 +563,9 @@ class Map:
         self.waypoints = []
         self.moveStartPosition = None
 
-    def addArea(self, position, distance, radius):
-        """
-        Adding/merging an area to the map.
-        We expect p1 to be connected to p2 and p3 rectangular.
-        """
-
-        def getTweenPoint(root, size1, size2, multi1, multi2):
-            return Point(root.x + (size1.x * multi1) + (size2.x * multi2),
-                         root.y + (size1.y * multi1) + (size2.y * multi2))
-        def appendWhereNeeded(area):
-            """ appends the new area to both lists """
-            self.areas.append(area)
-
-        if distance == 0 or radius == 0:
-            return
-
-        p = Point(-radius, 0).getTurned(position.orientation)
-        p.add(position.point)
-
-        size1 = Point(0, distance).getTurned(position.orientation)
-        size2 = Point(radius*2, 0).getTurned(position.orientation)
-
-        max1 = roundup(distance / MAX_VECTOR_LENGTH)
-        max2 = roundup(radius * 2 / MAX_VECTOR_LENGTH)
-
-        for run1 in range(max1):
-            multiplierMin1 = run1 / float(max1)
-            multiplierMax1 = (run1 + 1) / float(max1)
-
-            for run2 in range(max2):
-                multiplierMin2 = run2 / float(max2)
-                multiplierMax2 = (run2 + 1) / float(max2)
-
-                appendWhereNeeded(Area(getTweenPoint(p, size1, size2, multiplierMin1, multiplierMin2),
-                                       getTweenPoint(p, size1, size2, multiplierMin1, multiplierMax2),
-                                       getTweenPoint(p, size1, size2, multiplierMax1, multiplierMin2)))
-                appendWhereNeeded(Area(getTweenPoint(p, size1, size2, multiplierMax1, multiplierMax2),
-                                       getTweenPoint(p, size1, size2, multiplierMin1, multiplierMax2),
-                                       getTweenPoint(p, size1, size2, multiplierMax1, multiplierMin2)))
-
     def addWaypoint(self, wp=WayPoint(0, 0)):
         """ add a waypoint to current waypoints """
         self.waypoints.append(wp)
-
-    def areaMoveStep(self, position, radius=0, yExtent=0):
-        if self.moveStartPosition:
-            distance = self.moveStartPosition.point.getDistanceTo(position.point)
-
-            if distance:
-                self.addArea(self.moveStartPosition, distance + yExtent, radius)
-
-        self.moveStartPosition = position.copy()
 
     def clearWaypoints(self):
         self.waypoints = []
