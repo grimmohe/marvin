@@ -101,15 +101,20 @@ class Vector:
 
     def copy(self, position=Point(0, 0), orientation=0, offset=None):
         """ create a new vector with position added and orientation applied to size """
-        x = self.point.x
-        y = self.point.y
+        v = Vector(self.point.copy(), self.size.copy())
+
         if offset:
-            x += offset.size.x
-            y += offset.size.y
-        new_pos = turn_point({"x": x, "y": y}, orientation)
-        new_size = turn_point({"x": self.size.x, "y": self.size.y}, orientation)
-        return Vector(Point(new_pos["x"] + position.x, new_pos["y"] + position.y),
-                      Point(new_size["x"], new_size["y"]))
+            v.point.x += offset.size.x
+            v.point.y += offset.size.y
+
+        if orientation:
+            v = Vector(v.point.getTurned(orientation), v.size.getTurned(orientation))
+
+        if position:
+            v.point.x += position.x
+            v.point.y += position.y
+
+        return v
 
     def getAngle(self):
         return math.degrees(get_angle({"x": self.size.x, "y": self.size.y}))
