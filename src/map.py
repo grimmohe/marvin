@@ -216,10 +216,10 @@ class Vector:
         self.setStartPoint(p2)
         self.setEndPoint(p1)
 
-class BorderList:
+class VectorList:
 
     def __init__(self):
-        self.borders = []
+        self.vectors = []
 
     def __len__(self):
         return self.count()
@@ -235,50 +235,50 @@ class BorderList:
                 multiplier = float(run) / max
                 point = Point(v.point.x + (v.size.x * multiplier), v.point.y + (v.size.y * multiplier))
                 size = Point(v.size.x / max, v.size.y / max)
-                self.borders.append(Vector(point, size))
+                self.vectors.append(Vector(point, size))
         else:
             raise "Object None or wrong type. Expected Vector()"
 
     def count(self):
-        return len(self.borders)
+        return len(self.vectors)
 
     def get(self, index):
-        return self.borders[index]
+        return self.vectors[index]
 
-    def getAllBorders(self):
+    def getAllVectors(self):
         ret = []
-        for b in self.borders:
+        for b in self.vectors:
             ret.append(b)
         return ret
 
-    def getBordersInRange(self, x1=-MAX_RANGE, y1=-MAX_RANGE, x2=MAX_RANGE, y2=MAX_RANGE):
+    def getVectorsInRange(self, x1=-MAX_RANGE, y1=-MAX_RANGE, x2=MAX_RANGE, y2=MAX_RANGE):
         x1, x2, y1, y2 = sorted([x1, x2]) + sorted([y1, y2])
         ret = []
-        for border in self.borders:
-            if x1 <= border.point.x <= x2 and y1 <= border.point.y <= y2 \
-            or x1 <= border.point.x + border.size.x <= x2 and y1 <= border.point.y + border.size.y <= y2:
-                ret.append(border)
+        for vector in self.vectors:
+            if x1 <= vector.point.x <= x2 and y1 <= vector.point.y <= y2 \
+            or x1 <= vector.point.x + vector.size.x <= x2 and y1 <= vector.point.y + vector.size.y <= y2:
+                ret.append(vector)
         return ret
 
-    def getConnectedBorders(self, border=Vector()):
-        """ returns borders within MERGE_RANGE """
+    def getConnectedVectors(self, vector=Vector()):
+        """ returns vectors within MERGE_RANGE """
         con = []
-        for v in self.borders:
-            if v <> border and border.isConnected(v):
+        for v in self.vectors:
+            if v <> vector and vector.isConnected(v):
                 con.append(v)
         return con
 
     def getLooseEnds(self, position=Position()):
-        """ find loose ends in self.borders, sorted by distace to position  """
+        """ find loose ends in self.vectors, sorted by distace to position  """
         ii = 0
         looseEnds = []
-        while ii < len(self.borders):
-            v = self.borders[ii]
+        while ii < len(self.vectors):
+            v = self.vectors[ii]
             aa = 0
             loose = [True, True]
-            while (loose[0] or loose[1]) and aa < len(self.borders):
+            while (loose[0] or loose[1]) and aa < len(self.vectors):
                 if ii <> aa:
-                    range = v.inRange(self.borders[aa])
+                    range = v.inRange(self.vectors[aa])
                     loose[0] = loose[0] and not range[0]
                     loose[1] = loose[1] and not range[1]
                 aa += 1
@@ -291,17 +291,17 @@ class BorderList:
                                               - position.point.getDistanceTo(v2.getEndPoint())))
         return looseEnds
 
-    def getLooseEndPoints(self, border=Vector()):
-        """ identify if start or end point of border is loose """
+    def getLooseEndPoints(self, vector=Vector()):
+        """ identify if start or end point of vector is loose """
         ret = []
-        sp = border.getStartPoint()
-        if len(self.getBordersInRange(sp.x - MERGE_RANGE,
+        sp = vector.getStartPoint()
+        if len(self.getVectorsInRange(sp.x - MERGE_RANGE,
                                       sp.y - MERGE_RANGE,
                                       sp.x + MERGE_RANGE,
                                       sp.y + MERGE_RANGE)) < 2:
             ret.append(sp)
-        ep = border.getEndPoint()
-        if len(self.getBordersInRange(ep.x - MERGE_RANGE,
+        ep = vector.getEndPoint()
+        if len(self.getVectorsInRange(ep.x - MERGE_RANGE,
                                       ep.y - MERGE_RANGE,
                                       ep.x + MERGE_RANGE,
                                       ep.y + MERGE_RANGE)) < 2:
@@ -309,10 +309,9 @@ class BorderList:
         return ret
 
     def index(self, v):
-        return self.borders.index(v)
+        return self.vectors.index(v)
 
     def remove(self, v):
-        self.borders.remove(v)
         self.vectors.remove(v)
 
 class Router:
@@ -537,15 +536,15 @@ class Router:
                          headMovement=xmltemplate.HEAD_DOWN)
 
     #TODO: prepare is never called
-    def prepare(self, borders=BorderList()):
+    def prepare(self, borders=VectorList()):
         """ generate waypoints """
         self.waypoints.clear()
         finishedBorders = SortedList(lambda a, b: id(a) - id(b))
-        for border in borders.getAllBorders():
+        for border in borders.getAllVectors():
             if finishedBorders.contains(border):
                 continue
             finishedBorders.append(border)
-            for c in borders.getConnectedBorders(border):
+            for c in borders.getConnectedVectors(border):
                 if finishedBorders.contains(c):
                     continue
                 self._addWaypoint(border, c)
@@ -558,8 +557,8 @@ class Router:
 class Map:
 
     def __init__(self):
-        self.areas = []
-        self.borders = BorderList()
+        self.driven = VectorList()
+        self.borders = VectorList()
         self.waypoints = []
         self.moveStartPosition = None
 
@@ -586,7 +585,7 @@ class Map:
         for s in sensors:
             positionedSensors.append((s, s.copy(position.point, position.orientation)))
 
-        borders = self.borders.getAllBorders()
+        borders = self.borders.getAllVectors()
         for border in borders:
             distance = MAX_RANGE
             sensedby = None
@@ -621,24 +620,8 @@ class Map:
 
     def merge(self):
 
-        """ delete all borders in conflict with self.areas """
+        """ delete all borders in conflict with self.driven """
         print "=== merge ==="
-        for area in self.areas:
-            ii = 0
-            while ii < self.borders.count():
-                vector = self.borders.get(ii)
-                intersection = area.intersects(vector)
-                if intersection[0]:
-                    for hangover in intersection[1]:
-                        v = Vector(Point(vector.point.x + vector.size.x * hangover[0],
-                                         vector.point.y + vector.size.y * hangover[0]),
-                                   endPoint=Point(vector.point.x + vector.size.x * hangover[1],
-                                                  vector.point.y + vector.size.y * hangover[1]))
-                        self.borders.add(v)
-
-                    self.borders.remove(vector)
-                else:
-                    ii+=1
 
         """ merge borders that could be one """
         enum = Enumerator(self.borders)

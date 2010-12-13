@@ -261,7 +261,7 @@ class MapVisual(gtk.DrawingArea):
         bbox = BBox()
         bbox.displaySize=(self.height, self.width)
 
-        for vec in self.map.borders.getAllBorders():
+        for vec in self.map.borders.getAllVectors():
             sp=vec.getStartPoint()
             ep=vec.getEndPoint()
 
@@ -269,7 +269,8 @@ class MapVisual(gtk.DrawingArea):
             bbox.addPoint(ep.x, ep.y)
 
         print "draw borders"
-        for vec in self.map.borders.getAllBorders():
+
+        for vec in self.map.borders.getAllVectors():
             ep=vec.getEndPoint()
             self.drawLine(vec.point.x, vec.point.y, ep.x, ep.y,0, bbox)
 

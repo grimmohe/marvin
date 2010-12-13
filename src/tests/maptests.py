@@ -168,7 +168,7 @@ class TestRouterPrepared(unittest.TestCase):
 
     def testPrepare1(self):
         router = Router(20)
-        borders = BorderList()
+        borders = VectorList()
         borders.add(Vector(Point(0, 0), Point(50, 0)))
         borders.add(Vector(Point(50, 0), Point(0, 50)))
         router.prepare(borders)
@@ -199,7 +199,7 @@ class TestRouterPrepared(unittest.TestCase):
 
     def testPrepare2(self):
         router = Router(20)
-        borders = BorderList()
+        borders = VectorList()
         borders.add(Vector(Point(50, 0), Point(0, 50)))
         router.prepare(borders)
         self.failUnless(router.waypoints.count() == 8)
