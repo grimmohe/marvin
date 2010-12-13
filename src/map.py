@@ -35,6 +35,9 @@ class Point(object):
         self.x += point.x
         self.y += point.y
 
+    def copy(self):
+        return Point(self.x, self.y)
+
     def getDistanceTo(self, p2):
         return math.sqrt(math.pow(self.x - p2.x, 2) + math.pow(self.y - p2.y, 2))
 
@@ -569,6 +572,10 @@ class Map:
     def clearWaypoints(self):
         self.waypoints = []
 
+    def addDrive(self, start, end):
+        """ add a Vector() drive way """
+        self.driven.add(Vector(start.copy(), endPoint=end.copy()))
+
     def getCollisions(self, position=Position(), sensors=[], min_distance=0):
         """ calc distance to next collision """
         def __order(a, b):
@@ -618,10 +625,20 @@ class Map:
         collisions.sort(cmp=__order)
         return collisions
 
-    def merge(self):
+    def merge(self, radius):
+
+        print "=== merge ==="
 
         """ delete all borders in conflict with self.driven """
-        print "=== merge ==="
+        for drive in self.driven:
+            enum = Enumerator(self.borders)
+            while enum.next():
+                v = enum.current()
+                distance = min(getVectorToPointDistance(drive, v.getStartPoint()),
+                               getVectorToPointDistance(drive, v.getEndPoint()))
+                if distance < radius:
+                    enum.prev()
+                    self.borders.remove(v)
 
         """ merge borders that could be one """
         enum = Enumerator(self.borders)
@@ -641,6 +658,8 @@ class Map:
                         v1.merge(v2)
                         subenum.prev()
                         self.borders.remove(v2)
+
+
 
     def routeIsSet(self):
         return len(self.waypoints)

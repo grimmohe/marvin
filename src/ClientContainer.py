@@ -15,8 +15,6 @@ class ClientContainer(threading.Thread):
     def __init__(self, clientConnection):
         threading.Thread.__init__(self)
         self.position = map.Position()
-        self.xExtent = {"min": .0, "max":.0}
-        self.yExtent = {"min": .0, "max":.0}
         self.map = map.Map()
         self.devs = {}
         self.clientConnection = clientConnection
@@ -46,6 +44,9 @@ class ClientContainer(threading.Thread):
 
                 elif key == "distance":
                     newPos = self.position.getPointInDistance(action.value)
+
+                    # add drive line
+                    self.map.addDrive(self.position.point, newPos)
 
                     if ( self.devs.has_key("head")
                          and self.devs["head"].has_key("position")
@@ -77,6 +78,7 @@ class ClientContainer(threading.Thread):
                                         self.map.borders.add(v2)
                                     # sensor on end position
                                     self.map.borders.add(v_end)
+
                     # finally accept the new position
                     self.position.point = newPos
 
@@ -99,17 +101,13 @@ class ClientContainer(threading.Thread):
                 elif key == "dimension":
                     x, y, size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(x, y), map.Point(size_x, size_y))
-                    self.xExtent["min"] = min(self.xExtent["min"], self.devs[dev][key].getStartPoint().x, self.devs[dev][key].getEndPoint().x)
-                    self.xExtent["max"] = max(self.xExtent["max"], self.devs[dev][key].getStartPoint().x, self.devs[dev][key].getEndPoint().x)
-                    self.yExtent["min"] = min(self.yExtent["min"], self.devs[dev][key].getStartPoint().y, self.devs[dev][key].getEndPoint().y)
-                    self.yExtent["max"] = max(self.yExtent["max"], self.devs[dev][key].getStartPoint().y, self.devs[dev][key].getEndPoint().y)
                 elif key == "orientation":
                     size_x, size_y = action.value.split(";")
                     self.devs[dev][key] = map.Vector(map.Point(0, 0), map.Point(size_x, size_y))
                 elif key in ("radius", "position"):
                     self.devs[dev][key] = float(action.value)
 
-        self.map.merge()
+        self.map.merge(radius=self.devs["self"]["radius"])
 
         if self.cbMapRefresh:
             self.cbMapRefresh()
