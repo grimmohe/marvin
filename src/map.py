@@ -189,12 +189,8 @@ class Vector:
     def merge(self, v):
         """ combine th 2 most distant points into this vector """
         comp = self.compare(v)
-        max_dist = 0.0
-        max_index = 0
-        for ii in range(4):
-            if comp[ii] > max_dist:
-                max_dist = comp[ii]
-                max_index = ii
+        max_dist = max(comp)
+        max_index = comp.index(max_dist)
         if self.len() > comp[max_index]:
             pass
         elif max_index == 0:
