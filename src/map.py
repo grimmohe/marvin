@@ -440,7 +440,8 @@ class Router:
                 self.actionTurn(position=position,
                                 destAngle=Vector(position.point, endPoint=wp).getAngle(),
                                 cb_getSensorList=cb_getSensorList,
-                                cb_addAction=cb_addAction)
+                                cb_addAction=cb_addAction,
+                                cb_getCollisions=cb_getCollisions)
                 self.actionDrive(position=position,
                                  distance=position.point.getDistanceTo(wp),
                                  cb_getSensorList=cb_getSensorList,
@@ -489,7 +490,9 @@ class Router:
 
 
     def actionTurn(self, position, goAngle=None, destAngle=None,
-                   hitSensorNames=None, hitDirection=None, cb_getSensorList=None, cb_addAction=None):
+                   hitSensorNames=None, hitDirection=None,
+                   cb_getSensorList=None, cb_getCollisions=None,
+                   cb_addAction=None):
         """
         turn the device to a destined or relative angle while the head is up or not.
         maybe you turn and turn till you hit something.
@@ -497,19 +500,16 @@ class Router:
         if not (cb_getSensorList and cb_addAction):
             raise Exception("cb_getSensorList or cb_addAction missing")
 
+        sensorsTouching = []
+        sensorsUntouched = []
+        sensors = cb_getSensorList()
+
         if hitSensorNames or hitDirection:
             if not (hitSensorNames and hitDirection):
                 raise Exception()
-            sensors = cb_getSensorList()
-            sensorsTouching = []
-            sensorsUntouched = []
-            for s in sensors:
-                a = (Vector(endPoint=s.getStartPoint()).getAngle() + Vector(endPoint=s.getEndPoint()).getAngle() / 2)
-                if (hitDirection == xmltemplate.DIRECTION_LEFT and angleIsLeft(a)) \
-                or (hitDirection == xmltemplate.DIRECTION_RIGHT and angleIsRight(a)):
-                    sensorsTouching.append(s.name)
-                else:
-                    sensorsUntouched.append(s.name)
+
+            self.getHitAndBlindSensor(sensors, hitDirection, sensorsTouching, sensorsUntouched)
+
             cb_addAction(xmltemplate.TEMPLATE_TURN_HIT,
                          baseSensor=sensorsTouching,
                          untouchedSensor=sensorsUntouched,
@@ -532,15 +532,32 @@ class Router:
                     goAngle -= 360
                     direction = xmltemplate.DIRECTION_LEFT
 
-            cb_addAction(xmltemplate.TEMPLATE_HEAD,
-                         headMovement=xmltemplate.HEAD_UP)
+            lHit = (not cb_getCollisions) or len(cb_getCollisions(position=position, sensors=sensors, angle=goAngle))
+
+            if lHit:
+                cb_addAction(xmltemplate.TEMPLATE_HEAD,
+                             headMovement=xmltemplate.HEAD_UP)
+            else:
+                self.getHitAndBlindSensor(sensors, direction, sensorsTouching, sensorsUntouched)
 
             cb_addAction(xmltemplate.TEMPLATE_TURN_ANGLE,
                          direction=direction,
-                         targetAngle=goAngle)
+                         targetAngle=goAngle,
+                         baseSensor=sensorsTouching)
 
-            cb_addAction(xmltemplate.TEMPLATE_HEAD,
-                         headMovement=xmltemplate.HEAD_DOWN)
+            if lHit:
+                cb_addAction(xmltemplate.TEMPLATE_HEAD,
+                             headMovement=xmltemplate.HEAD_DOWN)
+
+    def getHitAndBlindSensor(self, sensors, direction, listHit, listBlind):
+        """ split sensors into hitting and blind ones """
+        for s in sensors:
+            a = (Vector(endPoint=s.getStartPoint()).getAngle() + Vector(endPoint=s.getEndPoint()).getAngle() / 2)
+            if (direction == xmltemplate.DIRECTION_LEFT and angleIsLeft(a)) \
+            or (direction == xmltemplate.DIRECTION_RIGHT and angleIsRight(a)):
+                listHit.append(s.name)
+            else:
+                listBlind.append(s.name)
 
     #TODO: prepare is never called
     def prepare(self, borders=VectorList()):
@@ -580,7 +597,7 @@ class Map:
         """ add a Vector() drive way """
         self.driven.add(Vector(start.copy(), endPoint=end.copy()))
 
-    def getCollisions(self, position=Position(), sensors=[], min_distance=0):
+    def getCollisions(self, position=Position(), sensors=[], min_distance=0, angle=None):
         """ calc distance to next collision """
         def __order(a, b):
             if a[0] - b[0] > 0:
@@ -598,6 +615,14 @@ class Map:
 
         borders = self.borders.getAllVectors()
         for border in borders:
+            distance = border.getDistanceToPoint(position.point)
+            for s in sensors:
+                if min(position.point.getDistanceTo(s.getStartPoint()),
+                       position.point.getDistanceTo(s.getEndPoint())) + 0.5 \
+                   > distance: #TODO: use half sensor range (0.5)
+                    if angle <> None: # TODO: berechnung ob kollision im winkelbereich
+                        return [(0, s, position.point.copy())]
+
             distance = MAX_RANGE
             sensedby = None
             for sensor in positionedSensors:
