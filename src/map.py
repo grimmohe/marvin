@@ -125,6 +125,9 @@ class Vector:
     def getEndPoint(self):
         return Point(self.point.x + self.size.x, self.point.y + self.size.y)
 
+    def getDistanceToPoint(self, point=Point(0, 0)):
+        return getVectorToPointDistance(self, point)
+
     def len(self):
         return math.sqrt(math.pow(abs(self.size.x), 2) + math.pow(abs(self.size.y), 2))
 
@@ -635,8 +638,8 @@ class Map:
             enum = Enumerator(self.borders)
             while enum.next():
                 v = enum.current()
-                distance = min(getVectorToPointDistance(drive, v.getStartPoint()),
-                               getVectorToPointDistance(drive, v.getEndPoint()))
+                distance = min(drive.getDistanceToPoint(v.getStartPoint()),
+                               drive.getDistanceToPoint(v.getEndPoint()))
                 if distance < radius:
                     enum.prev()
                     self.borders.remove(v)
@@ -649,12 +652,12 @@ class Map:
             while subenum.next():
                 v2 = subenum.current()
                 if v1 == v2: continue
-                distance = min(getVectorToPointDistance(v1, v2.getStartPoint()),
-                               getVectorToPointDistance(v1, v2.getEndPoint()))
+                distance = min(v1.getDistanceToPoint(v2.getStartPoint()),
+                               v1.getDistanceToPoint(v2.getEndPoint()))
                 if distance <= MERGE_RANGE:
                     comp = v1.compareGetMaxMin(v2)
-                    distance = min(getVectorToPointDistance(Vector(comp[0], endPoint=comp[1]), comp[2]),
-                                   getVectorToPointDistance(Vector(comp[0], endPoint=comp[1]), comp[3]))
+                    distance = min(Vector(comp[0], endPoint=comp[1]).getDistanceToPoint(comp[2]),
+                                   Vector(comp[0], endPoint=comp[1]).getDistanceToPoint(comp[3]))
                     if distance <= MERGE_RANGE:
                         v1.merge(v2)
                         subenum.prev()
