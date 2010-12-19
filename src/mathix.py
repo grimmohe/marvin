@@ -3,6 +3,15 @@
 
 from math import *
 
+def angleWithin(rangeStart, rangeEnd, testAngle):
+    """ lies testAngle within the gien range? """
+    if rangeStart > rangeEnd:
+        rangeStart -= 360
+    if testAngle > rangeEnd:
+        testAngle -= 360
+
+    return rangeStart <= testAngle <= rangeEnd
+
 def get_angle(point1, point2={"x": 0, "y": 0}):
     """ git den Winkel einer Strecke in Radianten """
     x = point1["x"] - point2["x"]

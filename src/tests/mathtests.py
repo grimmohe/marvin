@@ -44,5 +44,25 @@ class TestIntersections(unittest.TestCase):
         ratio = mathix.getVectorIntersectionRatio(vector1, vector2)
         self.failIf(ratio, ratio)
 
+class TestAngleWithin(unittest.TestCase):
+
+    def testWithinEasy(self):
+        self.failUnless(mathix.angleWithin(20, 78, 45))
+
+    def testWithinBorder(self):
+        self.failUnless(mathix.angleWithin(350, 70, 355))
+
+    def testWithinBorder2(self):
+        self.failUnless(mathix.angleWithin(350, 70, 20))
+
+    def testFailEasy(self):
+        self.failIf(mathix.angleWithin(20, 70, 355))
+
+    def testFailBorder(self):
+        self.failIf(mathix.angleWithin(320, 70, 300))
+
+    def testFailBorder2(self):
+        self.failIf(mathix.angleWithin(320, 70, 80))
+
 if __name__ == "__main__":
     unittest.main()
