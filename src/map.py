@@ -4,7 +4,7 @@
 import math
 from numpy.ma.core import max
 from mathix import turn_point, roundup, getVectorIntersectionRatio, get_angle,\
-    getVectorToPointDistance
+    getVectorToPointDistance, angleWithin
 from common import SortedList, Enumerator
 import xmltemplate
 
@@ -598,7 +598,7 @@ class Map:
         self.driven.add(Vector(start.copy(), endPoint=end.copy()))
 
     def getCollisions(self, position=Position(), sensors=[], min_distance=0, angle=None):
-        """ calc distance to next collision """
+        """ calc distance to next collision, angle is relative """
         def __order(a, b):
             if a[0] - b[0] > 0:
                 return 1
@@ -610,40 +610,67 @@ class Map:
         odirection = Point(0, -1).getTurned(position.orientation)
 
         positionedSensors = []
-        for s in sensors:
-            positionedSensors.append((s, s.copy(position.point, position.orientation)))
+        for sensor in sensors:
+            positionedSensors.append((sensor, sensor.copy(position.point, position.orientation)))
 
         borders = self.borders.getAllVectors()
         for border in borders:
-            distance = border.getDistanceToPoint(position.point)
-            for s in sensors:
-                if min(position.point.getDistanceTo(s.getStartPoint()),
-                       position.point.getDistanceTo(s.getEndPoint())) + 0.5 \
-                   > distance: #TODO: use half sensor range (0.5)
-                    if angle <> None: # TODO: berechnung ob kollision im winkelbereich
-                        return [(0, s, position.point.copy())]
-
-            distance = MAX_RANGE
             sensedby = None
+            distance = MAX_RANGE
+
+            marvin2borderDistance = border.getDistanceToPoint(position.point)
             for sensor in positionedSensors:
-                # sensor direction vectors
-                sdir1 = Vector(sensor[1].getStartPoint().getTurned(position.orientation), direction)
-                sdir2 = Vector(sensor[1].getEndPoint().getTurned(position.orientation), direction)
-                # border opposite direction vectors
-                bdir1 = Vector(border.getStartPoint(), odirection)
-                bdir2 = Vector(border.getEndPoint(), odirection)
-                # collision ratios
-                ratios = ( getVectorIntersectionRatio(sdir1, border),
-                           getVectorIntersectionRatio(sdir2, border),
-                           getVectorIntersectionRatio(bdir1, sensor[1]),
-                           getVectorIntersectionRatio(bdir2, sensor[1]) )
-                # find the closest one
-                for ratio in ratios:
-                    if ratio \
-                    and 0 < ratio[0] < distance \
-                    and 0 <= ratio[1] <= 1:
-                        distance = ratio[0]
+                """
+                calculate for collision in start position and if angle is set for collision while turning
+                """
+                # sensor in range for possible collision?
+                if min(position.point.getDistanceTo(sensor[0].getStartPoint()),
+                       position.point.getDistanceTo(sensor[0].getEndPoint())) + 0.5 \
+                   > marvin2borderDistance: #TODO: use half sensor range (0.5)
+                    ratio = getVectorIntersectionRatio(sensor[1], border)
+                    if ratio and 0 <= ratio[0] <= 1 and 0 <= ratio[1] <=  1:
                         sensedby = sensor[0]
+                        distance = 0
+
+                    elif angle <> None:
+                        ratio = getVectorIntersectionRatio(sensor[0].copy(position.point, position.orientation + angle), border)
+                        if ratio and 0 <= ratio[0] <= 1 and 0 <= ratio[1] <=  1:
+                            sensedby = sensor[0]
+                            distance = 0
+
+                        else:
+                            ratio = math.sqrt(math.pow(position.point.getDistanceTo(border.point), 2) -
+                                              math.pow(marvin2borderDistance, 2)) \
+                                    / border.len()
+                            hitAngle = Vector(position.point,
+                                              endPoint=Point(border.point.x + border.size.x * ratio,
+                                                             border.point.y + border.size.y * ratio))
+                            if angleWithin(position.orientation, position.orientation + angle, hitAngle):
+                                sensedby = sensor[0]
+                                distance = 0
+
+                """
+                if no collisions are found jet, see how far you can go
+                """
+                if not sensedby:
+                    # sensor direction vectors
+                    sdir1 = Vector(sensor[1].getStartPoint().getTurned(position.orientation), direction)
+                    sdir2 = Vector(sensor[1].getEndPoint().getTurned(position.orientation), direction)
+                    # border opposite direction vectors
+                    bdir1 = Vector(border.getStartPoint(), odirection)
+                    bdir2 = Vector(border.getEndPoint(), odirection)
+                    # collision ratios
+                    ratios = ( getVectorIntersectionRatio(sdir1, border),
+                               getVectorIntersectionRatio(sdir2, border),
+                               getVectorIntersectionRatio(bdir1, sensor[1]),
+                               getVectorIntersectionRatio(bdir2, sensor[1]) )
+                    # find the closest one
+                    for ratio in ratios:
+                        if ratio \
+                        and 0 < ratio[0] < distance \
+                        and 0 <= ratio[1] <= 1:
+                            distance = ratio[0]
+                            sensedby = sensor[0]
 
             if sensedby:
                 # position where marvin will collide
