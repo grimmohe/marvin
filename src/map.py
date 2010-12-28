@@ -625,26 +625,30 @@ class Map:
                 """
                 # sensor in range for possible collision?
                 if min(position.point.getDistanceTo(sensor[0].getStartPoint()),
-                       position.point.getDistanceTo(sensor[0].getEndPoint())) + 0.5 \
+                       position.point.getDistanceTo(sensor[0].getEndPoint())) \
                    > marvin2borderDistance: #TODO: use half sensor range (0.5)
                     ratio = getVectorIntersectionRatio(sensor[1], border)
+                    # direct collision
                     if ratio and 0 <= ratio[0] <= 1 and 0 <= ratio[1] <=  1:
                         sensedby = sensor[0]
                         distance = 0
 
                     elif angle <> None:
+                        # collision with target angle
                         ratio = getVectorIntersectionRatio(sensor[0].copy(position.point, position.orientation + angle), border)
                         if ratio and 0 <= ratio[0] <= 1 and 0 <= ratio[1] <=  1:
                             sensedby = sensor[0]
                             distance = 0
 
                         else:
+                            # closest point on border to position
+                            # a² + b² = c² => a² = c² - b²
                             ratio = math.sqrt(math.pow(position.point.getDistanceTo(border.point), 2) -
                                               math.pow(marvin2borderDistance, 2)) \
                                     / border.len()
                             hitAngle = Vector(position.point,
                                               endPoint=Point(border.point.x + border.size.x * ratio,
-                                                             border.point.y + border.size.y * ratio))
+                                                             border.point.y + border.size.y * ratio)).getAngle()
                             if angleWithin(position.orientation, position.orientation + angle, hitAngle):
                                 sensedby = sensor[0]
                                 distance = 0
@@ -652,7 +656,7 @@ class Map:
                 """
                 if no collisions are found jet, see how far you can go
                 """
-                if not sensedby:
+                if not sensedby and angle == None:
                     # sensor direction vectors
                     sdir1 = Vector(sensor[1].getStartPoint().getTurned(position.orientation), direction)
                     sdir2 = Vector(sensor[1].getEndPoint().getTurned(position.orientation), direction)
