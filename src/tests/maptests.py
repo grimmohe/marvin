@@ -54,6 +54,34 @@ class TestMapGetCollisions(unittest.TestCase):
         self.failUnless(collisions[1][1] == sensors[0])
         self.failUnless(collisions[1][0] == 90)
 
+    def testGetCollisionsTurn1(self):
+        map = Map()
+        map.borders.add(Vector(Point(0, 50), Point(4, 0)))
+        map.borders.add(Vector(Point(50, 0), Point(0, 10)))
+        sensors = [Vector(Point(-5, 5), Point(10, 0))]
+        collisions = map.getCollisions(Position(Point(0, 0), 0), sensors, angle=90)
+        self.failIf(len(collisions))
+
+    def testGetCollisionsTurn2(self):
+        map = Map()
+        map.borders.add(Vector(Point(0, 6), Point(4, 0)))
+        map.borders.add(Vector(Point(50, 0), Point(0, 10)))
+        sensors = [Vector(Point(-5, 5), Point(10, 0))]
+        collisions = map.getCollisions(Position(Point(0, 0), 0), sensors, angle=90)
+        self.failUnless(collisions[0][2].x == 0 and collisions[0][2].y == 0)
+        self.failUnless(collisions[0][1] == sensors[0])
+        self.failUnless(collisions[0][0] == 0)
+
+    def testGetCollisionsTurn3(self):
+        map = Map()
+        map.borders.add(Vector(Point(-3, 6), Point(10, 0)))
+        map.borders.add(Vector(Point(50, 0), Point(0, 10)))
+        sensors = [Vector(Point(-5, 5), Point(10, 0))]
+        collisions = map.getCollisions(Position(Point(0, 0), 0), sensors, angle=90)
+        self.failUnless(collisions[0][2].x == 0 and collisions[0][2].y == 0)
+        self.failUnless(collisions[0][1] == sensors[0])
+        self.failUnless(collisions[0][0] == 0)
+
 class TestMapGetLooseEnds(unittest.TestCase):
 
     def testGetLooseEndsNone(self):
