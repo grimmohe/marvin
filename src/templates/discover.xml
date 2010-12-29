@@ -12,10 +12,17 @@
 			<event ifarg1="$base-sensor:distance" ifcompare="l" ifarg2="0.4" then="a#=3" final="true"/>
 		</assignment>
 		<assignment id="2" start="engine:turn=$direction" end="engine:turn=stop">
-			<event ifarg1="$base-sensor:distance" ifcompare="le" ifarg2="0.5" then="a#=1" final="true"/>
+            <event ifarg1="$base-sensor:distance" ifcompare="le" ifarg2="0.5" then="a#=1" final="true"/>
+            <event ifarg1="engine:turned" ifcompare="l" ifarg2="-360" then="a#=4" final="true"/>
+            <event ifarg1="engine:turned" ifcompare="g" ifarg2="360" then="a#=4" final="true"/>
 		</assignment>
-		<assignment id="3" start="engine:turn=$opposite-direction" end="engine:turn=stop">
-			<event ifarg1="$base-sensor:distance" ifcompare="ge" ifarg2="0.5" then="a#=1" final="true"/>
-		</assignment>
+        <assignment id="3" start="engine:turn=$opposite-direction" end="engine:turn=stop">
+            <event ifarg1="$base-sensor:distance" ifcompare="ge" ifarg2="0.5" then="a#=1" final="true"/>
+            <event ifarg1="engine:turned" ifcompare="l" ifarg2="-360" then="a#=4" final="true"/>
+            <event ifarg1="engine:turned" ifcompare="g" ifarg2="360" then="a#=4" final="true"/>
+        </assignment>
+        <assignment id="4">
+            <event ifarg1="1" ifcompare="e" ifarg2="1" final="true"/>
+        </assignment>
 	</assignment>
 </assignment>
