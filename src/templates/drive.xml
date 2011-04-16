@@ -1,4 +1,0 @@
-<assignment id="$id" start="engine:drive=1" end="engine:drive=0">
-	<event ifarg1="engine:distance" ifcompare="ge" ifarg2="$distance" final="true"/>
-	<event ifarg1="$untouched-sensor:distance" ifcompare="l" ifarg2="1" final="true"/>
-</assignment>
