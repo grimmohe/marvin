@@ -1,0 +1,12 @@
+Marvin - The cleaning robot
+
+INSTALLATION
+============
+
+The following packages have to be isntalled:
+openjdk-6-jdk
+libv4l-0
+libv4l-dev
+v4l4j (http://code.google.com/p/v4l4j/wiki/GettingStarted)
+
+After that just run the marvin.jar.
