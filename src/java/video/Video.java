@@ -25,7 +25,6 @@ public class Video {
 		File dev = new File("/dev");
 
 		FilenameFilter filter = new FilenameFilter() {
-			@Override
 			public boolean accept(File dir, String name) {
 				return name.startsWith("video");
 			}
@@ -37,7 +36,7 @@ public class Video {
 		for (File file : fl) {
 			resultList.add(file.getAbsolutePath());
 		}
-		
+
 		return resultList;
 	}
 
