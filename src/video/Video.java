@@ -4,12 +4,7 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.sun.xml.internal.fastinfoset.util.StringArray;
-
-import conf.Configuration;
-
 import au.edu.jcu.v4l4j.CaptureCallback;
-import au.edu.jcu.v4l4j.Control;
 import au.edu.jcu.v4l4j.FrameGrabber;
 import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.V4L4JConstants;
@@ -17,34 +12,36 @@ import au.edu.jcu.v4l4j.VideoDevice;
 import au.edu.jcu.v4l4j.FrameInterval.DiscreteInterval;
 import au.edu.jcu.v4l4j.ResolutionInfo.DiscreteResolution;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
+import conf.Configuration;
 
 public class Video {
 
 	private Configuration configuration;
 
-	private VideoDevice activeVideo = null;
-	private FrameGrabber activeFrameGrabber = null;
+	private VideoDevice activeVideo;
+	private FrameGrabber activeFrameGrabber;
 
-	private String[] getDeviceFileList() {
+	private List<String> getDeviceFileList() {
 		File dev = new File("/dev");
 
 		FilenameFilter filter = new FilenameFilter() {
+			@Override
 			public boolean accept(File dir, String name) {
 				return name.startsWith("video");
 			}
 		};
 
 		File[] fl = dev.listFiles(filter);
-		String[] ret = new String[fl.length];
+		List<String> resultList = new ArrayList<String>();
 
-		for (int i=0; i<fl.length; i++) {
-			ret[i] = (fl[i].getAbsolutePath());
+		for (File file : fl) {
+			resultList.add(file.getAbsolutePath());
 		}
-
-		return ret;
+		
+		return resultList;
 	}
 
-	private VideoDeviceInfo getDeviceInfo(String devfile) throws Exception {
+	private VideoDeviceInfo getDeviceInfo(String devfile) throws V4L4JException, VideoException {
 		VideoDeviceInfo vdi = null;
 
 		VideoDevice vd = new VideoDevice(devfile);
@@ -58,7 +55,7 @@ public class Video {
 		return vdi;
 	}
 
-	private DeviceOptimals getDeviceOptimals(VideoDevice vd) throws Exception {
+	private DeviceOptimals getDeviceOptimals(VideoDevice vd) throws V4L4JException, VideoException {
 		DeviceOptimals opt = null;
 
 		for (ImageFormat imgf: vd.getDeviceInfo().getFormatList().getNativeFormats()) {
@@ -84,41 +81,36 @@ public class Video {
 		}
 
 		if ( opt == null ) {
-			throw new Exception("no compatible video format");
+			throw new VideoException("no suitable video format available");
 		}
 
 		return opt;
 	}
 
 	public Video(Configuration configuration) {
-		super();
 		this.configuration = configuration;
 	}
 
-	protected void finalize() throws Throwable {
-		setActiveVideoDevice(null);
+	protected void finalize() {
+		try {
+			setActiveVideoDevice(null);
+		} catch (VideoException e) {
+			e.printStackTrace();
+		}
 	}
 
-	public List<VideoDeviceInfo> getVideoDevices() {
-		String[] devicefiles = this.getDeviceFileList();
+	public List<VideoDeviceInfo> getVideoDevices() throws V4L4JException, VideoException {
+		List<String> devicefiles = getDeviceFileList();
 		List<VideoDeviceInfo> vdl = new ArrayList<VideoDeviceInfo>();
 
 		for (String devfile: devicefiles) {
-			try {
-				vdl.add(getDeviceInfo(devfile));
-			} catch (V4L4JException e) {
-				System.out.println("error reading device " + devfile);
-				e.printStackTrace();
-			} catch (Exception e) {
-				System.out.println("error: " + e.getMessage());
-				e.printStackTrace();
-			}
+			vdl.add(getDeviceInfo(devfile));
 		}
 
 		return vdl;
 	}
 
-	public void setActiveVideoDevice(VideoDeviceInfo vd) throws Exception {
+	public void setActiveVideoDevice(VideoDeviceInfo vd) throws VideoException {
 		if (activeVideo != null) {
 			stopStreaming();
 			activeVideo.release();
@@ -129,16 +121,16 @@ public class Video {
 				activeVideo = new VideoDevice(vd.getDevice());
 			} catch (V4L4JException e) {
 				e.printStackTrace();
-				throw new Exception("video device not avaiable. " + e.getMessage());
+				throw new VideoException("video device not avaiable. " + e.getMessage());
 			}
 		}
 	}
 
-	public void startStreaming(CaptureCallback cc) throws Exception {
+	public void startStreaming(CaptureCallback cc) throws V4L4JException, VideoException {
 		DeviceOptimals opt = getDeviceOptimals(activeVideo);
 
 		if (activeFrameGrabber != null) {
-			throw new Exception("there is a stream running");
+			throw new VideoException("there is a stream running");
 		}
 
 		activeFrameGrabber = activeVideo.getRawFrameGrabber(opt.width, opt.height, opt.input, opt.channel);
