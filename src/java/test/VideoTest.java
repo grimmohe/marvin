@@ -1,17 +1,16 @@
 package test;
 
 
-import java.util.Timer;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import conf.Configuration;
+import video.Video;
 
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
+import conf.Configuration;
 
 public class VideoTest {
 
@@ -26,14 +25,14 @@ public class VideoTest {
 	@Test
 	public void runstream() throws Exception {
 		Capture cap = new Capture();
-		video.Video v = new video.Video(new Configuration());
+		Video video = new Video(new Configuration());
 
-		v.setActiveVideoDevice(v.getVideoDevices().get(0));
-		v.startStreaming(cap);
+		video.setActiveVideoDevice(video.getVideoDevices().get(0));
+		video.startStreaming(cap);
 
 		Thread.sleep(10000);
 
-		v.stopStreaming();
+		video.stopStreaming();
 
 		float duration = (System.currentTimeMillis() - cap.firstframetime) / 1000;
 		System.out.printf("Captured frames: %d in %f seconds (%f fps)\n", cap.framecounter, duration, cap.framecounter / duration);

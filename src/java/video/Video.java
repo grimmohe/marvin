@@ -132,7 +132,7 @@ public class Video {
 			throw new VideoException("there is a stream running");
 		}
 
-		activeFrameGrabber = activeVideo.getRawFrameGrabber(opt.width, opt.height, opt.input, opt.channel);
+		activeFrameGrabber = activeVideo.getRGBFrameGrabber(opt.width, opt.height, opt.input, opt.channel);
 		activeFrameGrabber.setCaptureCallback(cc);
 		activeFrameGrabber.startCapture();
 	}
