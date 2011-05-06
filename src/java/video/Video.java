@@ -90,6 +90,7 @@ public class Video {
 		this.configuration = configuration;
 	}
 
+	@Override
 	protected void finalize() {
 		try {
 			setActiveVideoDevice(null);
