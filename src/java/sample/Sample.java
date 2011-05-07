@@ -1,22 +1,23 @@
 package sample;
 
-public class Sample {
+public class Sample implements Comparable<Sample> {
 
-	private float angle;
+	private float row;
 	private float distance;
-	
-	public Sample(float angle, float distance) {
+	private float intensity;
+
+	public Sample(float row, float intensity) {
 		super();
-		this.angle = angle;
-		this.distance = distance;
+		this.row = row;
+		this.intensity = intensity;
 	}
 
-	public float getAngle() {
-		return angle;
+	public float getRow() {
+		return row;
 	}
 
-	public void setAngle(float angle) {
-		this.angle = angle;
+	public void setRow(float row) {
+		this.row = row;
 	}
 
 	public float getDistance() {
@@ -26,5 +27,17 @@ public class Sample {
 	public void setDistance(float distance) {
 		this.distance = distance;
 	}
-	
+
+	public void setIntensity(float intensity) {
+		this.intensity = intensity;
+	}
+
+	public float getIntensity() {
+		return intensity;
+	}
+
+	public int compareTo(Sample o) {
+		return (int) (o.getIntensity() - this.intensity);
+	}
+
 }
