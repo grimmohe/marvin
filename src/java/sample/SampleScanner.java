@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import conf.Configuration;
+
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
@@ -15,7 +17,6 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 public class SampleScanner implements CaptureCallback {
 
 	private SampleUpdate updater;
-	private float[] columnThreshold;
 
 	public SampleScanner(SampleUpdate updater) {
 		this.updater = updater;
@@ -38,93 +39,32 @@ public class SampleScanner implements CaptureCallback {
 
 	private List<Sample> parseFrame(VideoFrame frame) {
 
-		List<Sample> sampleList = new ArrayList<Sample>();
-
-		Raster raster = frame.getRaster();
-
-		int minY = raster.getMinY();
-		int width = raster.getWidth();
-		int height = raster.getHeight();
-
-		if (columnThreshold.length != width) columnThreshold = new float[width];
-
-		for (int column = raster.getMinX(); column < width; column++) {
-			ColumnScanResult scanResult = scanColumn
-											(columnThreshold[column],
-											 raster.getPixels(column, minY, 1, height, (int[]) null));
-			if (scanResult.getSample() != null) {
-				sampleList.add(scanResult.getSample());
-			}
-
-			columnThreshold[column] = scanResult.getNewThreshold();
-		}
-
-		return sampleList;
+		SampleParserGrimm sampleParser = new SampleParserGrimm();
+		return calculateDistances(sampleParser.generateSamples(frame), frame);
+		
 	}
-
-	private ColumnScanResult scanColumn(float threshold, int[] pixels) {
-		int lightSum = 0;
-		int openCount = 0;
-		int sampleRowSum = 0;
-		int sampleLight = 0;
-
-		List<Sample> samples = new ArrayList<Sample>();
-		Sample sample = null;
-
-		for (int row = 0; row < pixels.length; row++) {
-			int light = pixels[row];
-			lightSum += light;
-
-			if (light > threshold) {
-				openCount++;
-				sampleRowSum += row;
-				sampleLight += light * row;
-			} else if (openCount > 0) {
-				samples.add(new Sample(sampleLight / sampleRowSum, sampleLight / openCount));
-
-				openCount = 0;
-				sampleRowSum = 0;
-				sampleLight = 0;
+	
+	private List<Sample> calculateDistances(List<Sample> samples, VideoFrame frame) {
+		
+		Raster raster = frame.getRaster();	
+		float upperTrashhold = raster.getHeight()/2;
+		float halfAngle = (Configuration.videoAngle / 2);
+		
+		for (Sample sample : samples) {
+			float degreePerRow = halfAngle/upperTrashhold;
+			if(sample.getRow() >= upperTrashhold) {
+				float row = sample.getRow() - upperTrashhold;
+				float degree = row*degreePerRow;
+				degree = (halfAngle + degree) - 90;
+				
 			}
 		}
-
-		Collections.sort(samples);
-
-		if (samples.size() > 0) {
-			sample = samples.get(0);
-		}
-		if (samples.size() > 1
-				&& Math.min(sample.getRow(), pixels.length - sample.getRow())
-					> Math.min(samples.get(1).getRow(), pixels.length - samples.get(1).getRow()))
-		{
-			sample = samples.get(1);
-		}
-
-		return new ColumnScanResult(lightSum / pixels.length, sample);
+		return samples;
+		
 	}
 
 	public SampleUpdate getUpdater() {
 		return updater;
 	}
-
-}
-
-class ColumnScanResult {
-
-	private float newThreshold;
-	private Sample sample;
-
-	public ColumnScanResult(float newThreshold, Sample sample) {
-		super();
-		this.newThreshold = newThreshold;
-		this.sample = sample;
-	}
-
-	public float getNewThreshold() {
-		return newThreshold;
-	}
-
-	public Sample getSample() {
-		return sample;
-	}
+	
 }

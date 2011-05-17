@@ -36,6 +36,7 @@ public class Sample implements Comparable<Sample> {
 		return intensity;
 	}
 
+	@Override
 	public int compareTo(Sample o) {
 		return (int) (o.getIntensity() - this.intensity);
 	}

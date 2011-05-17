@@ -3,11 +3,11 @@ package sample;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SampleParser {
+public class SampleParserCarci {
 
 	private List<int[]> rgbList;
 
-	public SampleParser(List<int[]> rgbList) {
+	public SampleParserCarci(List<int[]> rgbList) {
 		super();
 		this.rgbList = rgbList;
 	}
@@ -18,10 +18,6 @@ public class SampleParser {
 		List<int[]> hotspots = findHotspots();
 		
 		int pages = range/hotspots.size();
-		
-		float camLaserDistance = 8.0F;
-		
-		Math.tan(Math.rangle)
 		
 	}
 	
