@@ -10,7 +10,7 @@ import au.edu.jcu.v4l4j.VideoFrame;
 public class SampleParserGrimm {
 
 	private float[] columnThreshold;
-	
+
 	public List<Sample> generateSamples(VideoFrame frame) {
 
 		List<Sample> sampleList = new ArrayList<Sample>();
@@ -28,15 +28,17 @@ public class SampleParserGrimm {
 											(columnThreshold[column],
 											 raster.getPixels(column, minY, 1, height, (int[]) null));
 			if (scanResult.getSample() != null) {
-				sampleList.add(scanResult.getSample());
+				Sample sample = scanResult.getSample();
+				sample.setColumn(column);
+				sampleList.add(sample);
 			}
 
 			columnThreshold[column] = scanResult.getNewThreshold();
 		}
 
 		return sampleList;
-	}	
-	
+	}
+
 	private ColumnScanResult scanColumn(float threshold, int[] pixels) {
 		int lightSum = 0;
 		int openCount = 0;
@@ -77,9 +79,8 @@ public class SampleParserGrimm {
 
 		return new ColumnScanResult(lightSum / pixels.length, sample);
 	}
-
-
 }
+
 
 class ColumnScanResult {
 

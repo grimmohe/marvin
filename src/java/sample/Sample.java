@@ -3,13 +3,33 @@ package sample;
 public class Sample implements Comparable<Sample> {
 
 	private float row;
+	private int column;
+
 	private float distance;
+	private float angle;
 	private float intensity;
 
 	public Sample(float row, float intensity) {
 		super();
 		this.row = row;
 		this.intensity = intensity;
+	}
+
+	public float getAngle() {
+		return angle;
+	}
+
+	public void setAngle(float angle) {
+		this.angle = angle;
+	}
+
+	public int getColumn() {
+		return column;
+	}
+
+
+	public void setColumn(int column) {
+		this.column = column;
 	}
 
 	public float getRow() {

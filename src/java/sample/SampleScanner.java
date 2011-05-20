@@ -1,15 +1,12 @@
 package sample;
 
 import java.awt.image.Raster;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-
-import conf.Configuration;
 
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
+import conf.Configuration;
 
 /**
  * Scannt die Spalten eines Frames nach der besten Lichtquelle für die Distanzbestimmung
@@ -32,39 +29,41 @@ public class SampleScanner implements CaptureCallback {
 
 	public void nextFrame(VideoFrame frame) {
 
-		List<Sample> sampleList = parseFrame(frame);
+		List<Sample> sampleList = this.sampleParser.generateSamples(frame);
+		sampleList = calculateDistances(sampleList, frame);
 		frame.recycle();
 		updater.update(sampleList);
 
 	}
 
-	private List<Sample> parseFrame(VideoFrame frame) {
-
-		return calculateDistances(this.sampleParser.generateSamples(frame), frame);
-
-	}
-	
 	private List<Sample> calculateDistances(List<Sample> samples, VideoFrame frame) {
-		
-		Raster raster = frame.getRaster();	
-		float upperTrashhold = raster.getHeight()/2;
-		float halfAngle = (Configuration.videoAngle / 2);
-		
+
+		Raster raster = frame.getRaster();
+		int frameWidth = raster.getWidth();
+		int frameHeight = raster.getHeight();
+		float halfAngle = (Configuration.videoVAngle / 2);
+	    float degreePerRow = Configuration.videoVAngle/raster.getHeight();
+	    double camRecessed = Configuration.videoLaserDistance / Math.tan(halfAngle);
+
 		for (Sample sample : samples) {
-			float degreePerRow = halfAngle/upperTrashhold;
-			if(sample.getRow() >= upperTrashhold) {
-				float row = sample.getRow() - upperTrashhold;
-				float degree = row*degreePerRow;
-				degree = (halfAngle + degree) - 90;
-				
+			sample.setAngle(Configuration.videoHAngle / frameWidth * sample.getColumn());
+
+			float row = sample.getRow();
+			if (row > frameHeight/2) {
+				row = frameHeight - row;
 			}
+
+			float angle = 90 - row * degreePerRow;
+			double distance = Configuration.videoLaserDistance / Math.tan(angle) - camRecessed;
+
+			sample.setDistance((float) distance);
 		}
 		return samples;
-		
+
 	}
 
 	public SampleUpdate getUpdater() {
 		return updater;
 	}
-	
+
 }
