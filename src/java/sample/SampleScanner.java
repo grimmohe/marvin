@@ -17,6 +17,7 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 public class SampleScanner implements CaptureCallback {
 
 	private SampleUpdate updater;
+	private SampleParserGrimm sampleParser = new SampleParserGrimm();
 
 	public SampleScanner(SampleUpdate updater) {
 		this.updater = updater;
@@ -39,9 +40,8 @@ public class SampleScanner implements CaptureCallback {
 
 	private List<Sample> parseFrame(VideoFrame frame) {
 
-		SampleParserGrimm sampleParser = new SampleParserGrimm();
-		return calculateDistances(sampleParser.generateSamples(frame), frame);
-		
+		return calculateDistances(this.sampleParser.generateSamples(frame), frame);
+
 	}
 	
 	private List<Sample> calculateDistances(List<Sample> samples, VideoFrame frame) {
