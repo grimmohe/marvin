@@ -1,9 +1,9 @@
 package sample;
 
-import java.util.List;
+import map.ScanMap;
 
 public interface SampleUpdate {
 
-	public void update(List<Sample> sampleList);
-	
+	public void update(ScanMap scanMap);
+
 }

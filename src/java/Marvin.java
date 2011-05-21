@@ -1,8 +1,6 @@
-import java.util.List;
-
-import sample.Sample;
+import map.Map;
+import map.MapUpdater;
 import sample.SampleScanner;
-import sample.SampleUpdate;
 import video.Video;
 import video.VideoException;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
@@ -23,13 +21,10 @@ public class Marvin {
 
 		video.setActiveVideoDevice(video.getVideoDevices().get(0));
 
-		SampleScanner ss = new SampleScanner(new SampleUpdate() {
+		Map map = new Map();
+		MapUpdater updater = new MapUpdater(map);
 
-			public void update(List<Sample> sampleList) {
-//				System.out.println("sampleupdate with " + sampleList.size() + " samples");
-
-			}
-		});
+		SampleScanner ss = new SampleScanner(updater);
 
 		video.startStreaming(ss);
 

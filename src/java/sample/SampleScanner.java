@@ -3,6 +3,7 @@ package sample;
 import java.awt.image.Raster;
 import java.util.List;
 
+import map.ScanMap;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
@@ -32,7 +33,7 @@ public class SampleScanner implements CaptureCallback {
 		List<Sample> sampleList = this.sampleParser.generateSamples(frame);
 		sampleList = calculateDistances(sampleList, frame);
 		frame.recycle();
-		updater.update(sampleList);
+		updater.update(new ScanMap(sampleList));
 
 	}
 
