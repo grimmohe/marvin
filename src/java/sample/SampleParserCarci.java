@@ -19,6 +19,8 @@ public class SampleParserCarci {
 		
 		int pages = range/hotspots.size();
 		
+		return new ArrayList<Sample>();
+		
 	}
 	
 	private List<int[]> findHotspots() {

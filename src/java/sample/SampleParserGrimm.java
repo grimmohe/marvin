@@ -21,7 +21,7 @@ public class SampleParserGrimm {
 		int width = raster.getWidth();
 		int height = raster.getHeight();
 
-		if (columnThreshold.length != width) columnThreshold = new float[width];
+		if (columnThreshold == null || columnThreshold.length != width) columnThreshold = new float[width];
 
 		for (int column = raster.getMinX(); column < width; column++) {
 			ColumnScanResult scanResult = scanColumn
@@ -56,7 +56,7 @@ public class SampleParserGrimm {
 				openCount++;
 				sampleRowSum += row;
 				sampleLight += light * row;
-			} else if (openCount > 0) {
+			} else if (openCount > 0 && sampleRowSum > 0) {
 				samples.add(new Sample(sampleLight / sampleRowSum, sampleLight / openCount));
 
 				openCount = 0;
