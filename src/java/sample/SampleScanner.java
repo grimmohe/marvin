@@ -30,9 +30,13 @@ public class SampleScanner implements CaptureCallback {
 
 	public void nextFrame(VideoFrame frame) {
 
+		System.out.println(Thread.currentThread().getId() + " done 2");
 		List<Sample> sampleList = this.sampleParser.generateSamples(frame);
 		sampleList = calculateDistances(sampleList, frame);
 		frame.recycle();
+		
+		new SampleShrinker(sampleList).shrink();
+		
 		updater.update(new ScanMap(sampleList));
 
 	}
