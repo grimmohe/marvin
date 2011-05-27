@@ -1,5 +1,7 @@
 package sample;
 
+import map.Position;
+
 public class Sample implements Comparable<Sample> {
 
 	private float row;
@@ -54,6 +56,15 @@ public class Sample implements Comparable<Sample> {
 
 	public float getIntensity() {
 		return intensity;
+	}
+
+	public Position getPosition() {
+		Position pos = new Position();
+
+		pos.x = (float) (Math.sin(Math.toRadians(this.angle)) * this.distance);
+		pos.y = (float) (Math.cos(Math.toRadians(this.angle)) * this.distance);
+
+		return pos;
 	}
 
 	@Override
