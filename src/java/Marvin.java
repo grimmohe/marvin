@@ -13,8 +13,9 @@ public class Marvin {
 	 * @param args
 	 * @throws V4L4JException
 	 * @throws VideoException
+	 * @throws InterruptedException 
 	 */
-	public static void main(String[] args) throws VideoException, V4L4JException {
+	public static void main(String[] args) throws VideoException, V4L4JException, InterruptedException {
 
 		Configuration configuration = new Configuration();
 		Video video = new Video(configuration);
@@ -27,7 +28,12 @@ public class Marvin {
 		SampleScanner ss = new SampleScanner(updater);
 
 		video.startStreaming(ss);
-
+		
+		Thread.sleep(2000);
+		
+//		video.stopStreaming();
+		
+		System.out.println(Thread.currentThread().getId() + " done");
 	}
 
 }

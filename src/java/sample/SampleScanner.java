@@ -33,8 +33,12 @@ public class SampleScanner implements CaptureCallback {
 		List<Sample> sampleList = this.sampleParser.generateSamples(frame);
 		sampleList = calculateDistances(sampleList, frame);
 		frame.recycle();
+
+		new SampleShrinker(sampleList).shrink();
+
 		ScanMap sm = new ScanMap();
 		sm.read(sampleList);
+
 		this.updater.update(sm);
 
 	}
