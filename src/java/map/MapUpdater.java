@@ -7,7 +7,7 @@ public class MapUpdater implements SampleUpdate {
 	Map map;
 
 	public MapUpdater(Map map) {
-
+		this.map = map;
 	}
 
 	@Override
