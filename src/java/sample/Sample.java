@@ -1,5 +1,7 @@
 package sample;
 
+import com.sun.xml.internal.ws.util.StringUtils;
+
 import map.Position;
 
 public class Sample implements Comparable<Sample> {
@@ -23,6 +25,16 @@ public class Sample implements Comparable<Sample> {
 
 	public void setAngle(float angle) {
 		this.angle = angle;
+	}
+
+	@Override
+	public String toString() {
+		String out = "";
+		for (int ii = 1; ii < row; ii+=3) {
+			out += " ";
+		}
+		return out + "Sample [angle=" + angle + ", column=" + column + ", distance="
+				+ distance + ", intensity=" + intensity + ", row=" + row + "]";
 	}
 
 	public int getColumn() {

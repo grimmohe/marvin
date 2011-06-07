@@ -40,7 +40,7 @@ public class Video {
 		return resultList;
 	}
 
-	private VideoDeviceInfo getDeviceInfo(String devfile) throws V4L4JException, VideoException {
+	public VideoDeviceInfo getDeviceInfo(String devfile) throws V4L4JException, VideoException {
 		VideoDeviceInfo vdi = null;
 
 		VideoDevice vd = new VideoDevice(devfile);

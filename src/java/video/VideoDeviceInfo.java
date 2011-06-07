@@ -2,6 +2,12 @@ package video;
 
 public class VideoDeviceInfo {
 
+	@Override
+	public String toString() {
+		return "VideoDeviceInfo [device=" + device + ", name=" + name
+				+ ", optimals=" + optimals + "]";
+	}
+
 	private String name;
 	private String device;
 	private String optimals;
