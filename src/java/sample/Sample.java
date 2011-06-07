@@ -1,7 +1,5 @@
 package sample;
 
-import com.sun.xml.internal.ws.util.StringUtils;
-
 import map.Position;
 
 public class Sample implements Comparable<Sample> {

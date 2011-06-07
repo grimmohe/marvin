@@ -68,9 +68,11 @@ public class SampleScanner implements CaptureCallback {
 		Raster raster = frame.getRaster();
 		float frameWidth = raster.getWidth();
 		float frameHeight = raster.getHeight();
-		float halfAngle = (Configuration.videoVAngle / 2);
-	    float degreePerRow = Configuration.videoVAngle/raster.getHeight();
-	    double camRecessed = Configuration.videoLaserDistance / Math.tan(halfAngle);
+		float halfAngle = 90F - (Configuration.videoVAngle / 2);
+	    float degreePerRow = (float)Configuration.videoVAngle/raster.getHeight();
+	    double camRecessed = Configuration.videoLaserDistance * Math.tan(Math.toRadians(halfAngle));
+
+	    System.out.println(camRecessed);
 
 		for (Sample sample : samples) {
 			sample.setAngle(180 / frameWidth * sample.getColumn());
@@ -80,8 +82,8 @@ public class SampleScanner implements CaptureCallback {
 				row = frameHeight - row;
 			}
 
-			float angle = 90 - row * degreePerRow;
-			double distance = Configuration.videoLaserDistance / Math.tan(angle) - camRecessed;
+			float angle = halfAngle + row * degreePerRow;
+			double distance = Configuration.videoLaserDistance * Math.tan(Math.toRadians(angle)) - camRecessed;
 
 			sample.setDistance((float) distance);
 		}
