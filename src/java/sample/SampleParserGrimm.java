@@ -42,22 +42,26 @@ public class SampleParserGrimm {
 	private ColumnScanResult scanColumn(float threshold, int[] pixels) {
 		int lightSum = 0;
 		int openCount = 0;
-		int sampleRowSum = 0;
+		float sampleRowSum = 0;
 		int sampleLight = 0;
 
 		List<Sample> samples = new ArrayList<Sample>();
 		Sample sample = null;
 
-		for (int row = 0; row < pixels.length; row++) {
-			int light = pixels[row];
+		for (int row = 0; row < pixels.length; row+=3) {
+			int light = Math.max(0, pixels[row] - pixels[row+1] - pixels[row+2]);
 			lightSum += light;
 
 			if (light > threshold) {
 				openCount++;
-				sampleRowSum += row;
-				sampleLight += light * row;
+				sampleRowSum += row / 3;
+				sampleLight += light;
 			} else if (openCount > 0 && sampleRowSum > 0) {
-				samples.add(new Sample(sampleLight / sampleRowSum, sampleLight / openCount));
+				float estrow = sampleRowSum / openCount;
+				if (estrow > pixels.length / 6) {
+					estrow = pixels.length / 3 - estrow;
+				}
+				samples.add(new Sample(estrow, sampleLight / openCount));
 
 				openCount = 0;
 				sampleRowSum = 0;

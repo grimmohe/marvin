@@ -16,6 +16,7 @@ public class SampleScanner implements CaptureCallback {
 
 	private SampleUpdate updater;
 	private SampleParserGrimm sampleParser = new SampleParserGrimm();
+	private boolean working = false;
 
 	public SampleScanner(SampleUpdate updater) {
 		this.updater = updater;
@@ -30,30 +31,38 @@ public class SampleScanner implements CaptureCallback {
 
 	public void nextFrame(VideoFrame frame) {
 
-		List<Sample> sampleList = this.sampleParser.generateSamples(frame);
-		sampleList = calculateDistances(sampleList, frame);
+		if (!this.working) {
+			this.working = true;
+
+			List<Sample> sampleList = sampleParser.generateSamples(frame);
+			sampleList = calculateDistances(sampleList, frame);
+
+			new SampleShrinker(sampleList).shrink();
+
+			ScanMap sm = new ScanMap();
+			sm.read(sampleList);
+
+			this.updater.update(sm);
+
+
+			this.working = false;
+		}
+
 		frame.recycle();
-
-		new SampleShrinker(sampleList).shrink();
-
-		ScanMap sm = new ScanMap();
-		sm.read(sampleList);
-
-		this.updater.update(sm);
 
 	}
 
 	private List<Sample> calculateDistances(List<Sample> samples, VideoFrame frame) {
 
 		Raster raster = frame.getRaster();
-		int frameWidth = raster.getWidth();
-		int frameHeight = raster.getHeight();
+		float frameWidth = raster.getWidth();
+		float frameHeight = raster.getHeight();
 		float halfAngle = (Configuration.videoVAngle / 2);
 	    float degreePerRow = Configuration.videoVAngle/raster.getHeight();
 	    double camRecessed = Configuration.videoLaserDistance / Math.tan(halfAngle);
 
 		for (Sample sample : samples) {
-			sample.setAngle(Configuration.videoHAngle / frameWidth * sample.getColumn());
+			sample.setAngle(180 / frameWidth * sample.getColumn());
 
 			float row = sample.getRow();
 			if (row > frameHeight/2) {
