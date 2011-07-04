@@ -1,4 +1,4 @@
-package gui.log;
+package log;
 
 import java.awt.EventQueue;
 import java.awt.Graphics;

@@ -1,3 +1,5 @@
+import log.Logger;
+import log.Server;
 import map.Map;
 import map.MapUpdater;
 import sample.SampleScanner;
@@ -19,6 +21,7 @@ public class Marvin {
 	public static void main(String[] args) throws VideoException, V4L4JException, InterruptedException {
 
 		Configuration configuration = new Configuration();
+		Logger logger = new Logger();
 		Video video = new Video(configuration);
 
 		VideoDeviceInfo vdi = video.getDeviceInfo("/dev/video1");
@@ -28,13 +31,14 @@ public class Marvin {
 		Map map = new Map();
 		MapUpdater updater = new MapUpdater(map);
 
-		SampleScanner ss = new SampleScanner(updater);
+		SampleScanner ss = new SampleScanner(updater, logger);
 
 		video.startStreaming(ss);
 
 		Thread.sleep(2000);
 
-//		video.stopStreaming();
+		video.stopStreaming();
+		logger.close();
 
 		System.out.println(Thread.currentThread().getId() + " done");
 	}

@@ -7,5 +7,8 @@ public class Configuration {
 	public static final int videoVAngle = 36;
 	public static final int videoHAngle = 27;
 	public static final int videoLaserDistance = 8;
+	public static final int logginPort = 2889;
+
+	public static final String loggingServerAddress = "localhost";
 
 }

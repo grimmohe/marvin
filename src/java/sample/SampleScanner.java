@@ -3,6 +3,7 @@ package sample;
 import java.awt.image.Raster;
 import java.util.List;
 
+import log.Logger;
 import map.ScanMap;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
@@ -15,11 +16,13 @@ import conf.Configuration;
 public class SampleScanner implements CaptureCallback {
 
 	private SampleUpdate updater;
+	private Logger logger;
 	private SampleParserGrimm sampleParser = new SampleParserGrimm();
 	private boolean working = false;
 
-	public SampleScanner(SampleUpdate updater) {
+	public SampleScanner(SampleUpdate updater, Logger logger) {
 		this.updater = updater;
+		this.logger = logger;
 	}
 
 	public void exceptionReceived(V4L4JException e) {
@@ -37,10 +40,7 @@ public class SampleScanner implements CaptureCallback {
 			List<Sample> sampleList = sampleParser.generateSamples(frame);
 			sampleList = calculateDistances(sampleList, frame);
 
-			for (int ii=0;ii<sampleList.size();ii+=40) {
-				System.out.println(sampleList.get(ii));
-			}
-			System.out.println("-------------------------------------------------------------------");
+			this.logger.logSampleList(sampleList);
 
 			new SampleShrinker(sampleList).shrink();
 
@@ -49,18 +49,10 @@ public class SampleScanner implements CaptureCallback {
 
 			this.updater.update(sm);
 
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
 			this.working = false;
 		}
 
 		frame.recycle();
-
 	}
 
 	private List<Sample> calculateDistances(List<Sample> samples, VideoFrame frame) {
