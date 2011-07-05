@@ -52,13 +52,13 @@ public class Client extends Thread {
 				int length = 0;
 
 				for (int i = 3; i >= 0; i--) {
-					length += (in.read() & 0x000000FF) << (i*8);
+					length += (this.read(in) & 0x000000FF) << (i*8);
 				}
 
 				int read = 0;
 				byte[] data = new byte[length];
 				while ( read < length) {
-					read += in.read(data, read, length - read);
+					read += this.read(in, data, read, length - read);
 				}
 
 				logger.recreate(id, data);
@@ -75,6 +75,22 @@ public class Client extends Thread {
 			}
 
 		}
+	}
+
+	private int read(InputStream in) throws IOException {
+		int value = in.read();
+
+		if (value < 0) throw new IOException("End of stream");
+
+		return value;
+	}
+
+	private int read(InputStream in, byte[] data, int offset, int length) throws IOException {
+		int value = in.read(data, offset, length);
+
+		if (value < 0) throw new IOException("End of stream");
+
+		return value;
 	}
 
 }
