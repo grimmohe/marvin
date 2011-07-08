@@ -61,9 +61,11 @@ public class Client extends Thread {
 					read += this.read(in, data, read, length - read);
 				}
 
-				logger.recreate(id, data);
+				if (this.logger != null) {
+					logger.recreate(id, data);
+				}
 
-			} catch ( IOException e ) {
+			} catch ( Exception e ) {
 				e.printStackTrace();
 				System.out.println("Logger connection closing");
 				try {
