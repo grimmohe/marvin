@@ -22,7 +22,7 @@ public class Logger {
 
 	public Logger() {
 		super();
-		Server server = new Server();
+		Server server = new ServerImpl();
 		server.start();
 		this.server = server;
 	}
