@@ -9,73 +9,62 @@ import conf.Configuration;
 public class Client extends Thread {
 
 	private Logger logger;
+	private Socket server;
 
 	public Client(Logger logger) {
 		super();
 		this.logger = logger;
+		this.start();
 	}
 
 	@Override
 	public void run() {
-		Socket server = null;
-		while ( server == null ) {
-			try {
-				server = new Socket(Configuration.loggingServerAddress, Configuration.logginPort);
-			} catch (IOException e) {
-				System.out.println(e.getMessage());
-			}
-		}
+		this.server = null;
 
 		InputStream in;
-		try {
-			in = server.getInputStream();
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.out.println("Logger connection closing");
-			try {
-				server.close();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			return;
-		}
 
-		/*
-		 * data is expected in the following struct
-		 * 1 byte to identify the following data
-		 * 4 byte as integer to announce the length of the following data stream
-		 * n byte as announced above with user data
-		 */
-		while ( server.isConnected() ) {
-			try {
-				int id = in.read();
-				int length = 0;
+		endless: while (true) {
 
-				for (int i = 3; i >= 0; i--) {
-					length += (this.read(in) & 0x000000FF) << (i*8);
-				}
-
-				int read = 0;
-				byte[] data = new byte[length];
-				while ( read < length) {
-					read += this.read(in, data, read, length - read);
-				}
-
-				if (this.logger != null) {
-					logger.recreate(id, data);
-				}
-
-			} catch ( Exception e ) {
-				e.printStackTrace();
-				System.out.println("Logger connection closing");
+			while ( this.server != null && this.server.isConnected() ) {
 				try {
-					server.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
+					in = this.server.getInputStream();
+				} catch (IOException e) {
+					e.printStackTrace();
+					this.disconnect();
+					continue endless;
 				}
-				return;
+
+				/*
+				 * data is expected in the following struct
+				 * 1 byte to identify the following data
+				 * 4 byte as integer to announce the length of the following data stream
+				 * n byte as announced above with user data
+				 */
+				try {
+					int id = in.read();
+					int length = 0;
+
+					for (int i = 3; i >= 0; i--) {
+						length += (this.read(in) & 0x000000FF) << (i*8);
+					}
+
+					int read = 0;
+					byte[] data = new byte[length];
+					while ( read < length) {
+						read += this.read(in, data, read, length - read);
+					}
+
+					if (this.logger != null) {
+						logger.recreate(id, data);
+					}
+				} catch ( Exception e ) {
+					System.out.println(e.getMessage());
+					this.disconnect();
+					continue endless;
+				}
 			}
 
+			this.sleepStep();
 		}
 	}
 
@@ -93,6 +82,39 @@ public class Client extends Thread {
 		if (value < 0) throw new IOException("End of stream");
 
 		return value;
+	}
+
+	public void connect() {
+		for (int tryCount = 0; tryCount < 60 && (this.server == null || !this.server.isConnected()); tryCount++) {
+			try {
+				this.server = new Socket(Configuration.loggingServerAddress, Configuration.logginPort);
+				System.out.println("Connection established");
+			} catch (IOException e) {
+				System.out.println(e.getMessage());
+				this.sleepStep();
+			}
+		}
+	}
+
+	public void disconnect() {
+		if (this.server != null && this.server.isConnected()) {
+			try {
+				System.out.println("Connection closing");
+				this.server.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		this.server = null;
+	}
+
+	private void sleepStep() {
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

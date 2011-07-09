@@ -57,6 +57,7 @@ public class ServerImpl extends Thread implements Server {
 			try {
 				client = server.accept();
 				this.clients.add( client );
+				System.out.println("client connected from " + client.getInetAddress());
 			} catch ( IOException e ) {
 				e.printStackTrace();
 			}
@@ -97,6 +98,7 @@ public class ServerImpl extends Thread implements Server {
 	private void disconnectClient(Socket client) {
 		if (client.isConnected()) {
 			try {
+				System.out.println("client disconnecting from " + client.getInetAddress());
 				client.close();
 			} catch (IOException e) {
 				e.printStackTrace();

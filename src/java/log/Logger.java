@@ -70,6 +70,7 @@ public class Logger {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<Sample> deserializeSampleList(byte[] data)
 			throws IOException, ClassNotFoundException {
 
@@ -78,7 +79,6 @@ public class Logger {
 		ObjectInputStream in = new ObjectInputStream(bis);
 
 		return (ArrayList<Sample>) in.readObject();
-
 	}
 
 }
