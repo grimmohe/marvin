@@ -1,30 +1,35 @@
 package log;
 
+import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.Graphics;
-
-import javax.swing.JFrame;
-import javax.swing.JToolBar;
-import java.awt.BorderLayout;
-
-import javax.swing.JComponent;
-import javax.swing.JDesktopPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JPanel;
-import java.awt.SystemColor;
-import javax.swing.UIManager;
-import javax.swing.JButton;
 import java.awt.GridLayout;
-import javax.swing.JTextField;
-import javax.swing.JTextArea;
-import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.JToolBar;
+import javax.swing.UIManager;
+
+import map.Position;
+import sample.Sample;
 
 public class Viewer {
 
 	private JFrame	frame;
 	private final JToolBar toolBar = new JToolBar();
 	private JTextField txtLocalhost;
+	private JPanel	sampleListPanel;
+
+	private Draw draw;
+	private Logger logger;
+	private Client client;
 
 	/**
 	 * Launch the application.
@@ -81,59 +86,105 @@ public class Viewer {
 		textArea.setEditable(false);
 		connectionPanel.add(textArea);
 
-		JPanel samplePanel = new JPanel();
-		samplePanel.setBackground(UIManager.getColor("Panel.background"));
-		tabbedPane.addTab("Samples", null, samplePanel, null);
+		sampleListPanel = new JPanel();
+		sampleListPanel.setBackground(UIManager.getColor("Panel.background"));
+		tabbedPane.addTab("Samples", null, sampleListPanel, null);
 
 		JPanel nodePanel = new JPanel();
 		tabbedPane.addTab("Nodes", null, nodePanel, null);
 
-		btnConnect.addActionListener(new MyStarDrawer(samplePanel));
+		this.draw = new Draw(sampleListPanel);
+		this.logger = new Logger(this.draw);
+		this.client = new Client(this.logger);
+
+		btnConnect.addActionListener(new Connector(this.client));
+		btnDisconnect.addActionListener(new Disconnector(this.client));
 	}
 
 }
 
-class MyStarDrawer implements ActionListener {
+class Connector implements ActionListener {
 
-	private JPanel panel;
-	private Star star;
-	private int count = 1;
+	private Client client;
 
-	public MyStarDrawer(JPanel panel) {
+	public Connector(Client client) {
 		super();
+		this.client = client;
 
-		this.panel = panel;
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		Graphics g = this.panel.getGraphics();
-		int radius = this.panel.getHeight() / 2;
-
-		for (double angle = 0; angle < Math.PI; angle = angle + Math.PI / 16) {
-			double x1, x2, y1, y2;
-			x1 = Math.cos(angle + this.count) * radius + radius;
-			y1 = Math.sin(angle + this.count) * radius + radius;
-			x2 = Math.cos(angle + Math.PI + this.count) * radius + radius;
-			y2 = Math.sin(angle + Math.PI + this.count) * radius + radius;
-			g.drawLine((int)x1, (int)y1, (int)x2, (int)y2);
-		}
-
-		this.count++;
+		client.connect();
 	}
 
 }
 
-class Star extends JComponent {
+class Disconnector implements ActionListener {
 
-	private int radius;
+	private Client client;
 
-	public void paint(Graphics g) {
+	public Disconnector(Client client) {
+		super();
+		this.client = client;
 
-		System.out.println("debug");
 	}
-	public void setRadius(int radius) {
-		this.radius = radius;
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		client.disconnect();
 	}
+
+}
+
+class Draw implements ClientLoggerCallback {
+
+	JPanel sampleListPanel;
+	List<Sample> sampleList;
+	float sampleListRadius;
+
+	public Draw(JPanel sampleListPanel) {
+		super();
+		this.sampleListPanel = sampleListPanel;
+	}
+
+	@Override
+	public void newSampleList(List<Sample> samples) {
+
+		if (samples != null) this.sampleList = samples;
+
+		if (!this.sampleListPanel.isVisible()) return;
+
+		Graphics g = this.sampleListPanel.getGraphics();
+
+		float scale
+			= Math.max( this.sampleListRadius / this.sampleListPanel.getHeight(),
+						this.sampleListRadius / (sampleListPanel.getWidth()/2) );
+
+		float newRad = 1;
+		int startX = this.sampleListPanel.getWidth()/2;
+		int startY = this.sampleListPanel.getHeight();
+
+		g.clearRect(0, 0, sampleListPanel.getWidth(), sampleListPanel.getHeight());
+
+		g.drawString("Radius: " + this.sampleListRadius, 0, g.getFontMetrics().getHeight());
+
+		for (Sample sample : samples) {
+			newRad = Math.max(newRad, sample.getDistance());
+
+			Position pos = sample.getPosition();
+
+			g.drawLine
+				( startX,
+				  startY,
+				  (int) (startX + pos.x / scale),
+				  (int) (startY - pos.y / scale) );
+
+		}
+
+		this.sampleListRadius = newRad;
+	}
+
+
 }
 
