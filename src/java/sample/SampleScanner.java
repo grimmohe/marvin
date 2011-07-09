@@ -64,8 +64,6 @@ public class SampleScanner implements CaptureCallback {
 	    float degreePerRow = (float)Configuration.videoVAngle/raster.getHeight();
 	    double camRecessed = Configuration.videoLaserDistance * Math.tan(Math.toRadians(halfAngle));
 
-	    System.out.println(camRecessed);
-
 		for (Sample sample : samples) {
 			sample.setAngle(180 / frameWidth * sample.getColumn());
 

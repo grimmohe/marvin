@@ -1,5 +1,4 @@
 import log.Logger;
-import log.Server;
 import map.Map;
 import map.MapUpdater;
 import sample.SampleScanner;

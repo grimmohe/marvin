@@ -1,16 +1,13 @@
 package log;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.*;
+import org.junit.Test;
 
 import sample.Sample;
 
