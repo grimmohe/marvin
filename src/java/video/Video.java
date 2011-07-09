@@ -63,7 +63,7 @@ public class Video {
 					if ( frames >= Configuration.videoFramesMin
 					     && (opt == null
 					         || (frames < opt.interval
-						         && res.height > opt.height
+						         && res.height >= opt.height
 						         && res.width >= opt.width) ) )
 					{
 						opt = new DeviceOptimals();
@@ -128,6 +128,7 @@ public class Video {
 		}
 
 		activeFrameGrabber = activeVideo.getRGBFrameGrabber(opt.width, opt.height, opt.input, opt.channel);
+		activeFrameGrabber.setFrameInterval(opt.intervalNumerator, opt.intervalDenominator);
 		activeFrameGrabber.setCaptureCallback(cc);
 		activeFrameGrabber.startCapture();
 	}
