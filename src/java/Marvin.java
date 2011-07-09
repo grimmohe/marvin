@@ -7,7 +7,6 @@ import video.Video;
 import video.VideoDeviceInfo;
 import video.VideoException;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
-import conf.Configuration;
 
 
 public class Marvin {
@@ -20,9 +19,8 @@ public class Marvin {
 	 */
 	public static void main(String[] args) throws VideoException, V4L4JException, InterruptedException {
 
-		Configuration configuration = new Configuration();
 		Logger logger = new Logger();
-		Video video = new Video(configuration);
+		Video video = new Video();
 
 		VideoDeviceInfo vdi = video.getDeviceInfo("/dev/video1");
 		System.out.println(vdi);

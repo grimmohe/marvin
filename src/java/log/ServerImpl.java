@@ -52,7 +52,7 @@ public class ServerImpl extends Thread implements Server {
 
 	@Override
 	public void run() {
-		while ( !this.interrupted() ) {
+		while ( !Thread.interrupted() ) {
 			Socket client = null;
 			try {
 				client = server.accept();

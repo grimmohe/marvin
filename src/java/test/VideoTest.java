@@ -10,7 +10,6 @@ import video.Video;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
-import conf.Configuration;
 
 public class VideoTest {
 
@@ -25,7 +24,7 @@ public class VideoTest {
 	@Test
 	public void runstream() throws Exception {
 		Capture cap = new Capture();
-		Video video = new Video(new Configuration());
+		Video video = new Video();
 
 		video.setActiveVideoDevice(video.getVideoDevices().get(0));
 		video.startStreaming(cap);

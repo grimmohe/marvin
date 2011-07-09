@@ -16,8 +16,6 @@ import conf.Configuration;
 
 public class Video {
 
-	private Configuration configuration;
-
 	private VideoDevice activeVideo;
 	private FrameGrabber activeFrameGrabber;
 
@@ -62,7 +60,7 @@ public class Video {
 				for (DiscreteInterval interval: res.interval.getDiscreteIntervals()) {
 					int frames = interval.denominator / Math.max(1, interval.numerator);
 
-					if ( frames >= configuration.videoFramesMin
+					if ( frames >= Configuration.videoFramesMin
 					     && (opt == null
 					         || (frames < opt.interval
 						         && res.height > opt.height
@@ -84,10 +82,6 @@ public class Video {
 		}
 
 		return opt;
-	}
-
-	public Video(Configuration configuration) {
-		this.configuration = configuration;
 	}
 
 	@Override
