@@ -67,22 +67,42 @@ public class ServerImpl extends Thread implements Server {
 	 * send data to all connected clients
 	 */
 	public void write(int id, byte[] data) {
-		for (Socket client: this.clients) {
-			try {
-				OutputStream out = client.getOutputStream();
-				out.write(id);
+		Socket client = null;
 
-				int len = data.length;
-				for (int i = 3; i >= 0; i--) {
-					out.write((len >> (i*8)) & 0x000000FF);
+		for (int clientIndex = 0; clientIndex < this.clients.size(); clientIndex++) {
+			try {
+				client = this.clients.get(clientIndex);
+
+				if ( client.isConnected() ) {
+					OutputStream out = client.getOutputStream();
+					out.write(id);
+
+					int len = data.length;
+					for (int i = 3; i >= 0; i--) {
+						out.write((len >> (i*8)) & 0x000000FF);
+					}
+
+					out.write(data);
+				} else {
+					disconnectClient(client);
 				}
 
-				client.getOutputStream().write(data);
 			} catch (IOException e) {
-				this.clients.remove(client);
+				disconnectClient(client);
 				System.out.println(e.getMessage());
 			}
 		}
+	}
+
+	private void disconnectClient(Socket client) {
+		if (client.isConnected()) {
+			try {
+				client.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		this.clients.remove(client);
 	}
 
 	@Override
