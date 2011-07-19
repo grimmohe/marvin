@@ -180,7 +180,8 @@ class Draw implements ClientLoggerCallback {
 
 		g.clearRect(0, 0, sampleListPanel.getWidth(), sampleListPanel.getHeight());
 
-		g.drawString("Radius: " + this.sampleListRadius, 0, g.getFontMetrics().getHeight());
+		g.drawString("#: " + this.sampleList.size(), 0, g.getFontMetrics().getHeight());
+		g.drawString("Radius: " + this.sampleListRadius, 0, 2+(g.getFontMetrics().getHeight()*2));
 
 		Position lastPos = null;
 
