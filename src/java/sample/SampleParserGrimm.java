@@ -53,7 +53,7 @@ public class SampleParserGrimm {
 		int rowMin = 0;
 		int rowMax = pixels.length;
 
-		if (!Configuration.useTopLaser) rowMin = rowMax / 2;
+		if (!Configuration.useTopLaser) rowMin = rowMax / 3 / 2 * 3;
 		if (!Configuration.useBottomLaser) rowMax = rowMax / 2;
 
 		for (int row = rowMin; row < rowMax; row+=3) {

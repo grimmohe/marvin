@@ -16,9 +16,9 @@ public class SampleShrinkerTest {
 	@Test
 	public void testSampleShrinker() {
 
-		SampleShrinker sampleShrinker = new SampleShrinker(createSampleList());
+		SampleShrinker sampleShrinker = new SampleShrinker();
 
-		sampleShrinker.shrink();
+		sampleShrinker.adapt(createSampleList());
 
 		List<Sample> shrinkedSampleList = sampleShrinker.getSampleList();
 		assertEquals(2, shrinkedSampleList.size());
