@@ -55,7 +55,7 @@ public class Video {
 	private DeviceOptimals getDeviceOptimals(VideoDevice vd) throws V4L4JException, VideoException {
 		DeviceOptimals opt = null;
 
-		for (ImageFormat imgf: vd.getDeviceInfo().getFormatList().getNativeFormats()) {
+		for (ImageFormat imgf: vd.getDeviceInfo().getFormatList().getRGBEncodableFormats()) {
 			for (DiscreteResolution res: imgf.getResolutionInfo().getDiscreteResolutions()) {
 				for (DiscreteInterval interval: res.interval.getDiscreteIntervals()) {
 					int frames = interval.denominator / Math.max(1, interval.numerator);
