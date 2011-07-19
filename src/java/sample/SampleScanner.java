@@ -19,6 +19,8 @@ public class SampleScanner implements CaptureCallback {
 	private Logger logger;
 	private SampleParserGrimm sampleParser = new SampleParserGrimm();
 	private boolean working = false;
+	private SampleShrinker sampleShrinker = new SampleShrinker();
+
 
 	public SampleScanner(SampleUpdate updater, Logger logger) {
 		this.updater = updater;
@@ -41,9 +43,10 @@ public class SampleScanner implements CaptureCallback {
 			sampleList = calculateDistances(sampleList, frame);
 
 			this.logger.logSampleList(sampleList);
-
-			new SampleShrinker(sampleList).shrink();
-
+			
+			sampleShrinker.adapt(sampleList);
+			sampleList = sampleShrinker.getSampleList();
+			
 			this.logger.logNodeList(sampleList);
 
 			ScanMap sm = new ScanMap();
