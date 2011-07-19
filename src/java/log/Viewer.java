@@ -25,7 +25,6 @@ public class Viewer {
 	private JFrame	frame;
 	private final JToolBar toolBar = new JToolBar();
 	private JTextField txtLocalhost;
-	private JPanel	sampleListPanel;
 
 	private Draw draw;
 	private Logger logger;
@@ -86,14 +85,15 @@ public class Viewer {
 		textArea.setEditable(false);
 		connectionPanel.add(textArea);
 
-		sampleListPanel = new JPanel();
+		JPanel sampleListPanel = new JPanel();
 		sampleListPanel.setBackground(UIManager.getColor("Panel.background"));
 		tabbedPane.addTab("Samples", null, sampleListPanel, null);
 
 		JPanel nodePanel = new JPanel();
+		nodePanel.setBackground(UIManager.getColor("Panel.background"));
 		tabbedPane.addTab("Nodes", null, nodePanel, null);
 
-		this.draw = new Draw(sampleListPanel);
+		this.draw = new Draw(sampleListPanel, nodePanel);
 		this.logger = new Logger(this.draw);
 		this.client = new Client(this.logger);
 
@@ -143,9 +143,14 @@ class Draw implements ClientLoggerCallback {
 	List<Sample> sampleList;
 	float sampleListRadius;
 
-	public Draw(JPanel sampleListPanel) {
+	JPanel nodePanel;
+	List<Sample> nodes;
+	float nodeRadius;
+
+	public Draw(JPanel sampleListPanel, JPanel nodePanel) {
 		super();
 		this.sampleListPanel = sampleListPanel;
+		this.nodePanel = nodePanel;
 	}
 
 	@Override
@@ -159,7 +164,7 @@ class Draw implements ClientLoggerCallback {
 
 		float scale
 			= Math.max( this.sampleListRadius / this.sampleListPanel.getHeight(),
-						this.sampleListRadius / (sampleListPanel.getWidth()/2) );
+						this.sampleListRadius / (this.sampleListPanel.getWidth()/2) );
 
 		float newRad = 1;
 		int startX = this.sampleListPanel.getWidth()/2;
@@ -169,22 +174,69 @@ class Draw implements ClientLoggerCallback {
 
 		g.drawString("Radius: " + this.sampleListRadius, 0, g.getFontMetrics().getHeight());
 
-		for (Sample sample : samples) {
+		Position lastPos = null;
+
+		for (Sample sample : this.sampleList) {
 			newRad = Math.max(newRad, sample.getDistance());
 
 			Position pos = sample.getPosition();
 
-			g.drawLine
-				( startX,
-				  startY,
-				  (int) (startX + pos.x / scale),
-				  (int) (startY - pos.y / scale) );
+			if (lastPos != null) {
+				g.drawLine
+					( (int) (startX + lastPos.x / scale),
+					  (int) (startY - lastPos.y / scale),
+					  (int) (startX + pos.x / scale),
+					  (int) (startY - pos.y / scale) );
+			}
 
+			lastPos = pos;
 		}
 
 		this.sampleListRadius = newRad;
 	}
 
+	@Override
+	public void newNodeList(List<Sample> nodes) {
+
+		if (nodes != null) this.nodes = nodes;
+
+		if (!this.nodePanel.isVisible()) return;
+
+		Graphics g = this.nodePanel.getGraphics();
+
+		float scale
+			= Math.max( this.nodeRadius / this.nodePanel.getHeight(),
+						this.nodeRadius / (this.nodePanel.getWidth()/2) );
+
+		float newRad = 1;
+		int startX = this.nodePanel.getWidth()/2;
+		int startY = this.nodePanel.getHeight();
+
+		g.clearRect(0, 0, this.nodePanel.getWidth(), this.nodePanel.getHeight());
+
+		g.drawString("Radius: " + this.nodeRadius, 0, g.getFontMetrics().getHeight());
+
+		Position lastPos = null;
+
+		for (Sample node : this.nodes) {
+			newRad = Math.max(newRad, node.getDistance());
+
+			Position pos = node.getPosition();
+
+			if (lastPos != null) {
+				g.drawLine
+					( (int) (startX + lastPos.x / scale),
+					  (int) (startY - lastPos.y / scale),
+					  (int) (startX + pos.x / scale),
+					  (int) (startY - pos.y / scale) );
+			}
+
+			lastPos = pos;
+		}
+
+		this.nodeRadius = newRad;
+
+	}
 
 }
 

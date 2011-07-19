@@ -44,6 +44,8 @@ public class SampleScanner implements CaptureCallback {
 
 			new SampleShrinker(sampleList).shrink();
 
+			this.logger.logNodeList(sampleList);
+
 			ScanMap sm = new ScanMap();
 			sm.read(sampleList);
 
