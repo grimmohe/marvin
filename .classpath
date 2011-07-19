@@ -5,5 +5,20 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/usr/share/java/v4l4j.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/geronimo-jta_1.1_spec-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/lucene-core-3.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-community-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-cypher-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-graph-algo-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-graph-matching-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-jmx-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-kernel-1.4-tests.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-kernel-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-lucene-index-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-shell-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/neo4j-udc-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/org.apache.servicemix.bundles.jline-0.9.94_1.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/scala-library-2.9.0-1.jar"/>
+	<classpathentry kind="lib" path="lib/neo4j-1.4/server-api-1.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
