@@ -19,6 +19,8 @@ import javax.swing.UIManager;
 
 import map.Position;
 import sample.Sample;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 
 public class Viewer {
 
@@ -99,6 +101,7 @@ public class Viewer {
 
 		btnConnect.addActionListener(new Connector(this.client));
 		btnDisconnect.addActionListener(new Disconnector(this.client));
+		tabbedPane.addChangeListener(new TabChange(this.draw));
 	}
 
 }
@@ -153,12 +156,17 @@ class Draw implements ClientLoggerCallback {
 		this.nodePanel = nodePanel;
 	}
 
+	public void redraw() {
+		this.newSampleList(null);
+		this.newNodeList(null);
+	}
+
 	@Override
 	public void newSampleList(List<Sample> samples) {
 
 		if (samples != null) this.sampleList = samples;
 
-		if (!this.sampleListPanel.isVisible()) return;
+		if (!this.sampleListPanel.isVisible() || this.sampleList == null) return;
 
 		Graphics g = this.sampleListPanel.getGraphics();
 
@@ -200,7 +208,7 @@ class Draw implements ClientLoggerCallback {
 
 		if (nodes != null) this.nodes = nodes;
 
-		if (!this.nodePanel.isVisible()) return;
+		if (!this.nodePanel.isVisible() || this.nodes == null) return;
 
 		Graphics g = this.nodePanel.getGraphics();
 
@@ -236,6 +244,22 @@ class Draw implements ClientLoggerCallback {
 
 		this.nodeRadius = newRad;
 
+	}
+
+}
+
+class TabChange implements ChangeListener {
+
+	private Draw draw;
+
+	public TabChange(Draw draw) {
+		super();
+		this.draw = draw;
+	}
+
+	@Override
+	public void stateChanged(ChangeEvent e) {
+		this.draw.redraw();
 	}
 
 }
