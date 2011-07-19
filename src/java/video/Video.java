@@ -62,7 +62,7 @@ public class Video {
 
 					if ( frames >= Configuration.videoFramesMin
 					     && (opt == null
-					         || (frames < opt.interval
+					         || (frames <= opt.interval
 						         && res.height >= opt.height
 						         && res.width >= opt.width) ) )
 					{
