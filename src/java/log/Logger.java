@@ -19,6 +19,7 @@ public class Logger {
 	private ClientLoggerCallback clientCb;
 
 	private final static int SAMPLE_LIST = 1;
+	private final static int NODE_LIST = 2;
 
 	public Logger() {
 		super();
@@ -43,6 +44,18 @@ public class Logger {
 		}
 	}
 
+	public void logNodeList(List<Sample> nodes) {
+		ByteArrayOutputStream bout = new ByteArrayOutputStream();
+		ObjectOutputStream oout;
+		try {
+			oout = new ObjectOutputStream(bout);
+			oout.writeObject(nodes);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		server.write(NODE_LIST, bout.toByteArray());
+	}
+
 	public void logSampleList(List<Sample> samples) {
 		ByteArrayOutputStream bout = new ByteArrayOutputStream();
 		ObjectOutputStream oout;
@@ -63,11 +76,25 @@ public class Logger {
 			throws IOException, ClassNotFoundException {
 
 		switch(ident) {
+			case NODE_LIST: {
+				clientCb.newNodeList(deserializeNodeList(data));
+			}
 			case SAMPLE_LIST: {
 				clientCb.newSampleList(deserializeSampleList(data));
 			}
 		}
 
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<Sample> deserializeNodeList(byte[] data)
+			throws IOException, ClassNotFoundException {
+
+		ByteArrayInputStream bis = new ByteArrayInputStream(data);
+
+		ObjectInputStream in = new ObjectInputStream(bis);
+
+		return (ArrayList<Sample>) in.readObject();
 	}
 
 	@SuppressWarnings("unchecked")
