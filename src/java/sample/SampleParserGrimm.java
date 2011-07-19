@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import conf.Configuration;
+
 import au.edu.jcu.v4l4j.VideoFrame;
 
 public class SampleParserGrimm {
@@ -48,7 +50,13 @@ public class SampleParserGrimm {
 		List<Sample> samples = new ArrayList<Sample>();
 		Sample sample = null;
 
-		for (int row = 0; row < pixels.length; row+=3) {
+		int rowMin = 0;
+		int rowMax = pixels.length;
+
+		if (!Configuration.useTopLaser) rowMin = rowMax / 2;
+		if (!Configuration.useBottomLaser) rowMax = rowMax / 2;
+
+		for (int row = rowMin; row < rowMax; row+=3) {
 			int light = Math.max(0, pixels[row] - pixels[row+1] - pixels[row+2]);
 			lightSum += light;
 
