@@ -32,12 +32,10 @@ public class Marvin {
 
 		video.startStreaming(ss);
 
-		Thread.sleep(2000);
+		while (true) {
+			Thread.sleep(2000);
+		}
 
-		video.stopStreaming();
-		logger.close();
-
-		System.out.println(Thread.currentThread().getId() + " done");
 	}
 
 }
