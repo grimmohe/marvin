@@ -1,6 +1,7 @@
 package sample;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SampleShrinker {
@@ -26,27 +27,38 @@ public class SampleShrinker {
 		for (List<Sample> sampleList2 : listList) {
 			minSize = Math.min(sampleList2.size(), minSize);
 		}
-//		System.out.println("minsize: " + minSize);
 		
+		List<List<Sample>> tempApproxList = new ArrayList<List<Sample>>();
 		for (List<Sample> sampleList2 : listList) {
-			int removeNEntrie = sampleList2.size() % minSize;
-			System.out.println("1: listSize: " + sampleList2.size() + ", minSize: " + minSize + ", removeNEntries: " + removeNEntrie);
-			if(removeNEntrie>0 && sampleList2.size()>minSize)  {
-				System.out.println("remove every: " + sampleList2.size()/removeNEntrie);
-				System.out.println("remove every: " + sampleList2.size()%removeNEntrie);
-				for(int i=sampleList2.size()-1;i>=0; i-=removeNEntrie) {
-//					System.out.println("remove entrie " + i);
-					sampleList2.remove(i);
-				}
-			}
-			System.out.println("2: listSize: " + sampleList2.size() + ", minSize: " + minSize);
+			tempApproxList.add(resizeList(sampleList2, minSize));
 		}
+
+		List<Sample> tempSampleList = approximate(tempApproxList);
 		
-		List<Sample> shrinkedSampleList = shrink(sampleList);
+		List<Sample> shrinkedSampleList = shrink(tempSampleList);
+		
+		System.out.println("adapt new list: lists: " + listList.size() + ", currListSize: " + shrinkedSampleList.size());
+		
 		this.sampleList = shrinkedSampleList;
 		
 	}
 	
+	private List<Sample> approximate(List<List<Sample>> lists) {
+		
+		int numLists = lists.size();
+		int length = lists.get(0).size();
+		List<Sample> approxList = new ArrayList<Sample>();
+		for(int item=0;item<length;item++) {
+			float approxRow=0;
+			for(int list=0; list<numLists; list++) {
+				approxRow += lists.get(list).get(item).getRow();
+			}
+			approxList.add(new Sample(approxRow/numLists, 0.0F));
+		}
+		return approxList;
+		
+	}
+
 	private List<Sample> shrink(List<Sample> sampleList) {
 
 		List<Sample> sampleListCopy = new ArrayList<Sample>();
@@ -80,4 +92,24 @@ public class SampleShrinker {
 		return sampleList;
 	}
 
+	public List<Sample> resizeList(List<Sample> samples, int newWidth) {
+		int oldWidth = samples.size();
+		Sample[] newSamples = new Sample[newWidth];
+		
+		if(oldWidth == newWidth) {
+			return samples;
+		}
+
+//		System.out.println("resize from "+samples.size()+" to " + newWidth + "("+newSamples.length+")");
+	    int x_ratio = (int)((oldWidth<<16)/newWidth)+1;
+	    int x2 ;
+        for (int j=0;j<newWidth;j++) {
+            x2 = ((j*x_ratio)>>16) ;
+            newSamples[j] = samples.get(x2);
+        }                
+        
+        List<Sample> newSamplesList = new ArrayList<Sample>(Arrays.asList(newSamples));
+		return newSamplesList;
+	}	
+	
 }
