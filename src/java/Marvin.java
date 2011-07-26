@@ -21,7 +21,7 @@ public class Marvin {
 		Logger logger = new Logger();
 		Video video = new Video();
 
-		VideoDeviceInfo vdi = video.getDeviceInfo("/dev/video1");
+		VideoDeviceInfo vdi = video.getDeviceInfo("/dev/video2");
 		System.out.println(vdi);
 		video.setActiveVideoDevice(vdi);
 

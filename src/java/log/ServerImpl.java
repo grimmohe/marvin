@@ -67,7 +67,7 @@ public class ServerImpl extends Thread implements Server {
 	/*
 	 * send data to all connected clients
 	 */
-	public void write(int id, byte[] data) {
+	public synchronized void write(int id, byte[] data) {
 		Socket client = null;
 
 		for (int clientIndex = 0; clientIndex < this.clients.size(); clientIndex++) {
@@ -77,7 +77,6 @@ public class ServerImpl extends Thread implements Server {
 				if ( client.isConnected() ) {
 					OutputStream out = client.getOutputStream();
 					out.write(id);
-
 					int len = data.length;
 					for (int i = 3; i >= 0; i--) {
 						out.write((len >> (i*8)) & 0x000000FF);

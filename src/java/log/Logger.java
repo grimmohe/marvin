@@ -18,8 +18,8 @@ public class Logger {
 	private Server server;
 	private ClientLoggerCallback clientCb;
 
-	private final static int SAMPLE_LIST = 1;
-	private final static int NODE_LIST = 2;
+	private final static int SAMPLE_LIST = 50;
+	private final static int NODE_LIST = 60;
 
 	public Logger() {
 		super();
@@ -50,6 +50,8 @@ public class Logger {
 		try {
 			oout = new ObjectOutputStream(bout);
 			oout.writeObject(nodes);
+			oout.close();
+			bout.close();			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -62,6 +64,8 @@ public class Logger {
 		try {
 			oout = new ObjectOutputStream(bout);
 			oout.writeObject(samples);
+			oout.close();
+			bout.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -78,9 +82,11 @@ public class Logger {
 		switch(ident) {
 			case NODE_LIST: {
 				clientCb.newNodeList(deserializeNodeList(data));
+				break;
 			}
 			case SAMPLE_LIST: {
 				clientCb.newSampleList(deserializeSampleList(data));
+				break;
 			}
 		}
 
