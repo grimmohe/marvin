@@ -16,26 +16,32 @@ public class Marvin {
 	 * @throws VideoException
 	 * @throws InterruptedException
 	 */
-	public static void main(String[] args) throws VideoException, V4L4JException, InterruptedException {
+	public static void main(String[] args) {
 
 		Logger logger = new Logger();
 		Video video = new Video();
 
+		try {
 		VideoDeviceInfo vdi = video.getDeviceInfo("/dev/video2");
-		System.out.println(vdi);
-		video.setActiveVideoDevice(vdi);
+			System.out.println(vdi);
+			video.setActiveVideoDevice(vdi);
 
-		Map map = new Map();
-		MapUpdater updater = new MapUpdater(map);
+			Map map = new Map();
+			MapUpdater updater = new MapUpdater(map);
 
-		SampleScanner ss = new SampleScanner(updater, logger);
+			SampleScanner ss = new SampleScanner(updater, logger);
 
-		video.startStreaming(ss);
+			video.startStreaming(ss);
 
-		while (true) {
-			Thread.sleep(2000);
+			while (true) {
+				Thread.sleep(2000);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
+		video.stopStreaming();
+		logger.close();
 	}
 
 }
