@@ -2,23 +2,33 @@ package sample;
 
 import java.io.Serializable;
 
-import au.edu.jcu.v4l4j.VideoFrame;
-
 public class RawImageData implements Serializable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	VideoFrame frame;
+	private byte[] frame;
+	private int width;
+	private int height;
 
-	public RawImageData(VideoFrame frame) {
+	public RawImageData(byte[] bufferedImage, int width, int height) {
 		super();
-		this.frame = frame;
+		this.frame = bufferedImage;
+		this.width = width;
+		this.height = height;
 	}
 	
-	public VideoFrame getFrame() {
+	public byte[] getFrame() {
 		return frame;
+	}
+	
+	public int getHeight() {
+		return height;
+	}
+	
+	public int getWidth() {
+		return width;
 	}
 	
 }

@@ -40,7 +40,7 @@ public class SampleScanner implements CaptureCallback {
 		if (!this.working) {
 			this.working = true;
 
-			logger.logRawImage(new RawImageData(frame));
+			logger.logRawImage(new RawImageData(frame.getBytes(), frame.getBufferedImage().getWidth(), frame.getBufferedImage().getHeight()));
 			
 			List<Sample> sampleList = sampleParser.generateSamples(frame);
 			sampleList = calculateDistances(sampleList, frame);
