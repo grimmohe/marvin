@@ -1,6 +1,7 @@
 package log;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.GridLayout;
@@ -149,6 +150,7 @@ class Draw implements ClientLoggerCallback {
 
 	JPanel rawImagePanel;
 	Image rawImage;
+	List<Sample> rawRowNodes;
 
 	JPanel sampleListPanel;
 	List<Sample> sampleList;
@@ -215,7 +217,6 @@ class Draw implements ClientLoggerCallback {
 		this.sampleListPanel.getGraphics().drawImage(img, 0, 0, null);
 
 		this.sampleListRadius = newRad;
-//		(new NullPointerException("test")).printStackTrace();
 	}
 
 	@Override
@@ -273,6 +274,20 @@ class Draw implements ClientLoggerCallback {
 
 		if (!this.rawImagePanel.isVisible() || this.rawImage == null) return;
 
+		if (this.sampleList != null) {
+			Graphics g = this.rawImage.getGraphics();
+			g.setColor(new Color(0, 255, 255));
+			for (Sample sample: this.sampleList) {
+				int intensity = (int) sample.getIntensity();
+				g.drawOval(
+						sample.getColumn() - (intensity / 2),
+						(int)sample.getRow() - (intensity / 2),
+						intensity,
+						intensity
+						);
+			}
+		}
+
 		this.rawImagePanel.getGraphics().drawImage
 			( this.rawImage,
 			  0, 0, this.nodePanel.getWidth(), this.nodePanel.getHeight(),
@@ -282,7 +297,8 @@ class Draw implements ClientLoggerCallback {
 
 	@Override
 	public void newRowNodes(List<Sample> deserializeSampleList) {
-		// TODO Auto-generated method stub
+
+		if (deserializeSampleList != null) this.rawRowNodes = deserializeSampleList;
 
 	}
 
