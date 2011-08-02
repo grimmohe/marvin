@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
@@ -168,7 +169,9 @@ class Draw implements ClientLoggerCallback {
 
 		if (!this.sampleListPanel.isVisible() || this.sampleList == null) return;
 
-		Graphics g = this.sampleListPanel.getGraphics();
+		Image img = this.sampleListPanel.createImage(this.sampleListPanel.getWidth(), this.sampleListPanel.getHeight());
+
+		Graphics g = img.getGraphics();
 
 		float scale
 			= Math.max( this.sampleListRadius / this.sampleListPanel.getHeight(),
@@ -201,6 +204,8 @@ class Draw implements ClientLoggerCallback {
 			lastPos = pos;
 		}
 
+		this.sampleListPanel.getGraphics().drawImage(img, 0, 0, null);
+
 		this.sampleListRadius = newRad;
 	}
 
@@ -211,7 +216,9 @@ class Draw implements ClientLoggerCallback {
 
 		if (!this.nodePanel.isVisible() || this.nodes == null) return;
 
-		Graphics g = this.nodePanel.getGraphics();
+		Image img = this.sampleListPanel.createImage(this.nodePanel.getWidth(), this.nodePanel.getHeight());
+
+		Graphics g = img.getGraphics();
 
 		float scale
 			= Math.max( this.nodeRadius / this.nodePanel.getHeight(),
@@ -242,6 +249,8 @@ class Draw implements ClientLoggerCallback {
 
 			lastPos = pos;
 		}
+
+		this.nodePanel.getGraphics().drawImage(img, 0, 0, null);
 
 		this.nodeRadius = newRad;
 
