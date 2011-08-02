@@ -2,6 +2,7 @@ package video;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import au.edu.jcu.v4l4j.CaptureCallback;
@@ -34,6 +35,8 @@ public class Video {
 		for (File file : fl) {
 			resultList.add(file.getAbsolutePath());
 		}
+
+		Collections.sort(resultList);
 
 		return resultList;
 	}
