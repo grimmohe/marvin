@@ -1,6 +1,7 @@
 package sample;
 
 import java.awt.image.Raster;
+import java.util.ArrayList;
 import java.util.List;
 
 import log.Logger;
@@ -44,15 +45,20 @@ public class SampleScanner implements CaptureCallback {
 
 			this.logger.logSampleList(sampleList);
 			
-			sampleShrinker.adapt(sampleList);
-			sampleList = sampleShrinker.getSampleList();
 			
-			this.logger.logNodeList(sampleList);
+			List<Sample> shrinkedSampleList = sampleShrinker.adapt(sampleList);
 
-			ScanMap sm = new ScanMap();
-			sm.read(sampleList);
+			shrinkedSampleList = calculateDistances(shrinkedSampleList, frame);
+//			List<Sample> shrinkedSampleList = new ArrayList<Sample>();
+			
+			this.logger.logNodeList(shrinkedSampleList);
 
-			this.updater.update(sm);
+			if(shrinkedSampleList.size() > 0) {
+				ScanMap sm = new ScanMap();
+				sm.read(shrinkedSampleList);
+
+				this.updater.update(sm);
+			}
 
 			this.working = false;
 		}
@@ -68,7 +74,8 @@ public class SampleScanner implements CaptureCallback {
 		float halfAngle = 90F - (Configuration.videoVAngle / 2);
 	    float degreePerRow = (float)Configuration.videoVAngle/raster.getHeight();
 	    double camRecessed = Configuration.videoLaserDistance * Math.tan(Math.toRadians(halfAngle));
-
+	    List<Sample> removableSamples = new ArrayList<Sample>();
+	    
 		for (Sample sample : samples) {
 			sample.setAngle(180 / frameWidth * sample.getColumn());
 
@@ -79,9 +86,11 @@ public class SampleScanner implements CaptureCallback {
 
 			float angle = halfAngle + row * degreePerRow;
 			double distance = Configuration.videoLaserDistance * Math.tan(Math.toRadians(angle)) - camRecessed;
-
+			if(row<30)
+				removableSamples.add(sample);
 			sample.setDistance((float) distance);
 		}
+		samples.removeAll(removableSamples);
 		return samples;
 
 	}

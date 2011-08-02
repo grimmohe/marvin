@@ -22,7 +22,7 @@ public class Marvin {
 		Video video = new Video();
 
 		try {
-			VideoDeviceInfo vdi = video.getDeviceInfo("/dev/video1");
+		VideoDeviceInfo vdi = video.getDeviceInfo("/dev/video2");
 			System.out.println(vdi);
 			video.setActiveVideoDevice(vdi);
 

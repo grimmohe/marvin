@@ -158,16 +158,16 @@ class Draw implements ClientLoggerCallback {
 	}
 
 	public void redraw() {
-		this.newSampleList(null);
-		this.newNodeList(null);
+//		this.newSampleList(null);
+//		this.newNodeList(null);
 	}
 
 	@Override
 	public void newSampleList(List<Sample> samples) {
-
+		
 		if (samples != null) this.sampleList = samples;
 
-		if (!this.sampleListPanel.isVisible() || this.sampleList == null) return;
+		if (!this.sampleListPanel.isVisible() || this.sampleList == null || this.sampleList.size() == 0) return;
 
 		Image img = this.sampleListPanel.createImage(this.sampleListPanel.getWidth(), this.sampleListPanel.getHeight());
 
@@ -207,6 +207,7 @@ class Draw implements ClientLoggerCallback {
 		this.sampleListPanel.getGraphics().drawImage(img, 0, 0, null);
 
 		this.sampleListRadius = newRad;
+//		(new NullPointerException("test")).printStackTrace();
 	}
 
 	@Override
@@ -230,7 +231,8 @@ class Draw implements ClientLoggerCallback {
 
 		g.clearRect(0, 0, this.nodePanel.getWidth(), this.nodePanel.getHeight());
 
-		g.drawString("Radius: " + this.nodeRadius, 0, g.getFontMetrics().getHeight());
+		g.drawString("#: " + this.nodes.size(), 0, g.getFontMetrics().getHeight());
+		g.drawString("Radius: " + this.nodeRadius, 0, 2+(g.getFontMetrics().getHeight()*2));
 
 		Position lastPos = null;
 

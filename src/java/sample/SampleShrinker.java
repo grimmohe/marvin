@@ -7,21 +7,25 @@ import java.util.List;
 public class SampleShrinker {
 
 	private List<Sample> sampleList = new ArrayList<Sample>();
-	private final int TRESH_HOLD = 100;
-	private final int APPROXIMATE = 5;
+	private final float TRESH_HOLD = 1.5F;
+	private final float TRESH_HOLD_N = TRESH_HOLD * -1;
+	private final int APPROXIMATE = 10;
 	private List<List<Sample>> listList = new ArrayList<List<Sample>>();
 	
 	public SampleShrinker() {
 		super();
 	}
 
-	public void adapt(List<Sample> sampleList) {
+	public List<Sample> adapt(List<Sample> sampleList) {
 		
 		if(listList.size()>= APPROXIMATE) {
 			listList.remove(0);
 		}
+
+		List<Sample> sampleListCopy = new ArrayList<Sample>();
+		sampleListCopy.addAll(sampleList);
 		
-		listList.add(sampleList);
+		listList.add(sampleListCopy);
 		
 		int minSize=listList.get(0).size();
 		for (List<Sample> sampleList2 : listList) {
@@ -37,9 +41,9 @@ public class SampleShrinker {
 		
 		List<Sample> shrinkedSampleList = shrink(tempSampleList);
 		
-		System.out.println("adapt new list: lists: " + listList.size() + ", currListSize: " + shrinkedSampleList.size());
+//		System.out.println("adapt new list: lists: " + listList.size() + ", currListSize: " + shrinkedSampleList.size());
 		
-		this.sampleList = shrinkedSampleList;
+		return shrinkedSampleList;
 		
 	}
 	
@@ -48,12 +52,20 @@ public class SampleShrinker {
 		int numLists = lists.size();
 		int length = lists.get(0).size();
 		List<Sample> approxList = new ArrayList<Sample>();
-		for(int item=0;item<length;item++) {
-			float approxRow=0;
+		for(int item=0;item<length && length > 0 && numLists > 0;item++) {
+			float approxRow=0, intensity=0, angle=0, distance=0;
 			for(int list=0; list<numLists; list++) {
-				approxRow += lists.get(list).get(item).getRow();
+				Sample sample = lists.get(list).get(item);
+				approxRow += sample.getRow();
+				intensity += sample.getIntensity();
+				angle += sample.getAngle();
+				distance += sample.getDistance();
 			}
-			approxList.add(new Sample(approxRow/numLists, 0.0F));
+			Sample approxSample = new Sample(approxRow/numLists, intensity/numLists);
+			approxSample.setColumn(item);
+			approxSample.setAngle(angle/numLists);
+			approxSample.setDistance(distance/numLists);
+			approxList.add(approxSample);
 		}
 		return approxList;
 		
@@ -65,24 +77,29 @@ public class SampleShrinker {
 		sampleListCopy.addAll(sampleList);
 
 		float previousDiff=0;
+		int removed=0;
 		Sample previous=null;
 		for (Sample sample : sampleListCopy) {
 			if(previous != null) {
 				float diff = sample.getRow() - previous.getRow();
-				if(previousDiff != diff && (diff > TRESH_HOLD || diff < TRESH_HOLD) ) {
-					previousDiff = diff;
-				} else {
+//				float diffValue = (previousDiff - diff);
+				if((diff < TRESH_HOLD ) && (diff > (TRESH_HOLD_N)) ) {
 					sampleList.remove(previous);
+					removed++;
+				} else {
+//					System.out.print(diff + ", ");
+					previousDiff = diff;
 				}
 			}
 			previous = sample;
 		}
+//		System.out.println("removed " + removed);
 
 		// remove fist and last item
-		if(sampleList.size()>2) {
-			sampleList.remove(sampleList.get(0));
-			sampleList.remove(sampleList.get(sampleList.size()-1));
-		}
+//		if(sampleList.size()>2) {
+//			sampleList.remove(sampleList.get(0));
+//			sampleList.remove(sampleList.get(sampleList.size()-1));
+//		}
 		
 		return sampleList;
 		
@@ -96,7 +113,7 @@ public class SampleShrinker {
 		int oldWidth = samples.size();
 		Sample[] newSamples = new Sample[newWidth];
 		
-		if(oldWidth == newWidth) {
+		if(oldWidth == newWidth || newWidth == 0) {
 			return samples;
 		}
 
