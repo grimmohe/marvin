@@ -7,6 +7,7 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -17,12 +18,11 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.UIManager;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import map.Position;
-import sample.RawImageData;
 import sample.Sample;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ChangeEvent;
 
 public class Viewer {
 
@@ -89,6 +89,9 @@ public class Viewer {
 		textArea.setEditable(false);
 		connectionPanel.add(textArea);
 
+		JPanel rawPanel = new JPanel();
+		tabbedPane.addTab("Raw", null, rawPanel, null);
+
 		JPanel sampleListPanel = new JPanel();
 		sampleListPanel.setBackground(UIManager.getColor("Panel.background"));
 		tabbedPane.addTab("Samples", null, sampleListPanel, null);
@@ -97,7 +100,7 @@ public class Viewer {
 		nodePanel.setBackground(UIManager.getColor("Panel.background"));
 		tabbedPane.addTab("Nodes", null, nodePanel, null);
 
-		this.draw = new Draw(sampleListPanel, nodePanel);
+		this.draw = new Draw(rawPanel, sampleListPanel, nodePanel);
 		this.logger = new Logger(this.draw);
 		this.client = new Client(this.logger);
 
@@ -144,6 +147,9 @@ class Disconnector implements ActionListener {
 
 class Draw implements ClientLoggerCallback {
 
+	JPanel rawImagePanel;
+	Image rawImage;
+
 	JPanel sampleListPanel;
 	List<Sample> sampleList;
 	float sampleListRadius;
@@ -152,8 +158,9 @@ class Draw implements ClientLoggerCallback {
 	List<Sample> nodes;
 	float nodeRadius;
 
-	public Draw(JPanel sampleListPanel, JPanel nodePanel) {
+	public Draw(JPanel rawImagePanel, JPanel sampleListPanel, JPanel nodePanel) {
 		super();
+		this.rawImagePanel = rawImagePanel;
 		this.sampleListPanel = sampleListPanel;
 		this.nodePanel = nodePanel;
 	}
@@ -165,7 +172,7 @@ class Draw implements ClientLoggerCallback {
 
 	@Override
 	public void newSampleList(List<Sample> samples) {
-		
+
 		if (samples != null) this.sampleList = samples;
 
 		if (!this.sampleListPanel.isVisible() || this.sampleList == null || this.sampleList.size() == 0) return;
@@ -260,15 +267,23 @@ class Draw implements ClientLoggerCallback {
 	}
 
 	@Override
-	public void newRawImage(RawImageData deserializeRawImage) {
-		// TODO Auto-generated method stub
-		
+	public void newRawImage(BufferedImage deserializeRawImage) {
+
+		if (deserializeRawImage != null) this.rawImage = deserializeRawImage;
+
+		if (!this.rawImagePanel.isVisible() || this.rawImage == null) return;
+
+		this.rawImagePanel.getGraphics().drawImage
+			( this.rawImage,
+			  0, 0, this.nodePanel.getWidth(), this.nodePanel.getHeight(),
+			  0, 0, this.rawImage.getWidth(null), this.rawImage.getHeight(null),
+			  null);
 	}
 
 	@Override
 	public void newRowNodes(List<Sample> deserializeSampleList) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

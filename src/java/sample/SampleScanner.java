@@ -1,8 +1,12 @@
 package sample;
 
 import java.awt.image.Raster;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import log.Logger;
 import map.ScanMap;
@@ -40,18 +44,23 @@ public class SampleScanner implements CaptureCallback {
 		if (!this.working) {
 			this.working = true;
 
-			logger.logRawImage(new RawImageData(frame.getBytes(), frame.getBufferedImage().getWidth(), frame.getBufferedImage().getHeight()));
-			
+			try {
+				ByteArrayOutputStream beos = new ByteArrayOutputStream();
+				ImageIO.write(frame.getBufferedImage(), "jpg", beos);
+				logger.logRawImage(beos.toByteArray());
+				beos.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			List<Sample> sampleList = sampleParser.generateSamples(frame);
 			sampleList = calculateDistances(sampleList, frame);
 
 			this.logger.logSampleList(sampleList);
-			
+
 			List<Sample> shrinkedSampleList = sampleShrinker.adapt(sampleList);
 
 			shrinkedSampleList = calculateDistances(shrinkedSampleList, frame);
-//			List<Sample> shrinkedSampleList = new ArrayList<Sample>();
-			
+
 			this.logger.logNodeList(shrinkedSampleList);
 
 			if(shrinkedSampleList.size() > 0) {
@@ -76,7 +85,7 @@ public class SampleScanner implements CaptureCallback {
 	    float degreePerRow = (float)Configuration.videoVAngle/raster.getHeight();
 	    double camRecessed = Configuration.videoLaserDistance * Math.tan(Math.toRadians(halfAngle));
 	    List<Sample> removableSamples = new ArrayList<Sample>();
-	    
+
 		for (Sample sample : samples) {
 			sample.setAngle(180 / frameWidth * sample.getColumn());
 

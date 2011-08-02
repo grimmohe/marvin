@@ -1,8 +1,8 @@
 package log;
 
+import java.awt.image.BufferedImage;
 import java.util.List;
 
-import sample.RawImageData;
 import sample.Sample;
 
 public class NullClientLoggerCallback implements ClientLoggerCallback {
@@ -13,7 +13,7 @@ public class NullClientLoggerCallback implements ClientLoggerCallback {
 	}
 
 	@Override
-	public void newRawImage(RawImageData deserializeRawImage) {
+	public void newRawImage(BufferedImage deserializeRawImage) {
 		System.out.println("ClientLoggerCallback: newRawImage");
 	}
 

@@ -1,5 +1,6 @@
 package log;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -8,7 +9,8 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.RawImageData;
+import javax.imageio.ImageIO;
+
 import sample.Sample;
 
 /*
@@ -23,7 +25,7 @@ public class Logger {
 	private final static int RECOGNIZED_ROWS = 2;
 	private final static int SAMPLE_LIST = 3;
 	private final static int NODE_LIST = 4;
-	
+
 	private static Logger loggerInstance;
 
 	public Logger() {
@@ -47,21 +49,21 @@ public class Logger {
 		}
 		return loggerInstance;
 	}
-	
+
 	public void close() {
 		if (this.server != null) {
 			this.server.close();
 		}
 	}
 
-	public void logRawImage(RawImageData imageData) {
-		server.write(RAW_IMAGE, serializeObject(imageData));
+	public void logRawImage(byte[] imageData) {
+		server.write(RAW_IMAGE, imageData);
 	}
-	
+
 	public void logRecognizedRows(List<Sample> rows) {
 		server.write(RECOGNIZED_ROWS, serializeObject(rows));
 	}
-	
+
 	public void logNodeList(List<Sample> nodes) {
 		server.write(NODE_LIST, serializeObject(nodes));
 	}
@@ -83,7 +85,7 @@ public class Logger {
 		}
 		return bout.toByteArray();
 	}
-	
+
 	/*
 	 * called by log.Client()
 	 * calls ClientLoggerCallback with deserialised data structs
@@ -112,12 +114,14 @@ public class Logger {
 
 	}
 
-	@SuppressWarnings("unchecked")
-	private RawImageData deserializeRawImage(byte[] data)
+	private BufferedImage deserializeRawImage(byte[] data)
 			throws IOException, ClassNotFoundException {
-		return (RawImageData) deserializeObject(data).readObject();
+		ByteArrayInputStream bais = new ByteArrayInputStream(data);
+		BufferedImage img = ImageIO.read(bais);
+		bais.close();
+		return img;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private List<Sample> deserializeSampleList(byte[] data)
 			throws IOException, ClassNotFoundException {
@@ -127,8 +131,8 @@ public class Logger {
 	private ObjectInputStream deserializeObject(byte[] data) throws IOException {
 		ByteArrayInputStream bis = new ByteArrayInputStream(data);
 
-		ObjectInputStream in = new ObjectInputStream(bis);		
-		
+		ObjectInputStream in = new ObjectInputStream(bis);
+
 		return in;
 	}
 
