@@ -60,19 +60,10 @@ public class SampleParserGrimm implements SampleParser {
 
 		if (!Configuration.useTopLaser) rowMin = rowMax / 3 / 2 * 3;
 		if (!Configuration.useBottomLaser) rowMax = rowMax / 3 / 2 * 3;
-		
-//		rowMin = Math.max(0, Math.min(rowMin, lastRow - 25));
-//		rowMax = Math.min(rowMax, lastRow + 25);
-		
-//		System.out.println("rowMin:"+rowMin+", rowMax:"+rowMax);
+
 		for (int row = rowMin; row < rowMax; row+=3) {
-			int light = Math.max(0, pixels[row] - pixels[row+1] - pixels[row+2]);
-//			int light = pixels[row] - pixels[row+1] - pixels[row+2];
-			lightSum += light;	
-//			System.out.print("#:"+row);
-//			System.out.print("r:"+pixels[row]);
-//			System.out.print("g:"+pixels[row+1]);
-//			System.out.println("b:"+pixels[row+2]);
+			int light = Math.max(0, pixels[row] - (pixels[row+1] + pixels[row+2]) / 2);
+			lightSum += light;
 
 			if (light > threshold) {
 				openCount++;
@@ -88,7 +79,6 @@ public class SampleParserGrimm implements SampleParser {
 				openCount = 0;
 				sampleRowSum = 0;
 				sampleLight = 0;
-//				break;
 			}
 		}
 
@@ -101,7 +91,6 @@ public class SampleParserGrimm implements SampleParser {
 				&& Math.min(sample.getRow(), pixels.length - sample.getRow())
 					> Math.min(samples.get(1).getRow(), pixels.length - samples.get(1).getRow()))
 		{
-			System.out.println(samples.size());
 			sample = samples.get(1);
 		}
 
