@@ -1,3 +1,5 @@
+import java.util.List;
+
 import log.Logger;
 import map.Map;
 import map.MapUpdater;
@@ -22,9 +24,9 @@ public class Marvin {
 		Video video = new Video();
 
 		try {
-		VideoDeviceInfo vdi = video.getDeviceInfo("/dev/video0");
-			System.out.println(vdi);
-			video.setActiveVideoDevice(vdi);
+			List<VideoDeviceInfo> vdil = video.getVideoDevices();
+			System.out.println(vdil.get(vdil.size()-1));
+			video.setActiveVideoDevice(vdil.get(vdil.size()-1));
 
 			Map map = new Map();
 			MapUpdater updater = new MapUpdater(map);
