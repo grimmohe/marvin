@@ -9,10 +9,13 @@ import conf.Configuration;
 
 import au.edu.jcu.v4l4j.VideoFrame;
 
-public class SampleParserGrimm {
+public class SampleParserGrimm implements SampleParser {
 
 	private float[] columnThreshold;
 
+	/* (non-Javadoc)
+	 * @see sample.SampleParser#generateSamples(au.edu.jcu.v4l4j.VideoFrame)
+	 */
 	public List<Sample> generateSamples(VideoFrame frame) {
 
 		List<Sample> sampleList = new ArrayList<Sample>();
@@ -25,14 +28,16 @@ public class SampleParserGrimm {
 
 		if (columnThreshold == null || columnThreshold.length != width) columnThreshold = new float[width];
 
+		float lastRow=0;
 		for (int column = raster.getMinX(); column < width; column++) {
 			ColumnScanResult scanResult = scanColumn
 											(columnThreshold[column],
-											 raster.getPixels(column, minY, 1, height, (int[]) null));
+											 raster.getPixels(column, minY, 1, height, (int[]) null), (int) lastRow);
 			if (scanResult.getSample() != null) {
 				Sample sample = scanResult.getSample();
 				sample.setColumn(column);
 				sampleList.add(sample);
+				lastRow = sample.getRow();
 			}
 
 			columnThreshold[column] = scanResult.getNewThreshold();
@@ -41,7 +46,7 @@ public class SampleParserGrimm {
 		return sampleList;
 	}
 
-	private ColumnScanResult scanColumn(float threshold, int[] pixels) {
+	private ColumnScanResult scanColumn(float threshold, int[] pixels, int lastRow) {
 		int lightSum = 0;
 		int openCount = 0;
 		float sampleRowSum = 0;
@@ -54,11 +59,20 @@ public class SampleParserGrimm {
 		int rowMax = pixels.length;
 
 		if (!Configuration.useTopLaser) rowMin = rowMax / 3 / 2 * 3;
-		if (!Configuration.useBottomLaser) rowMax = rowMax / 2;
-
+		if (!Configuration.useBottomLaser) rowMax = rowMax / 3 / 2 * 3;
+		
+//		rowMin = Math.max(0, Math.min(rowMin, lastRow - 25));
+//		rowMax = Math.min(rowMax, lastRow + 25);
+		
+//		System.out.println("rowMin:"+rowMin+", rowMax:"+rowMax);
 		for (int row = rowMin; row < rowMax; row+=3) {
 			int light = Math.max(0, pixels[row] - pixels[row+1] - pixels[row+2]);
-			lightSum += light;
+//			int light = pixels[row] - pixels[row+1] - pixels[row+2];
+			lightSum += light;	
+//			System.out.print("#:"+row);
+//			System.out.print("r:"+pixels[row]);
+//			System.out.print("g:"+pixels[row+1]);
+//			System.out.println("b:"+pixels[row+2]);
 
 			if (light > threshold) {
 				openCount++;
@@ -74,6 +88,7 @@ public class SampleParserGrimm {
 				openCount = 0;
 				sampleRowSum = 0;
 				sampleLight = 0;
+//				break;
 			}
 		}
 
@@ -86,6 +101,7 @@ public class SampleParserGrimm {
 				&& Math.min(sample.getRow(), pixels.length - sample.getRow())
 					> Math.min(samples.get(1).getRow(), pixels.length - samples.get(1).getRow()))
 		{
+			System.out.println(samples.size());
 			sample = samples.get(1);
 		}
 

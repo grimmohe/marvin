@@ -19,6 +19,7 @@ import javax.swing.JToolBar;
 import javax.swing.UIManager;
 
 import map.Position;
+import sample.RawImageData;
 import sample.Sample;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
@@ -256,6 +257,18 @@ class Draw implements ClientLoggerCallback {
 
 		this.nodeRadius = newRad;
 
+	}
+
+	@Override
+	public void newRawImage(RawImageData deserializeRawImage) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void newRowNodes(List<Sample> deserializeSampleList) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import sample.RawImageData;
 import sample.Sample;
 
 /*
@@ -16,20 +17,22 @@ import sample.Sample;
 public class Logger {
 
 	private Server server;
-	private ClientLoggerCallback clientCb;
+	private ClientLoggerCallback clientCb = new NullClientLoggerCallback();
 
-	private final static int SAMPLE_LIST = 50;
-	private final static int NODE_LIST = 60;
+	private final static int RAW_IMAGE = 1;
+	private final static int RECOGNIZED_ROWS = 2;
+	private final static int SAMPLE_LIST = 3;
+	private final static int NODE_LIST = 4;
+	
+	private static Logger loggerInstance;
 
 	public Logger() {
-		super();
 		Server server = new ServerImpl();
 		server.start();
 		this.server = server;
 	}
 
 	public Logger(ClientLoggerCallback clientCb) {
-		super();
 		this.clientCb = clientCb;
 	}
 
@@ -38,40 +41,49 @@ public class Logger {
 		this.server = server;
 	}
 
+	public static Logger getInstance() {
+		if(loggerInstance == null) {
+			loggerInstance = new Logger();
+		}
+		return loggerInstance;
+	}
+	
 	public void close() {
 		if (this.server != null) {
 			this.server.close();
 		}
 	}
 
+	public void logRawImage(RawImageData imageData) {
+		server.write(RAW_IMAGE, serializeObject(imageData));
+	}
+	
+	public void logRecognizedRows(List<Sample> rows) {
+		server.write(RECOGNIZED_ROWS, serializeObject(rows));
+	}
+	
 	public void logNodeList(List<Sample> nodes) {
-		ByteArrayOutputStream bout = new ByteArrayOutputStream();
-		ObjectOutputStream oout;
-		try {
-			oout = new ObjectOutputStream(bout);
-			oout.writeObject(nodes);
-			oout.close();
-			bout.close();			
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		server.write(NODE_LIST, bout.toByteArray());
+		server.write(NODE_LIST, serializeObject(nodes));
 	}
 
 	public void logSampleList(List<Sample> samples) {
+		server.write(SAMPLE_LIST, serializeObject(samples));
+	}
+
+	private byte[] serializeObject(Object o) {
 		ByteArrayOutputStream bout = new ByteArrayOutputStream();
 		ObjectOutputStream oout;
 		try {
 			oout = new ObjectOutputStream(bout);
-			oout.writeObject(samples);
+			oout.writeObject(o);
 			oout.close();
 			bout.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		server.write(SAMPLE_LIST, bout.toByteArray());
+		return bout.toByteArray();
 	}
-
+	
 	/*
 	 * called by log.Client()
 	 * calls ClientLoggerCallback with deserialised data structs
@@ -81,11 +93,19 @@ public class Logger {
 
 		switch(ident) {
 			case NODE_LIST: {
-				clientCb.newNodeList(deserializeNodeList(data));
+				clientCb.newNodeList(deserializeSampleList(data));
 				break;
 			}
 			case SAMPLE_LIST: {
 				clientCb.newSampleList(deserializeSampleList(data));
+				break;
+			}
+			case RAW_IMAGE: {
+				clientCb.newRawImage(deserializeRawImage(data));
+				break;
+			}
+			case RECOGNIZED_ROWS: {
+				clientCb.newRowNodes(deserializeSampleList(data));
 				break;
 			}
 		}
@@ -93,25 +113,23 @@ public class Logger {
 	}
 
 	@SuppressWarnings("unchecked")
-	private List<Sample> deserializeNodeList(byte[] data)
+	private RawImageData deserializeRawImage(byte[] data)
 			throws IOException, ClassNotFoundException {
-
-		ByteArrayInputStream bis = new ByteArrayInputStream(data);
-
-		ObjectInputStream in = new ObjectInputStream(bis);
-
-		return (ArrayList<Sample>) in.readObject();
+		return (RawImageData) deserializeObject(data).readObject();
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	private List<Sample> deserializeSampleList(byte[] data)
 			throws IOException, ClassNotFoundException {
+		return (ArrayList<Sample>) deserializeObject(data).readObject();
+	}
 
+	private ObjectInputStream deserializeObject(byte[] data) throws IOException {
 		ByteArrayInputStream bis = new ByteArrayInputStream(data);
 
-		ObjectInputStream in = new ObjectInputStream(bis);
-
-		return (ArrayList<Sample>) in.readObject();
+		ObjectInputStream in = new ObjectInputStream(bis);		
+		
+		return in;
 	}
 
 }

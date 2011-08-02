@@ -9,8 +9,8 @@ public class Configuration {
 	public static final int videoLaserDistance = 8;
 	public static final int logginPort = 2889;
 
-	public static final boolean useTopLaser = false;
-	public static final boolean useBottomLaser = true;
+	public static final boolean useTopLaser = true;
+	public static final boolean useBottomLaser = false;
 
 	public static final String loggingServerAddress = "localhost";
 
