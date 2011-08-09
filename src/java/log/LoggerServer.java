@@ -2,6 +2,8 @@ package log;
 
 import java.util.List;
 
+import au.edu.jcu.v4l4j.VideoFrame;
+
 import sample.Sample;
 
 /*
@@ -11,7 +13,7 @@ public class LoggerServer {
 
 	private Server server;
 
-	
+
 	private static LoggerServer loggerInstance;
 
 	public LoggerServer() {
@@ -31,21 +33,21 @@ public class LoggerServer {
 		}
 		return loggerInstance;
 	}
-	
+
 	public void close() {
 		if (this.server != null) {
 			this.server.close();
 		}
 	}
 
-	public void logRawImage(byte[] imageData) {
-		server.write(LoggerCommon.RAW_IMAGE, new SerializedDataSimple(imageData));
+	public void logRawImage(VideoFrame frame) {
+		server.write(LoggerCommon.RAW_IMAGE, new SerializedDataImage(frame));
 	}
-	
+
 	public void logRecognizedRows(List<Sample> rows) {
 		server.write(LoggerCommon.RECOGNIZED_ROWS, new SerializedDataProxy(rows));
 	}
-	
+
 	public void logNodeList(List<Sample> nodes) {
 		server.write(LoggerCommon.NODE_LIST, new SerializedDataProxy(nodes));
 	}

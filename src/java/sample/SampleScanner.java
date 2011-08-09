@@ -1,14 +1,10 @@
 package sample;
 
 import java.awt.image.Raster;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import log.LoggerServer;
-import javax.imageio.ImageIO;
-
 import map.ScanMap;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
@@ -44,14 +40,8 @@ public class SampleScanner implements CaptureCallback {
 		if (!this.working) {
 			this.working = true;
 
-			try {
-				ByteArrayOutputStream beos = new ByteArrayOutputStream();
-				ImageIO.write(frame.getBufferedImage(), "jpg", beos);
-				logger.logRawImage(beos.toByteArray());
-				beos.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			logger.logRawImage(frame);
+
 			List<Sample> sampleList = sampleParser.generateSamples(frame);
 			sampleList = calculateDistances(sampleList, frame);
 
