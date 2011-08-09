@@ -20,9 +20,9 @@ public class MocupServer implements Server {
 	}
 
 	@Override
-	public void write(int id, byte[] data) {
+	public void write(int id, SerializedData data) {
 
-		result = data;
+		result = data.getData();
 	}
 
 	public byte[] getResult() {

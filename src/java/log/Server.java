@@ -10,7 +10,7 @@ public interface Server {
 
 	public void close();
 
-	public void write(int id, byte[] data) ;
+	public void write(int id, SerializedData serializedData) ;
 
 	public void start();
 

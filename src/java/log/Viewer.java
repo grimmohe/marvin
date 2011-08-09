@@ -8,6 +8,7 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
@@ -27,12 +28,12 @@ import sample.Sample;
 
 public class Viewer {
 
-	private JFrame	frame;
+	private JFrame frame;
 	private final JToolBar toolBar = new JToolBar();
 	private JTextField txtLocalhost;
 
-	private Draw draw;
-	private Logger logger;
+	private DrawingLoggerCallback draw;
+	private LoggerClient logger;
 	private Client client;
 
 	/**
@@ -101,8 +102,8 @@ public class Viewer {
 		nodePanel.setBackground(UIManager.getColor("Panel.background"));
 		tabbedPane.addTab("Nodes", null, nodePanel, null);
 
-		this.draw = new Draw(rawPanel, sampleListPanel, nodePanel);
-		this.logger = new Logger(this.draw);
+		this.draw = new DrawingLoggerCallback(rawPanel, sampleListPanel, nodePanel, this);
+		this.logger = new LoggerClient(this.draw);
 		this.client = new Client(this.logger);
 
 		btnConnect.addActionListener(new Connector(this.client));
@@ -110,6 +111,10 @@ public class Viewer {
 		tabbedPane.addChangeListener(new TabChange(this.draw));
 	}
 
+	public Client getClient() {
+		return client;
+	}
+	
 }
 
 class Connector implements ActionListener {
@@ -146,7 +151,9 @@ class Disconnector implements ActionListener {
 
 }
 
-class Draw implements ClientLoggerCallback {
+class DrawingLoggerCallback implements ClientLoggerCallback {
+
+	private Viewer viewer;
 
 	JPanel rawImagePanel;
 	Image rawImage;
@@ -160,41 +167,60 @@ class Draw implements ClientLoggerCallback {
 	List<Sample> nodes;
 	float nodeRadius;
 
-	public Draw(JPanel rawImagePanel, JPanel sampleListPanel, JPanel nodePanel) {
+	public DrawingLoggerCallback(JPanel rawImagePanel, JPanel sampleListPanel, JPanel nodePanel, Viewer viewer) {
 		super();
 		this.rawImagePanel = rawImagePanel;
 		this.sampleListPanel = sampleListPanel;
 		this.nodePanel = nodePanel;
+		this.viewer = viewer;
 	}
 
 	public void redraw() {
-//		this.newSampleList(null);
-//		this.newNodeList(null);
+		try {
+			Client client = viewer.getClient();
+			if(client != null) {
+				client.setWichesRawImage(false);
+				client.setWichesSampleList(this.sampleListPanel.isVisible());
+				client.setWichesNodeList(this.nodePanel.isVisible());
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// this.newSampleList(null);
+		// this.newNodeList(null);
 	}
 
 	@Override
 	public void newSampleList(List<Sample> samples) {
 
-		if (samples != null) this.sampleList = samples;
+		if (samples != null)
+			this.sampleList = samples;
 
-		if (!this.sampleListPanel.isVisible() || this.sampleList == null || this.sampleList.size() == 0) return;
+		if (!this.sampleListPanel.isVisible() || this.sampleList == null
+				|| this.sampleList.size() == 0)
+			return;
 
-		Image img = this.sampleListPanel.createImage(this.sampleListPanel.getWidth(), this.sampleListPanel.getHeight());
+		Image img = this.sampleListPanel.createImage(this.sampleListPanel
+				.getWidth(), this.sampleListPanel.getHeight());
 
 		Graphics g = img.getGraphics();
 
-		float scale
-			= Math.max( this.sampleListRadius / this.sampleListPanel.getHeight(),
-						this.sampleListRadius / (this.sampleListPanel.getWidth()/2) );
+		float scale = Math.max(this.sampleListRadius
+				/ this.sampleListPanel.getHeight(), this.sampleListRadius
+				/ (this.sampleListPanel.getWidth() / 2));
 
 		float newRad = 1;
-		int startX = this.sampleListPanel.getWidth()/2;
+		int startX = this.sampleListPanel.getWidth() / 2;
 		int startY = this.sampleListPanel.getHeight();
 
-		g.clearRect(0, 0, sampleListPanel.getWidth(), sampleListPanel.getHeight());
+		g.clearRect(0, 0, sampleListPanel.getWidth(), sampleListPanel
+				.getHeight());
 
-		g.drawString("#: " + this.sampleList.size(), 0, g.getFontMetrics().getHeight());
-		g.drawString("Radius: " + this.sampleListRadius, 0, 2+(g.getFontMetrics().getHeight()*2));
+		g.drawString("#: " + this.sampleList.size(), 0, g.getFontMetrics()
+				.getHeight());
+		g.drawString("Radius: " + this.sampleListRadius, 0, 2 + (g
+				.getFontMetrics().getHeight() * 2));
 
 		Position lastPos = null;
 
@@ -204,11 +230,10 @@ class Draw implements ClientLoggerCallback {
 			Position pos = sample.getPosition();
 
 			if (lastPos != null) {
-				g.drawLine
-					( (int) (startX + lastPos.x / scale),
-					  (int) (startY - lastPos.y / scale),
-					  (int) (startX + pos.x / scale),
-					  (int) (startY - pos.y / scale) );
+				g.drawLine((int) (startX + lastPos.x / scale),
+						(int) (startY - lastPos.y / scale),
+						(int) (startX + pos.x / scale), (int) (startY - pos.y
+								/ scale));
 			}
 
 			lastPos = pos;
@@ -222,26 +247,32 @@ class Draw implements ClientLoggerCallback {
 	@Override
 	public void newNodeList(List<Sample> nodes) {
 
-		if (nodes != null) this.nodes = nodes;
+		if (nodes != null)
+			this.nodes = nodes;
 
-		if (!this.nodePanel.isVisible() || this.nodes == null) return;
+		if (!this.nodePanel.isVisible() || this.nodes == null)
+			return;
 
-		Image img = this.sampleListPanel.createImage(this.nodePanel.getWidth(), this.nodePanel.getHeight());
+		Image img = this.sampleListPanel.createImage(this.nodePanel.getWidth(),
+				this.nodePanel.getHeight());
 
 		Graphics g = img.getGraphics();
 
-		float scale
-			= Math.max( this.nodeRadius / this.nodePanel.getHeight(),
-						this.nodeRadius / (this.nodePanel.getWidth()/2) );
+		float scale = Math.max(this.nodeRadius / this.nodePanel.getHeight(),
+				this.nodeRadius / (this.nodePanel.getWidth() / 2));
 
 		float newRad = 1;
-		int startX = this.nodePanel.getWidth()/2;
+		int startX = this.nodePanel.getWidth() / 2;
 		int startY = this.nodePanel.getHeight();
 
-		g.clearRect(0, 0, this.nodePanel.getWidth(), this.nodePanel.getHeight());
+		g
+				.clearRect(0, 0, this.nodePanel.getWidth(), this.nodePanel
+						.getHeight());
 
-		g.drawString("#: " + this.nodes.size(), 0, g.getFontMetrics().getHeight());
-		g.drawString("Radius: " + this.nodeRadius, 0, 2+(g.getFontMetrics().getHeight()*2));
+		g.drawString("#: " + this.nodes.size(), 0, g.getFontMetrics()
+				.getHeight());
+		g.drawString("Radius: " + this.nodeRadius, 0, 2 + (g.getFontMetrics()
+				.getHeight() * 2));
 
 		Position lastPos = null;
 
@@ -251,11 +282,10 @@ class Draw implements ClientLoggerCallback {
 			Position pos = node.getPosition();
 
 			if (lastPos != null) {
-				g.drawLine
-					( (int) (startX + lastPos.x / scale),
-					  (int) (startY - lastPos.y / scale),
-					  (int) (startX + pos.x / scale),
-					  (int) (startY - pos.y / scale) );
+				g.drawLine((int) (startX + lastPos.x / scale),
+						(int) (startY - lastPos.y / scale),
+						(int) (startX + pos.x / scale), (int) (startY - pos.y
+								/ scale));
 			}
 
 			lastPos = pos;
@@ -306,9 +336,9 @@ class Draw implements ClientLoggerCallback {
 
 class TabChange implements ChangeListener {
 
-	private Draw draw;
+	private DrawingLoggerCallback draw;
 
-	public TabChange(Draw draw) {
+	public TabChange(DrawingLoggerCallback draw) {
 		super();
 		this.draw = draw;
 	}
@@ -319,4 +349,3 @@ class TabChange implements ChangeListener {
 	}
 
 }
-
