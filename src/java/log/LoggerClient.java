@@ -28,7 +28,7 @@ public class LoggerClient {
 	public void recreate(int ident, byte[] data)
 			throws IOException, ClassNotFoundException {
 
-		System.out.println(clientCb);
+//		System.out.println("received data for id: " + ident +"("+data.length+")");
 		switch(ident) {
 			case LoggerCommon.NODE_LIST: {
 				clientCb.newNodeList(deserializeSampleList(data));
@@ -49,7 +49,6 @@ public class LoggerClient {
 		}
 
 	}
-
 
 	private BufferedImage deserializeRawImage(byte[] data)
 			throws IOException, ClassNotFoundException {

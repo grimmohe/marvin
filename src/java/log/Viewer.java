@@ -179,8 +179,9 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 		try {
 			Client client = viewer.getClient();
 			if(client != null) {
-				client.setWichesRawImage(false);
-				client.setWichesSampleList(this.sampleListPanel.isVisible());
+				client.setWichesRawImage(this.rawImagePanel.isVisible());
+				client.setWichesSampleList(this.sampleListPanel.isVisible() 
+						|| this.rawImagePanel.isVisible());
 				client.setWichesNodeList(this.nodePanel.isVisible());
 			}
 		} catch (IOException e) {
@@ -298,9 +299,9 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 	}
 
 	@Override
-	public void newRawImage(BufferedImage deserializeRawImage) {
+	public void newRawImage(BufferedImage deserializedRawImage) {
 
-		if (deserializeRawImage != null) this.rawImage = deserializeRawImage;
+		if (deserializedRawImage != null) this.rawImage = deserializedRawImage;
 
 		if (!this.rawImagePanel.isVisible() || this.rawImage == null) return;
 

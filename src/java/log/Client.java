@@ -69,7 +69,6 @@ public class Client extends Thread {
 						read += this.read(in, data, read, length - read);
 					}
 
-					System.out.println("id: " + id + ", data: " + data);
 					if(id > CMD_WISHES_OFFSET) {
 						switchWishes(id, data);
 					} else {
@@ -91,7 +90,6 @@ public class Client extends Thread {
 
 	void switchWishes(int id, byte[] data) throws IOException, ClassNotFoundException {
 		
-		System.out.println("switchWishes: " + id + " data: " + data[0]);
 		switch(id) {
 			case CMD_WISHES_RAWIMAGE: {
 				wichesRawImage = (Boolean) SerializationUtil.deserializeObject(data).readObject();

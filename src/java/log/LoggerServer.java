@@ -39,7 +39,7 @@ public class LoggerServer {
 	}
 
 	public void logRawImage(byte[] imageData) {
-		server.write(LoggerCommon.RAW_IMAGE, new SerializedDataProxy(imageData));
+		server.write(LoggerCommon.RAW_IMAGE, new SerializedDataSimple(imageData));
 	}
 	
 	public void logRecognizedRows(List<Sample> rows) {
