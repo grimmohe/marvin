@@ -303,7 +303,6 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 
 		if (deserializedRawImage != null) this.rawImage = deserializedRawImage;
 
-		System.out.println("drawing raw image " + rawImage);
 		if (!this.rawImagePanel.isVisible() || this.rawImage == null) return;
 
 		if (this.sampleList != null) {
