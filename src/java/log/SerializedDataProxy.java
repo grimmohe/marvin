@@ -14,7 +14,6 @@ public class SerializedDataProxy implements SerializedData {
 	@Override
 	public byte[] getData() {
 		if(data == null) {
-			System.out.println("retrieving objects serialized data");
 			data = SerializationUtil.serializeObject(list);
 		}
 		return data;

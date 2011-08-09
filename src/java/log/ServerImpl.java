@@ -165,6 +165,7 @@ public class ServerImpl extends Thread implements Server {
 
 				if ( clientSocket.isConnected()) {
 					if(client.whiches(id)) {
+//						System.out.println("write data for id: " + id );
 						byte[] data = serializedData.getData();
 						OutputStream out = clientSocket.getOutputStream();
 						out.write(id);
