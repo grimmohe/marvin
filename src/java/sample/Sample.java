@@ -31,7 +31,7 @@ public class Sample implements Comparable<Sample>, java.io.Serializable {
 	}
 
 	/**
-	 * angle in grad were 0 is all left, 90 ist front, 180 is right
+	 * angle in grad were -90 is all left, 0 ist front, 90 is right
 	 */
 	public float getAngle() {
 		return angle;
@@ -87,8 +87,8 @@ public class Sample implements Comparable<Sample>, java.io.Serializable {
 	public Position getPosition() {
 		Position pos = new Position();
 
-		pos.x = (float) (Math.cos(Math.toRadians(this.angle)) * this.distance);
-		pos.y = (float) (Math.sin(Math.toRadians(this.angle)) * this.distance);
+		pos.y = (float) (Math.cos(Math.toRadians(this.angle)) * this.distance);
+		pos.x = (float) (Math.sin(Math.toRadians(this.angle)) * this.distance);
 
 		return pos;
 	}

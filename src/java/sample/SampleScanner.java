@@ -87,7 +87,7 @@ public class SampleScanner implements CaptureCallback {
 	    List<Sample> removableSamples = new ArrayList<Sample>();
 
 		for (Sample sample : samples) {
-			sample.setAngle(180 / frameWidth * sample.getColumn());
+			sample.setAngle((180 / frameWidth * sample.getColumn()) - 90);
 
 			float row = sample.getRow();
 			if (row > frameHeight/2) {
