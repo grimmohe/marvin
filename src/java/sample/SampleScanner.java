@@ -4,7 +4,7 @@ import java.awt.image.Raster;
 import java.util.ArrayList;
 import java.util.List;
 
-import log.Logger;
+import log.LoggerServer;
 import map.ScanMap;
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
@@ -17,13 +17,13 @@ import conf.Configuration;
 public class SampleScanner implements CaptureCallback {
 
 	private SampleUpdate updater;
-	private Logger logger;
+	private LoggerServer logger;
 	private SampleParser sampleParser = new SampleParserGrimm();
 	private boolean working = false;
 	private SampleShrinker sampleShrinker = new SampleShrinker();
 
 
-	public SampleScanner(SampleUpdate updater, Logger logger) {
+	public SampleScanner(SampleUpdate updater, LoggerServer logger) {
 		this.updater = updater;
 		this.logger = logger;
 	}

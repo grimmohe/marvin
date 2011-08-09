@@ -22,7 +22,7 @@ public class LoggerTest {
 
 		MocupServer server = new MocupServer();
 
-		Logger logger = new Logger(server);
+		LoggerServer logger = new LoggerServer(server);
 
 		logger.logSampleList(samples);
 

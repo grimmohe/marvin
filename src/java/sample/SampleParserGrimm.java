@@ -101,7 +101,7 @@ public class SampleParserGrimm implements SampleParser {
 				&& Math.min(sample.getRow(), pixels.length - sample.getRow())
 					> Math.min(samples.get(1).getRow(), pixels.length - samples.get(1).getRow()))
 		{
-			System.out.println(samples.size());
+//			System.out.println(samples.size());
 			sample = samples.get(1);
 		}
 

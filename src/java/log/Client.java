@@ -2,32 +2,47 @@ package log;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 
 import conf.Configuration;
 
 public class Client extends Thread {
 
-	private Logger logger;
-	private Socket server;
+	private LoggerClient logger;
+	private Socket serverSocket;
+	private Socket mySocket;
+	private boolean wichesRawImage=false;
+	private boolean wichesSampleList=false;
+	private boolean wichesNodeList=false;
+	
+	/* this id's must not overlay into logger id's */
+	static final int CMD_WISHES_OFFSET = 100;
+	private static final int CMD_WISHES_RAWIMAGE = CMD_WISHES_OFFSET + LoggerCommon.RAW_IMAGE;
+	private static final int CMD_WISHES_SAMPLE_LIST = CMD_WISHES_OFFSET + LoggerCommon.SAMPLE_LIST;
+	private static final int CMD_WISHES_NODE_LIST = CMD_WISHES_OFFSET + LoggerCommon.NODE_LIST;
 
-	public Client(Logger logger) {
-		super();
+	public Client(LoggerClient logger) {
 		this.logger = logger;
 		this.start();
 	}
 
+	public Client(Socket clientSocket) {
+		this.mySocket = clientSocket;
+		this.start();
+	}
+	
 	@Override
 	public void run() {
-		this.server = null;
+		this.serverSocket = null;
 
 		InputStream in;
 
 		endless: while (true) {
 
-			while ( this.server != null && this.server.isConnected() ) {
+			while ( this.serverSocket != null && this.serverSocket.isConnected() ) {
 				try {
-					in = this.server.getInputStream();
+					in = this.serverSocket.getInputStream();
 				} catch (IOException e) {
 					e.printStackTrace();
 					this.disconnect();
@@ -54,11 +69,17 @@ public class Client extends Thread {
 						read += this.read(in, data, read, length - read);
 					}
 
-					if (this.logger != null) {
-						logger.recreate(id, data);
+					System.out.println("id: " + id + ", data: " + data);
+					if(id > CMD_WISHES_OFFSET) {
+						switchWishes(id, data);
+					} else {
+						if (this.logger != null) {
+							logger.recreate(id, data);
+						}
 					}
+					
 				} catch ( Exception e ) {
-					System.out.println(e.getMessage());
+					e.printStackTrace();
 					this.disconnect();
 					continue endless;
 				}
@@ -66,6 +87,23 @@ public class Client extends Thread {
 
 			this.sleepStep();
 		}
+	}
+
+	void switchWishes(int id, byte[] data) throws IOException, ClassNotFoundException {
+		
+		System.out.println("switchWishes: " + id + " data: " + data[0]);
+		switch(id) {
+			case CMD_WISHES_RAWIMAGE: {
+				wichesRawImage = (Boolean) SerializationUtil.deserializeObject(data).readObject();
+			}
+			case CMD_WISHES_SAMPLE_LIST: {
+				wichesSampleList = (Boolean) SerializationUtil.deserializeObject(data).readObject();
+			}
+			case CMD_WISHES_NODE_LIST: {
+				wichesNodeList = (Boolean) SerializationUtil.deserializeObject(data).readObject();
+			}
+		}
+		
 	}
 
 	private int read(InputStream in) throws IOException {
@@ -76,7 +114,8 @@ public class Client extends Thread {
 		return value;
 	}
 
-	private int read(InputStream in, byte[] data, int offset, int length) throws IOException {
+	private int read(InputStream in, byte[] data, int offset, int length) 
+			throws IOException {
 		int value = in.read(data, offset, length);
 
 		if (value < 0) throw new IOException("End of stream");
@@ -85,9 +124,11 @@ public class Client extends Thread {
 	}
 
 	public void connect() {
-		for (int tryCount = 0; tryCount < 60 && (this.server == null || !this.server.isConnected()); tryCount++) {
+		for (int tryCount = 0; tryCount < 60 && (this.serverSocket == null || 
+				!this.serverSocket.isConnected()); tryCount++) {
 			try {
-				this.server = new Socket(Configuration.loggingServerAddress, Configuration.logginPort);
+				this.serverSocket = new Socket(Configuration.loggingServerAddress, 
+						Configuration.logginPort);
 				System.out.println("Connection established");
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
@@ -97,16 +138,16 @@ public class Client extends Thread {
 	}
 
 	public void disconnect() {
-		if (this.server != null && this.server.isConnected()) {
+		if (this.serverSocket != null && this.serverSocket.isConnected()) {
 			try {
 				System.out.println("Connection closing");
-				this.server.close();
+				this.serverSocket.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 
-		this.server = null;
+		this.serverSocket = null;
 	}
 
 	private void sleepStep() {
@@ -117,4 +158,68 @@ public class Client extends Thread {
 		}
 	}
 
+	public boolean whiches(int id) {
+		switch (id + CMD_WISHES_OFFSET) {
+			case CMD_WISHES_NODE_LIST: return wichesNodeList;
+			case CMD_WISHES_RAWIMAGE: return wichesRawImage;
+			case CMD_WISHES_SAMPLE_LIST: return wichesSampleList;
+		}
+		return false;
+	}
+	
+	public void setWichesRawImage(boolean whichesRawImage) throws IOException {
+		this.wichesRawImage = whichesRawImage;
+		sendWhichesToServer(CMD_WISHES_RAWIMAGE, this.wichesRawImage);
+	}
+
+	public void setWichesSampleList(boolean whichesSampleList) throws IOException {
+		this.wichesSampleList = whichesSampleList;
+		sendWhichesToServer(CMD_WISHES_SAMPLE_LIST, this.wichesSampleList);
+	}
+
+	public void setWichesNodeList(boolean whichesNodeList) throws IOException {
+		this.wichesNodeList = whichesNodeList;
+		sendWhichesToServer(CMD_WISHES_NODE_LIST, this.wichesNodeList);
+	}
+	
+	private void sendWhichesToServer(int cmdId,
+			boolean flag) throws IOException {
+		
+		write(cmdId, SerializationUtil.serializeObject(flag));
+		
+	}
+	
+	/*
+	 * send data to all connected clients
+	 */
+	public synchronized void write(int id, byte[] data) throws IOException {
+
+		if(serverSocket != null) {
+			if ( serverSocket.isConnected() ) {
+				OutputStream out = serverSocket.getOutputStream();
+				out.write(id);
+				int len = data.length;
+				for (int i = 3; i >= 0; i--) {
+					out.write((len >> (i*8)) & 0x000000FF);
+				}
+	
+				out.write(data);
+			} else {
+				disconnect();
+			}
+		}
+	}	
+
+	public Socket getMySocket() {
+		return mySocket;
+	}
+
+	@Override
+	public String toString() {
+		return "Client [mySocket=" + mySocket + ", serverSocket="
+				+ serverSocket + ", wichesNodeList=" + wichesNodeList
+				+ ", wichesRawImage=" + wichesRawImage + ", wichesSampleList="
+				+ wichesSampleList + "]";
+	}
+	
 }

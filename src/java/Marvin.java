@@ -1,6 +1,6 @@
 import java.util.List;
 
-import log.Logger;
+import log.LoggerServer;
 import map.Map;
 import map.MapUpdater;
 import sample.SampleScanner;
@@ -20,7 +20,7 @@ public class Marvin {
 	 */
 	public static void main(String[] args) {
 
-		Logger logger = new Logger();
+		LoggerServer logger = new LoggerServer();
 		Video video = new Video();
 
 		try {
