@@ -1,10 +1,13 @@
 package log;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.RawImageData;
+import javax.imageio.ImageIO;
+
 import sample.Sample;
 
 public class LoggerClient {
@@ -48,9 +51,12 @@ public class LoggerClient {
 	}
 
 
-	private RawImageData deserializeRawImage(byte[] data)
+	private BufferedImage deserializeRawImage(byte[] data)
 			throws IOException, ClassNotFoundException {
-		return (RawImageData) SerializationUtil.deserializeObject(data).readObject();
+		ByteArrayInputStream bais = new ByteArrayInputStream(data);
+		BufferedImage img = ImageIO.read(bais);
+		bais.close();
+		return img;
 	}
 	
 	@SuppressWarnings("unchecked")

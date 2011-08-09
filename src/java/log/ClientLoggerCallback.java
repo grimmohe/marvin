@@ -1,8 +1,8 @@
 package log;
 
+import java.awt.image.BufferedImage;
 import java.util.List;
 
-import sample.RawImageData;
 import sample.Sample;
 
 public interface ClientLoggerCallback {
@@ -11,7 +11,7 @@ public interface ClientLoggerCallback {
 
 	public void newNodeList(List<Sample> nodes);
 
-	public void newRawImage(RawImageData deserializeRawImage);
+	public void newRawImage(BufferedImage deserializeRawImage);
 
 	public void newRowNodes(List<Sample> deserializeSampleList);
 

@@ -1,6 +1,7 @@
 package log;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.GridLayout;
@@ -8,6 +9,7 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.awt.image.BufferedImage;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -18,12 +20,11 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.UIManager;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import map.Position;
-import sample.RawImageData;
 import sample.Sample;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ChangeEvent;
 
 public class Viewer {
 
@@ -90,6 +91,9 @@ public class Viewer {
 		textArea.setEditable(false);
 		connectionPanel.add(textArea);
 
+		JPanel rawPanel = new JPanel();
+		tabbedPane.addTab("Raw", null, rawPanel, null);
+
 		JPanel sampleListPanel = new JPanel();
 		sampleListPanel.setBackground(UIManager.getColor("Panel.background"));
 		tabbedPane.addTab("Samples", null, sampleListPanel, null);
@@ -98,7 +102,7 @@ public class Viewer {
 		nodePanel.setBackground(UIManager.getColor("Panel.background"));
 		tabbedPane.addTab("Nodes", null, nodePanel, null);
 
-		this.draw = new DrawingLoggerCallback(sampleListPanel, nodePanel, this);
+		this.draw = new DrawingLoggerCallback(rawPanel, sampleListPanel, nodePanel, this);
 		this.logger = new LoggerClient(this.draw);
 		this.client = new Client(this.logger);
 
@@ -151,6 +155,10 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 
 	private Viewer viewer;
 
+	JPanel rawImagePanel;
+	Image rawImage;
+	List<Sample> rawRowNodes;
+
 	JPanel sampleListPanel;
 	List<Sample> sampleList;
 	float sampleListRadius;
@@ -159,8 +167,9 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 	List<Sample> nodes;
 	float nodeRadius;
 
-	public DrawingLoggerCallback(JPanel sampleListPanel, JPanel nodePanel, Viewer viewer) {
+	public DrawingLoggerCallback(JPanel rawImagePanel, JPanel sampleListPanel, JPanel nodePanel, Viewer viewer) {
 		super();
+		this.rawImagePanel = rawImagePanel;
 		this.sampleListPanel = sampleListPanel;
 		this.nodePanel = nodePanel;
 		this.viewer = viewer;
@@ -233,7 +242,6 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 		this.sampleListPanel.getGraphics().drawImage(img, 0, 0, null);
 
 		this.sampleListRadius = newRad;
-		// (new NullPointerException("test")).printStackTrace();
 	}
 
 	@Override
@@ -290,14 +298,37 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 	}
 
 	@Override
-	public void newRawImage(RawImageData deserializeRawImage) {
-		// TODO Auto-generated method stub
+	public void newRawImage(BufferedImage deserializeRawImage) {
 
+		if (deserializeRawImage != null) this.rawImage = deserializeRawImage;
+
+		if (!this.rawImagePanel.isVisible() || this.rawImage == null) return;
+
+		if (this.sampleList != null) {
+			Graphics g = this.rawImage.getGraphics();
+			g.setColor(new Color(0, 255, 255));
+			for (Sample sample: this.sampleList) {
+				int intensity = (int) sample.getIntensity();
+				g.drawOval(
+						sample.getColumn() - (intensity / 2),
+						(int)sample.getRow() - (intensity / 2),
+						intensity,
+						intensity
+						);
+			}
+		}
+
+		this.rawImagePanel.getGraphics().drawImage
+			( this.rawImage,
+			  0, 0, this.nodePanel.getWidth(), this.nodePanel.getHeight(),
+			  0, 0, this.rawImage.getWidth(null), this.rawImage.getHeight(null),
+			  null);
 	}
 
 	@Override
 	public void newRowNodes(List<Sample> deserializeSampleList) {
-		// TODO Auto-generated method stub
+
+		if (deserializeSampleList != null) this.rawRowNodes = deserializeSampleList;
 
 	}
 

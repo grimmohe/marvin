@@ -10,16 +10,16 @@ public class ClientTest {
 	@Test
 	public void testWiches() throws Exception {
 		
-		Client client = new Client(new LoggerServer());
+		Client client = new Client(new LoggerClient(new NullClientLoggerCallback()));
 		
 		client.setWichesNodeList(true);
 		client.setWichesRawImage(true);
 		client.setWichesSampleList(true);
 		
-		assertEquals(true, client.whiches(LoggerServer.NODE_LIST));
-		assertEquals(true, client.whiches(LoggerServer.RAW_IMAGE));
-		assertEquals(true, client.whiches(LoggerServer.SAMPLE_LIST));
-		assertEquals(false, client.whiches(LoggerServer.RECOGNIZED_ROWS));
+		assertEquals(true, client.whiches(LoggerCommon.NODE_LIST));
+		assertEquals(true, client.whiches(LoggerCommon.RAW_IMAGE));
+		assertEquals(true, client.whiches(LoggerCommon.SAMPLE_LIST));
+		assertEquals(false, client.whiches(LoggerCommon.RECOGNIZED_ROWS));
 		
 	}
 	

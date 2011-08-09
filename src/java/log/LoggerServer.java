@@ -1,14 +1,7 @@
 package log;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
 import java.util.List;
 
-import sample.RawImageData;
 import sample.Sample;
 
 /*
@@ -45,7 +38,7 @@ public class LoggerServer {
 		}
 	}
 
-	public void logRawImage(RawImageData imageData) {
+	public void logRawImage(byte[] imageData) {
 		server.write(LoggerCommon.RAW_IMAGE, new SerializedDataProxy(imageData));
 	}
 	
