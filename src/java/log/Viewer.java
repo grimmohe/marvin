@@ -113,7 +113,11 @@ public class Viewer {
 		checkRed.setFont(new Font("Dialog", Font.PLAIN, 10));
 		rawPanel.add(checkRed);
 
-		this.draw = new DrawingLoggerCallback(rawPanel, checkRed, sampleListPanel, nodePanel, this);
+		JCheckBox checkIntensity = new JCheckBox("Intensity");
+		checkIntensity.setFont(new Font("Dialog", Font.PLAIN, 10));
+		rawPanel.add(checkIntensity);
+
+		this.draw = new DrawingLoggerCallback(rawPanel, checkRed, checkIntensity, sampleListPanel, nodePanel, this);
 		this.logger = new LoggerClient(this.draw);
 		this.client = new Client(this.logger);
 
@@ -171,6 +175,7 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 	JPanel rawImagePanel;
 	BufferedImage rawImage;
 	JCheckBox rawRed;
+	JCheckBox rawIntensity;
 	List<Sample> rawRowNodes;
 
 	JPanel sampleListPanel;
@@ -181,10 +186,11 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 	List<Sample> nodes;
 	float nodeRadius;
 
-	public DrawingLoggerCallback(JPanel rawImagePanel, JCheckBox red, JPanel sampleListPanel, JPanel nodePanel, Viewer viewer) {
+	public DrawingLoggerCallback(JPanel rawImagePanel, JCheckBox red, JCheckBox intensity, JPanel sampleListPanel, JPanel nodePanel, Viewer viewer) {
 		super();
 		this.rawImagePanel = rawImagePanel;
 		this.rawRed = red;
+		this.rawIntensity = intensity;
 		this.sampleListPanel = sampleListPanel;
 		this.nodePanel = nodePanel;
 		this.viewer = viewer;
@@ -335,6 +341,9 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 			g.setColor(new Color(0, 255, 255));
 			for (Sample sample: this.sampleList) {
 				int intensity = (int) sample.getIntensity();
+				if (!this.rawIntensity.isSelected()) {
+					intensity = 2;
+				}
 				g.drawOval(
 						sample.getColumn() - (intensity / 2),
 						(int)sample.getRow() - (intensity / 2),
