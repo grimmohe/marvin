@@ -106,7 +106,7 @@ public class Viewer {
 		this.logger = new LoggerClient(this.draw);
 		this.client = new Client(this.logger);
 
-		btnConnect.addActionListener(new Connector(this.client));
+		btnConnect.addActionListener(new Connector(this.client, this.draw));
 		btnDisconnect.addActionListener(new Disconnector(this.client));
 		tabbedPane.addChangeListener(new TabChange(this.draw));
 	}
@@ -120,16 +120,18 @@ public class Viewer {
 class Connector implements ActionListener {
 
 	private Client client;
+	private DrawingLoggerCallback draw;
 
-	public Connector(Client client) {
+	public Connector(Client client, DrawingLoggerCallback draw) {
 		super();
 		this.client = client;
-
+		this.draw = draw;
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		client.connect();
+		draw.redraw();
 	}
 
 }
