@@ -7,9 +7,9 @@ import java.util.List;
 public class SampleShrinker {
 
 	private List<Sample> sampleList = new ArrayList<Sample>();
-	private final float TRESH_HOLD = 1.5F;
+	private final float TRESH_HOLD = 0.35F;
 	private final float TRESH_HOLD_N = TRESH_HOLD * -1;
-	private final int APPROXIMATE = 10;
+	private final int APPROXIMATE = 5;
 	private List<List<Sample>> listList = new ArrayList<List<Sample>>();
 	
 	public SampleShrinker() {
