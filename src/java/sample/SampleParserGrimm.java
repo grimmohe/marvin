@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import util.CalcUtil;
+
 import au.edu.jcu.v4l4j.VideoFrame;
 import conf.Configuration;
 
@@ -72,7 +74,7 @@ public class SampleParserGrimm implements SampleParser {
 		if (!Configuration.useBottomLaser) rowMax = rowMax / 3 / 2 * 3;
 
 		for (int row = rowMin; row < rowMax; row+=3) {
-			int light = Math.max(0, pixels[row] - (pixels[row+1] + pixels[row+2]) / 2);
+			int light = CalcUtil.getRed(pixels[row], pixels[row+1], pixels[row+2]);
 			lightSum += light;
 			lightMax = Math.max(lightMax, light);
 
