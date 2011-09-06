@@ -52,16 +52,18 @@ public class SampleShrinker {
 		int numLists = lists.size();
 		int length = lists.get(0).size();
 		List<Sample> approxList = new ArrayList<Sample>();
+		for(int list=1; list<numLists; list++) {
+			length = Math.min(length, lists.get(list).size());
+		}
 		for(int item=0;item<length && length > 0 && numLists > 0;item++) {
-			float approxRow=0, intensity=0, angle=0, distance=0;
+			float approxRow=0, approxIntensity=0, angle=0, distance=0;
 			for(int list=0; list<numLists; list++) {
-				Sample sample = lists.get(list).get(item);
+				List<Sample> list2 = lists.get(list);
+				Sample sample = list2.get(item);
 				approxRow += sample.getRow();
-				intensity += sample.getIntensity();
-				angle += sample.getAngle();
-				distance += sample.getDistance();
+				approxIntensity += sample.getIntensity();
 			}
-			Sample approxSample = new Sample(approxRow/numLists, intensity/numLists);
+			Sample approxSample = new Sample(approxRow/numLists, approxIntensity/numLists);
 			approxSample.setColumn(item);
 			approxSample.setAngle(angle/numLists);
 			approxSample.setDistance(distance/numLists);
