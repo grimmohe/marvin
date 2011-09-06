@@ -3,7 +3,9 @@ package sample;
 import java.awt.image.Raster;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import util.CalcUtil;
 
@@ -12,7 +14,13 @@ import conf.Configuration;
 
 public class SampleParserGrimm implements SampleParser {
 
+	public SampleParserGrimm() {
+		super();
+	}
+
 	private float[] columnThreshold = new float[0];
+	private Map<Integer, List<Sample>> sampleCache = new HashMap<Integer, List<Sample>>();
+	private int frameCacheCount;
 
 	/* (non-Javadoc)
 	 * @see sample.SampleParser#generateSamples(au.edu.jcu.v4l4j.VideoFrame)
@@ -44,7 +52,32 @@ public class SampleParserGrimm implements SampleParser {
 			columnThreshold[column] = scanResult.getNewThreshold();
 		}
 
+		this.checkCache(sampleList);
+
 		return sampleList;
+	}
+
+	private void checkCache(List<Sample> sampleList) {
+		List<Sample> copy = new ArrayList<Sample>(sampleList);
+		for (Sample s: copy) {
+			boolean valid = true;
+			for (Map.Entry<Integer, List<Sample>> list: this.sampleCache.entrySet()) {
+				boolean set = false;
+				for (Sample cs: list.getValue()) {
+					if (s.getColumn() == cs.getColumn() && Math.abs(s.getRow() - cs.getRow()) < 1) {
+						set = true;
+						break;
+					}
+				}
+				valid = valid && set;
+			}
+			if (!valid) {
+				sampleList.remove(s);
+			}
+		}
+
+		this.sampleCache.put(this.frameCacheCount, copy);
+		this.frameCacheCount = ++this.frameCacheCount % Configuration.noiseFrameCache;
 	}
 
 	private float getThreshold(float[] pixels, int index) {

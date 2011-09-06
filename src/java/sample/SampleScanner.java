@@ -1,7 +1,6 @@
 package sample;
 
 import java.awt.image.Raster;
-import java.util.ArrayList;
 import java.util.List;
 
 import log.LoggerServer;
