@@ -12,7 +12,7 @@ import conf.Configuration;
 
 public class SampleParserGrimm implements SampleParser {
 
-	private float[] columnThreshold;
+	private float[] columnThreshold = new float[0];
 
 	/* (non-Javadoc)
 	 * @see sample.SampleParser#generateSamples(au.edu.jcu.v4l4j.VideoFrame)
@@ -27,7 +27,7 @@ public class SampleParserGrimm implements SampleParser {
 		int width = raster.getWidth();
 		int height = raster.getHeight();
 
-		if (columnThreshold == null || columnThreshold.length != width) columnThreshold = new float[width];
+		if (columnThreshold.length != width) columnThreshold = new float[width];
 
 		float lastRow=0;
 		for (int column = raster.getMinX(); column < width; column++) {
