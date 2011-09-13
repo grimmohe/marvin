@@ -3,7 +3,9 @@ package sample;
 import java.awt.image.Raster;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import util.CalcUtil;
 
@@ -12,7 +14,13 @@ import conf.Configuration;
 
 public class SampleParserGrimm implements SampleParser {
 
-	private float[] columnThreshold;
+	public SampleParserGrimm() {
+		super();
+	}
+
+	private float[] columnThreshold = new float[0];
+	private Map<Integer, SampleCacheContainer> sampleCache = new HashMap<Integer, SampleCacheContainer>();
+	private int frameCacheCount;
 
 	/* (non-Javadoc)
 	 * @see sample.SampleParser#generateSamples(au.edu.jcu.v4l4j.VideoFrame)
@@ -27,7 +35,7 @@ public class SampleParserGrimm implements SampleParser {
 		int width = raster.getWidth();
 		int height = raster.getHeight();
 
-		if (columnThreshold == null || columnThreshold.length != width) columnThreshold = new float[width];
+		if (columnThreshold.length != width) columnThreshold = new float[width];
 
 		float lastRow=0;
 		for (int column = raster.getMinX(); column < width; column++) {
@@ -44,7 +52,54 @@ public class SampleParserGrimm implements SampleParser {
 			columnThreshold[column] = scanResult.getNewThreshold();
 		}
 
+		this.checkCache(sampleList);
+
 		return sampleList;
+	}
+
+	private void checkCache(List<Sample> sampleList) {
+		List<Sample> copy = new ArrayList<Sample>(sampleList);
+
+		for (int run = 0; run < copy.size(); run++) {
+			Sample s = copy.get(run);
+
+			boolean valid = true;
+			for (Map.Entry<Integer, SampleCacheContainer> scl: this.sampleCache.entrySet()) {
+				List<Sample> list = scl.getValue().samples;
+
+				if (scl.getValue().column < s.getColumn()) scl.getValue().indexStart = scl.getValue().indexEnd;
+
+				boolean set = false;
+
+				for (int sampleIndex = scl.getValue().indexStart; sampleIndex < list.size(); sampleIndex++) {
+					Sample cs = list.get(sampleIndex);
+					if (s.getColumn() == cs.getColumn() && Math.abs(s.getRow() - cs.getRow()) < 1) {
+						set = true;
+					}
+					if (set || s.getColumn() < cs.getColumn()) {
+						scl.getValue().indexEnd = Math.max(scl.getValue().indexEnd, sampleIndex);
+						break;
+					}
+				}
+
+				valid = valid && set;
+
+				if (!valid) break;
+			}
+			if (!valid) {
+				sampleList.remove(s);
+			}
+		}
+
+		this.sampleCache.put(this.frameCacheCount, new SampleCacheContainer(copy));
+		this.frameCacheCount = ++this.frameCacheCount % Configuration.noiseFrameCache;
+
+		for (int count = 0; count < Configuration.noiseFrameCache; count++) {
+			if (this.sampleCache.containsKey(count)) {
+				this.sampleCache.get(count).indexStart = 0;
+				this.sampleCache.get(count).indexEnd = 0;
+			}
+		}
 	}
 
 	private float getThreshold(float[] pixels, int index) {
@@ -109,6 +164,19 @@ public class SampleParserGrimm implements SampleParser {
 
 		return new ColumnScanResult((lightSum / pixels.length + lightMax) / 2, sample);
 	}
+}
+
+class SampleCacheContainer {
+
+	public List<Sample> samples;
+	public int column;
+	public int indexStart;
+	public int indexEnd;
+
+	public SampleCacheContainer(List<Sample> samples) {
+		this.samples = samples;
+	}
+
 }
 
 
