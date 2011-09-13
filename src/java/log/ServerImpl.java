@@ -10,12 +10,15 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.unknown.marvin.Marvin;
+
 import conf.Configuration;
 
 public class ServerImpl extends Thread implements Server {
+	
 	private ServerSocket server;
 	private List<Client> clients = new ArrayList<Client>();
-
+	protected Marvin marvin;
 
 	@Override
 	public synchronized void start() {
@@ -124,6 +127,10 @@ public class ServerImpl extends Thread implements Server {
 					client.switchWishes(id, data);
 				}
 				
+				if(id > Client.CMD_ACTION) {
+					marvin.getVideo().saveDeviceConfiguration();
+				}
+				
 			} catch ( Exception e ) {
 				e.printStackTrace();
 			}
@@ -203,6 +210,16 @@ public class ServerImpl extends Thread implements Server {
 	@Override
 	public boolean isClientConnected() {
 		return !this.clients.isEmpty();
+	}
+
+	@Override
+	public Marvin getMarvin() {
+		return marvin;
+	}
+
+	@Override
+	public void setMarvin(Marvin marvin) {
+		this.marvin = marvin;
 	}
 
 }

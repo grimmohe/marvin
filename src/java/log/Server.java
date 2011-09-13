@@ -1,5 +1,6 @@
 package log;
 
+import org.unknown.marvin.Marvin;
 
 public interface Server {
 
@@ -14,4 +15,8 @@ public interface Server {
 
 	public void start();
 
+	public void setMarvin(Marvin marvin);
+	
+	public Marvin getMarvin();
+	
 }

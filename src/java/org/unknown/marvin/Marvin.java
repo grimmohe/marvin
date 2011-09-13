@@ -1,3 +1,4 @@
+package org.unknown.marvin;
 import java.util.List;
 
 import log.LoggerServer;
@@ -12,6 +13,9 @@ import au.edu.jcu.v4l4j.exceptions.V4L4JException;
 
 public class Marvin {
 
+	private LoggerServer logger = new LoggerServer();
+	private Video video = new Video();
+
 	/**
 	 * @param args
 	 * @throws V4L4JException
@@ -19,11 +23,17 @@ public class Marvin {
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) {
+		
+		Marvin marvin = new Marvin();
+		marvin.run();
+		
+	}
 
-		LoggerServer logger = new LoggerServer();
-		Video video = new Video();
-
+	private void run() {
+		
 		try {
+
+			logger.setMarvin(this);
 			List<VideoDeviceInfo> vdil = video.getVideoDevices();
 			System.out.println(vdil.get(vdil.size()-1));
 			video.setActiveVideoDevice(vdil.get(vdil.size()-1));
@@ -44,6 +54,15 @@ public class Marvin {
 
 		video.stopStreaming();
 		logger.close();
+		
+	}
+	
+	public LoggerServer getLogger() {
+		return logger;
+	}
+	
+	public Video getVideo() {
+		return video;
 	}
 
 }

@@ -84,6 +84,9 @@ public class Viewer {
 		JButton btnDisconnect = new JButton("Disconnect");
 		toolBar.add(btnDisconnect);
 
+		JButton btnCamSave = new JButton("CamSave");
+		toolBar.add(btnCamSave);
+		
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		frame.getContentPane().add(tabbedPane, BorderLayout.CENTER);
 
@@ -123,6 +126,7 @@ public class Viewer {
 
 		btnConnect.addActionListener(new Connector(this.client, this.draw));
 		btnDisconnect.addActionListener(new Disconnector(this.client));
+		btnCamSave.addActionListener(new CamSaver(this.client));
 		tabbedPane.addChangeListener(new TabChange(this.draw));
 	}
 
@@ -164,6 +168,27 @@ class Disconnector implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		client.disconnect();
+	}
+
+}
+
+class CamSaver implements ActionListener {
+
+	private Client client;
+
+	public CamSaver(Client client) {
+		super();
+		this.client = client;
+
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		try {
+			client.camSaveCommand();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 	}
 
 }

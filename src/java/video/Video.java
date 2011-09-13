@@ -1,18 +1,26 @@
 package video;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import au.edu.jcu.v4l4j.CaptureCallback;
+import au.edu.jcu.v4l4j.Control;
+import au.edu.jcu.v4l4j.ControlList;
 import au.edu.jcu.v4l4j.FrameGrabber;
 import au.edu.jcu.v4l4j.ImageFormat;
 import au.edu.jcu.v4l4j.V4L4JConstants;
 import au.edu.jcu.v4l4j.VideoDevice;
 import au.edu.jcu.v4l4j.FrameInterval.DiscreteInterval;
 import au.edu.jcu.v4l4j.ResolutionInfo.DiscreteResolution;
+import au.edu.jcu.v4l4j.exceptions.ControlException;
 import au.edu.jcu.v4l4j.exceptions.V4L4JException;
+import conf.CameraPropertyResolver;
 import conf.Configuration;
 
 public class Video {
@@ -116,13 +124,60 @@ public class Video {
 		if (vd != null) {
 			try {
 				activeVideo = new VideoDevice(vd.getDevice());
+				configureDevice();
 			} catch (V4L4JException e) {
 				e.printStackTrace();
-				throw new VideoException("video device not avaiable. " + e.getMessage());
+				throw new VideoException("video device not avaiable. ", e);
+			} catch (FileNotFoundException e) {
+				throw new VideoException(e);
+			} catch (IOException e) {
+				throw new VideoException(e);
 			}
 		}
 	}
 
+	private void configureDevice() 
+			throws FileNotFoundException, IOException, V4L4JException {
+
+		Properties properties = (new CameraPropertyResolver()).resolveProperties(
+				activeVideo.getDeviceInfo().getName());
+		
+		if(properties != null) {
+			for (Map.Entry<Object, Object> entry: properties.entrySet()) {
+				Control control = activeVideo.getControlList().getControl((String) entry.getKey());
+				System.out.println("set cam config: " + entry.getKey() + "=" + 
+						entry.getValue() + "(was: " + control.getValue() + ")");
+				try {
+					control.setValue(Integer.valueOf((String) entry.getValue()));
+				} catch (ControlException e) {
+					// pass
+				}
+			}
+		}
+		
+	}
+	
+	public void saveDeviceConfiguration() 
+			throws FileNotFoundException, IOException, V4L4JException {
+		
+		CameraPropertyResolver propertyResolver = 
+			new CameraPropertyResolver();
+		
+		Properties properties = propertyResolver.resolveProperties(
+				activeVideo.getDeviceInfo().getName());
+
+		ControlList controlList = activeVideo.getControlList();
+		
+		for (Control control : controlList.getList()) {
+			properties.setProperty(control.getName(), 
+					Integer.toString(control.getValue()));
+		}
+		
+		propertyResolver.storeProperties(properties, 
+				activeVideo.getDeviceInfo().getName());
+		
+	}
+	
 	public void startStreaming(CaptureCallback cc) throws V4L4JException, VideoException {
 		DeviceOptimals opt = getDeviceOptimals(activeVideo);
 
@@ -130,8 +185,10 @@ public class Video {
 			throw new VideoException("there is a stream running");
 		}
 
-		activeFrameGrabber = activeVideo.getRGBFrameGrabber(opt.width, opt.height, opt.input, opt.channel);
-		activeFrameGrabber.setFrameInterval(opt.intervalNumerator, opt.intervalDenominator);
+		activeFrameGrabber = activeVideo.getRGBFrameGrabber(opt.width, 
+				opt.height, opt.input, opt.channel);
+		activeFrameGrabber.setFrameInterval(opt.intervalNumerator, 
+				opt.intervalDenominator);
 		activeFrameGrabber.setCaptureCallback(cc);
 		activeFrameGrabber.startCapture();
 	}

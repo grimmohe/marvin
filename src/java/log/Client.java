@@ -22,6 +22,9 @@ public class Client extends Thread {
 	private static final int CMD_WISHES_SAMPLE_LIST = CMD_WISHES_OFFSET + LoggerCommon.SAMPLE_LIST;
 	private static final int CMD_WISHES_NODE_LIST = CMD_WISHES_OFFSET + LoggerCommon.NODE_LIST;
 
+	static final int CMD_ACTION = 200;
+	private static final int CMD_ACTION_SAVE_CAM_DATA = 201;
+	
 	public Client(LoggerClient logger) {
 		this.logger = logger;
 		this.start();
@@ -178,6 +181,10 @@ public class Client extends Thread {
 	public void setWichesNodeList(boolean whichesNodeList) throws IOException {
 		this.wichesNodeList = whichesNodeList;
 		sendWhichesToServer(CMD_WISHES_NODE_LIST, this.wichesNodeList);
+	}
+
+	public void camSaveCommand() throws IOException {
+		sendWhichesToServer(CMD_ACTION_SAVE_CAM_DATA, false);
 	}
 	
 	private void sendWhichesToServer(int cmdId,

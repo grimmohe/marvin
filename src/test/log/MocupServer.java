@@ -1,5 +1,7 @@
 package log;
 
+import org.unknown.marvin.Marvin;
+
 public class MocupServer implements Server {
 
 	private byte[] result;
@@ -27,6 +29,18 @@ public class MocupServer implements Server {
 
 	public byte[] getResult() {
 		return result;
+	}
+
+	@Override
+	public Marvin getMarvin() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setMarvin(Marvin marvin) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

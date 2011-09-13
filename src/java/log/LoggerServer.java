@@ -2,9 +2,10 @@ package log;
 
 import java.util.List;
 
-import au.edu.jcu.v4l4j.VideoFrame;
+import org.unknown.marvin.Marvin;
 
 import sample.Sample;
+import au.edu.jcu.v4l4j.VideoFrame;
 
 /*
  * Write classes into a byte[] to send to listening clients and recreates them to be visualized in a gui.
@@ -12,7 +13,6 @@ import sample.Sample;
 public class LoggerServer {
 
 	private Server server;
-
 
 	private static LoggerServer loggerInstance;
 
@@ -54,6 +54,14 @@ public class LoggerServer {
 
 	public void logSampleList(List<Sample> samples) {
 		server.write(LoggerCommon.SAMPLE_LIST, new SerializedDataProxy(samples));
+	}
+
+	public void setMarvin(Marvin marvin) {
+		server.setMarvin(marvin);
+	}
+
+	public Marvin getMarvin() {
+		return server.getMarvin();
 	}
 
 }

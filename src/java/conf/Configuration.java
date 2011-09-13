@@ -1,5 +1,8 @@
 package conf;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Configuration {
 
 	public static final int debug = 0;
