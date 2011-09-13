@@ -84,7 +84,9 @@ public class SampleScanner implements CaptureCallback {
 			}
 
 			double angle = halfAngle + row * degreePerRow;
-			double distance = Configuration.videoLaserDistance * Math.tan(Math.toRadians(angle)) - camRecessed;
+			double distance = Configuration.videoLaserDistance * Math.tan(Math.toRadians(angle));
+			distance -= camRecessed;
+			distance /= Math.cos(Math.toRadians(sample.getAngle()));
 			sample.setDistance((float) distance);
 		}
 
