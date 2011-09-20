@@ -70,13 +70,14 @@ public class SampleScanner implements CaptureCallback {
 		Raster raster = frame.getRaster();
 		float frameWidth = raster.getWidth();
 		float frameHeight = raster.getHeight();
-		float halfAngle = 90F - (Configuration.videoVAngle / 2); // von gerade runter bis zum beginn des Bildes
-	    float degreePerRow = (float)Configuration.videoVAngle / raster.getHeight();
-	    float degreePerCol = Configuration.videoViewVAngle / frameWidth;
-	    double camRecessed = Configuration.videoLaserDistance * Math.tan(Math.toRadians(halfAngle)); // wie weit die cam hinter der Null-Distanz positioniert ist
+		Configuration conf = Configuration.getInstance();
+		float halfAngle = 90F - (conf.videoVAngle / 2); // von gerade runter bis zum beginn des Bildes
+	    float degreePerRow = (float)conf.videoVAngle / raster.getHeight();
+	    float degreePerCol = conf.videoViewVAngle / frameWidth;
+	    double camRecessed = conf.videoLaserDistance * Math.tan(Math.toRadians(halfAngle)); // wie weit die cam hinter der Null-Distanz positioniert ist
 
 		for (Sample sample : samples) {
-			sample.setAngle((degreePerCol * sample.getColumn()) - Configuration.videoViewVAngle / 2); // "-" um die linke Hälfte negativ zu bekommen
+			sample.setAngle((degreePerCol * sample.getColumn()) - conf.videoViewVAngle / 2); // "-" um die linke Hälfte negativ zu bekommen
 
 			float row = sample.getRow();
 			if (row > frameHeight/2) { // alles auf die obere Hälfte
@@ -84,7 +85,7 @@ public class SampleScanner implements CaptureCallback {
 			}
 
 			double angle = halfAngle + row * degreePerRow;
-			double distance = Configuration.videoLaserDistance * Math.tan(Math.toRadians(angle));
+			double distance = conf.videoLaserDistance * Math.tan(Math.toRadians(angle));
 			distance /= Math.cos(Math.toRadians(sample.getAngle()));
 			sample.setDistance((float) distance);
 		}

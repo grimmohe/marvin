@@ -65,13 +65,14 @@ public class Video {
 
 	private DeviceOptimals getDeviceOptimals(VideoDevice vd) throws V4L4JException, VideoException {
 		DeviceOptimals opt = null;
+		Configuration conf = Configuration.getInstance();
 
 		for (ImageFormat imgf: vd.getDeviceInfo().getFormatList().getRGBEncodableFormats()) {
 			for (DiscreteResolution res: imgf.getResolutionInfo().getDiscreteResolutions()) {
 				for (DiscreteInterval interval: res.interval.getDiscreteIntervals()) {
 					int frames = interval.denominator / Math.max(1, interval.numerator);
 
-					if ( frames >= Configuration.videoFramesMin
+					if ( frames >= conf.videoFramesMin
 					     && (opt == null
 					         || (frames <= opt.interval
 						         && res.height >= opt.height
@@ -136,16 +137,16 @@ public class Video {
 		}
 	}
 
-	private void configureDevice() 
+	private void configureDevice()
 			throws FileNotFoundException, IOException, V4L4JException {
 
 		Properties properties = (new CameraPropertyResolver()).resolveProperties(
 				activeVideo.getDeviceInfo().getName());
-		
+
 		if(properties != null) {
 			for (Map.Entry<Object, Object> entry: properties.entrySet()) {
 				Control control = activeVideo.getControlList().getControl((String) entry.getKey());
-				System.out.println("set cam config: " + entry.getKey() + "=" + 
+				System.out.println("set cam config: " + entry.getKey() + "=" +
 						entry.getValue() + "(was: " + control.getValue() + ")");
 				try {
 					control.setValue(Integer.valueOf((String) entry.getValue()));
@@ -154,30 +155,30 @@ public class Video {
 				}
 			}
 		}
-		
+
 	}
-	
-	public void saveDeviceConfiguration() 
+
+	public void saveDeviceConfiguration()
 			throws FileNotFoundException, IOException, V4L4JException {
-		
-		CameraPropertyResolver propertyResolver = 
+
+		CameraPropertyResolver propertyResolver =
 			new CameraPropertyResolver();
-		
+
 		Properties properties = propertyResolver.resolveProperties(
 				activeVideo.getDeviceInfo().getName());
 
 		ControlList controlList = activeVideo.getControlList();
-		
+
 		for (Control control : controlList.getList()) {
-			properties.setProperty(control.getName(), 
+			properties.setProperty(control.getName(),
 					Integer.toString(control.getValue()));
 		}
-		
-		propertyResolver.storeProperties(properties, 
+
+		propertyResolver.storeProperties(properties,
 				activeVideo.getDeviceInfo().getName());
-		
+
 	}
-	
+
 	public void startStreaming(CaptureCallback cc) throws V4L4JException, VideoException {
 		DeviceOptimals opt = getDeviceOptimals(activeVideo);
 
@@ -185,9 +186,9 @@ public class Video {
 			throw new VideoException("there is a stream running");
 		}
 
-		activeFrameGrabber = activeVideo.getRGBFrameGrabber(opt.width, 
+		activeFrameGrabber = activeVideo.getRGBFrameGrabber(opt.width,
 				opt.height, opt.input, opt.channel);
-		activeFrameGrabber.setFrameInterval(opt.intervalNumerator, 
+		activeFrameGrabber.setFrameInterval(opt.intervalNumerator,
 				opt.intervalDenominator);
 		activeFrameGrabber.setCaptureCallback(cc);
 		activeFrameGrabber.startCapture();

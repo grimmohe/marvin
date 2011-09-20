@@ -92,9 +92,9 @@ public class SampleParserGrimm implements SampleParser {
 		}
 
 		this.sampleCache.put(this.frameCacheCount, new SampleCacheContainer(copy));
-		this.frameCacheCount = ++this.frameCacheCount % Configuration.noiseFrameCache;
+		this.frameCacheCount = ++this.frameCacheCount % Configuration.getInstance().noiseFrameCache;
 
-		for (int count = 0; count < Configuration.noiseFrameCache; count++) {
+		for (int count = 0; count < Configuration.getInstance().noiseFrameCache; count++) {
 			if (this.sampleCache.containsKey(count)) {
 				this.sampleCache.get(count).indexStart = 0;
 				this.sampleCache.get(count).indexEnd = 0;
@@ -125,8 +125,8 @@ public class SampleParserGrimm implements SampleParser {
 		int rowMin = 0;
 		int rowMax = pixels.length;
 
-		if (!Configuration.useTopLaser) rowMin = rowMax / 3 / 2 * 3;
-		if (!Configuration.useBottomLaser) rowMax = rowMax / 3 / 2 * 3;
+		if (!Configuration.getInstance().useTopLaser) rowMin = rowMax / 3 / 2 * 3;
+		if (!Configuration.getInstance().useBottomLaser) rowMax = rowMax / 3 / 2 * 3;
 
 		for (int row = rowMin; row < rowMax; row+=3) {
 			int light = CalcUtil.getRed(pixels[row], pixels[row+1], pixels[row+2]);
