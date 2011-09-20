@@ -74,7 +74,6 @@ public class SampleScanner implements CaptureCallback {
 		float halfAngle = 90F - (conf.videoVAngle / 2); // von gerade runter bis zum beginn des Bildes
 	    float degreePerRow = (float)conf.videoVAngle / raster.getHeight();
 	    float degreePerCol = conf.videoViewVAngle / frameWidth;
-	    double camRecessed = conf.videoLaserDistance * Math.tan(Math.toRadians(halfAngle)); // wie weit die cam hinter der Null-Distanz positioniert ist
 
 		for (Sample sample : samples) {
 			sample.setAngle((degreePerCol * sample.getColumn()) - conf.videoViewVAngle / 2); // "-" um die linke Hälfte negativ zu bekommen

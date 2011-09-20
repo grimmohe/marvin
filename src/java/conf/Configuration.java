@@ -10,6 +10,7 @@ public class Configuration {
 	public int videoViewVAngle = 25;
 	public int logginPort = 2889;
 	public int noiseFrameCache = 3;
+	public double camRecession  = 0;
 
 	public boolean useTopLaser = true;
 	public boolean useBottomLaser = false;

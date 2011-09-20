@@ -186,6 +186,9 @@ public class Video {
 			throw new VideoException("there is a stream running");
 		}
 
+		Configuration conf = Configuration.getInstance();
+		conf.camRecession = conf.videoLaserDistance * Math.tan(Math.toRadians(90F - (conf.videoVAngle / 2))); // wie weit die cam hinter der Null-Distanz positioniert ist
+
 		activeFrameGrabber = activeVideo.getRGBFrameGrabber(opt.width,
 				opt.height, opt.input, opt.channel);
 		activeFrameGrabber.setFrameInterval(opt.intervalNumerator,
