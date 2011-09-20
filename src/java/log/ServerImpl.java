@@ -24,7 +24,7 @@ public class ServerImpl extends Thread implements Server {
 	public synchronized void start() {
 		while ( this.server == null ) {
 			try {
-				this.server = new ServerSocket( Configuration.logginPort );
+				this.server = new ServerSocket( Configuration.getInstance().logginPort );
 			} catch ( IOException e ) {
 				System.out.println(e.getMessage());
 				try {

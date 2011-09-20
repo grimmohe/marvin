@@ -128,8 +128,8 @@ public class Client extends Thread {
 		for (int tryCount = 0; tryCount < 60 && (this.serverSocket == null || 
 				!this.serverSocket.isConnected()); tryCount++) {
 			try {
-				this.serverSocket = new Socket(Configuration.loggingServerAddress, 
-						Configuration.logginPort);
+				this.serverSocket = new Socket(Configuration.getInstance().loggingServerAddress, 
+						Configuration.getInstance().logginPort);
 				System.out.println("Connection established");
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
