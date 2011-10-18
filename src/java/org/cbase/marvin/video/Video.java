@@ -147,6 +147,7 @@ public class Video {
 		if(properties != null) {
 			for (Map.Entry<Object, Object> entry: properties.entrySet()) {
 				Control control = activeVideo.getControlList().getControl((String) entry.getKey());
+				if (control == null) continue;
 				System.out.println("set cam config: " + entry.getKey() + "=" +
 						entry.getValue() + "(was: " + control.getValue() + ")");
 				try {
