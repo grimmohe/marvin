@@ -1,17 +1,21 @@
 #!/bin/bash
+
+DEST="root@192.168.0.100"
+if [ ! -z "$1" ] ; then DEST=$1; fi
+
 pushd bin
 jar cvfm marvin.jar MANIFEST.MF org/
 popd
 
-ssh $1 'if [ ! -d /usr/share/marvin ] ; then mkdir /usr/share/marvin; fi'
-ssh $1 'if [ ! -d /usr/share/marvin/bin ] ; then mkdir /usr/share/marvin/bin; fi'
-ssh $1 'if [ ! -d /usr/share/marvin/lib ] ; then mkdir /usr/share/marvin/lib; fi'
+ssh $DEST 'if [ ! -d /usr/share/marvin ] ; then mkdir /usr/share/marvin; fi'
+ssh $DEST 'if [ ! -d /usr/share/marvin/bin ] ; then mkdir /usr/share/marvin/bin; fi'
+ssh $DEST 'if [ ! -d /usr/share/marvin/lib ] ; then mkdir /usr/share/marvin/lib; fi'
 
 #marvin
-scp -r bin/marvin.jar $1:/usr/share/marvin/bin/
+scp -r bin/marvin.jar $DEST:/usr/share/marvin/bin/
 
 #neo4j
-scp -r lib/* $1:/usr/share/marvin/lib
+scp -r lib/* $DEST:/usr/share/marvin/lib
 
-ssh $1 '/etc/init.d/marvin restart'
+ssh $DEST '/etc/init.d/marvin restart'
 
