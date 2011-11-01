@@ -68,7 +68,7 @@ public class Video {
 		DeviceOptimals opt = null;
 		Configuration conf = Configuration.getInstance();
 
-		for (ImageFormat imgf: vd.getDeviceInfo().getFormatList().getRGBEncodableFormats()) {
+		for (ImageFormat imgf: vd.getDeviceInfo().getFormatList().getNativeFormats()) {
 			for (DiscreteResolution res: imgf.getResolutionInfo().getDiscreteResolutions()) {
 				for (DiscreteInterval interval: res.interval.getDiscreteIntervals()) {
 					int frames = interval.denominator / Math.max(1, interval.numerator);
@@ -191,12 +191,11 @@ public class Video {
 		Configuration conf = Configuration.getInstance();
 		conf.camRecession = conf.videoLaserDistance * Math.tan(Math.toRadians(90F - (conf.videoVAngle / 2))); // wie weit die cam hinter der Null-Distanz positioniert ist
 
-		activeFrameGrabber = activeVideo.getRGBFrameGrabber(opt.width,
-				opt.height, opt.input, opt.channel);
-		activeFrameGrabber.setFrameInterval(opt.intervalNumerator,
-				opt.intervalDenominator);
+		activeFrameGrabber = activeVideo.getRawFrameGrabber(opt.width, opt.height, opt.input, opt.channel);
+		activeFrameGrabber.setFrameInterval(opt.intervalNumerator, opt.intervalDenominator);
 		activeFrameGrabber.setCaptureCallback(cc);
 		activeFrameGrabber.startCapture();
+		System.out.println("raw frame format: " + activeFrameGrabber.getImageFormat().getName());
 	}
 
 	public void stopStreaming() {

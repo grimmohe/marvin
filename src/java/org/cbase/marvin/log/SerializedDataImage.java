@@ -3,16 +3,14 @@ package org.cbase.marvin.log;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import javax.imageio.ImageIO;
-
-import au.edu.jcu.v4l4j.VideoFrame;
+import org.cbase.marvin.video.Format;
 
 public class SerializedDataImage implements SerializedData {
 
-	private VideoFrame frame;
+	private Format frame;
 	private byte[] data;
 
-	public SerializedDataImage(VideoFrame frame) {
+	public SerializedDataImage(Format frame) {
 		super();
 		this.frame = frame;
 	}
@@ -21,14 +19,30 @@ public class SerializedDataImage implements SerializedData {
 	public byte[] getData() {
 		if (data == null) {
 			try {
-				ByteArrayOutputStream beos = new ByteArrayOutputStream();
-				ImageIO.write(frame.getBufferedImage(), "jpg", beos);
-				data = beos.toByteArray();
-				beos.close();
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+				baos.write(toByteArray(frame.getFormat()));
+				baos.write(toByteArray(frame.getWidth()));
+				baos.write(toByteArray(frame.getHeight()));
+				baos.write(frame.getBytes());
+
+				data = baos.toByteArray();
+				baos.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+		return data;
+	}
+
+	private byte[] toByteArray(int i) {
+		byte[] data = new byte[4];
+
+		data[0] = (byte)((i >> 24) & 0xff);
+		data[1] = (byte)((i >> 16) & 0xff);
+		data[2] = (byte)((i >> 8) & 0xff);
+		data[3] = (byte)(i & 0xff);
+
 		return data;
 	}
 

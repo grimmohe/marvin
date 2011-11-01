@@ -1,11 +1,12 @@
 package org.cbase.marvin.sample;
 
-import java.awt.image.Raster;
 import java.util.List;
 
 import org.cbase.marvin.conf.Configuration;
 import org.cbase.marvin.log.LoggerServer;
 import org.cbase.marvin.map.ScanMap;
+import org.cbase.marvin.video.Format;
+import org.cbase.marvin.video.FormatFactory;
 
 import au.edu.jcu.v4l4j.CaptureCallback;
 import au.edu.jcu.v4l4j.VideoFrame;
@@ -18,9 +19,10 @@ public class SampleScanner implements CaptureCallback {
 
 	private SampleUpdate updater;
 	private LoggerServer logger;
-	private SampleParser sampleParser = new SampleParserGrimm();
+	private SampleParser sampleParser = new SampleParserImpl();
 	private boolean working = false;
 	private SampleShrinker sampleShrinker = new SampleShrinker();
+	private Format frame;
 
 
 	public SampleScanner(SampleUpdate updater, LoggerServer logger) {
@@ -35,12 +37,21 @@ public class SampleScanner implements CaptureCallback {
 
 	}
 
-	public void nextFrame(VideoFrame frame) {
+	public void nextFrame(VideoFrame rawframe) {
 
-		if (!this.working) {
+		if (this.working) {
+			System.out.println("skipping frame");
+		}
+		else {
 			this.working = true;
 
-			logger.logRawImage(frame);
+			if (this.frame == null) {
+				frame = FormatFactory.getInstance().getFormat(rawframe.getFrameGrabber().getImageFormat().getIndex());
+			}
+
+			this.frame.setFrame(rawframe.getBytes(), rawframe.getFrameGrabber().getWidth(), rawframe.getFrameGrabber().getHeight());
+
+			logger.logRawImage(this.frame);
 
 			List<Sample> sampleList = sampleParser.generateSamples(frame);
 			sampleList = calculateDistances(sampleList, frame);
@@ -63,17 +74,16 @@ public class SampleScanner implements CaptureCallback {
 			this.working = false;
 		}
 
-		frame.recycle();
+		rawframe.recycle();
 	}
 
-	private List<Sample> calculateDistances(List<Sample> samples, VideoFrame frame) {
+	private List<Sample> calculateDistances(List<Sample> samples, Format frame) {
 
-		Raster raster = frame.getRaster();
-		float frameWidth = raster.getWidth();
-		float frameHeight = raster.getHeight();
+		float frameWidth = frame.getWidth();
+		float frameHeight = frame.getHeight();
 		Configuration conf = Configuration.getInstance();
 		float halfAngle = 90F - (conf.videoVAngle / 2); // von gerade runter bis zum beginn des Bildes
-	    float degreePerRow = (float)conf.videoVAngle / raster.getHeight();
+	    float degreePerRow = (float)conf.videoVAngle / frameHeight;
 	    float degreePerCol = conf.videoViewVAngle / frameWidth;
 
 		for (Sample sample : samples) {

@@ -1,9 +1,9 @@
 package org.cbase.marvin.log;
 
-import java.awt.image.BufferedImage;
 import java.util.List;
 
 import org.cbase.marvin.sample.Sample;
+import org.cbase.marvin.video.Format;
 
 
 public interface ClientLoggerCallback {
@@ -12,7 +12,7 @@ public interface ClientLoggerCallback {
 
 	public void newNodeList(List<Sample> nodes);
 
-	public void newRawImage(BufferedImage deserializeRawImage);
+	public void newRawImage(Format format);
 
 	public void newRowNodes(List<Sample> deserializeSampleList);
 

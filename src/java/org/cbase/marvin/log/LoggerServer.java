@@ -4,8 +4,7 @@ import java.util.List;
 
 import org.cbase.marvin.Marvin;
 import org.cbase.marvin.sample.Sample;
-
-import au.edu.jcu.v4l4j.VideoFrame;
+import org.cbase.marvin.video.Format;
 
 /*
  * Write classes into a byte[] to send to listening clients and recreates them to be visualized in a gui.
@@ -40,7 +39,7 @@ public class LoggerServer {
 		}
 	}
 
-	public void logRawImage(VideoFrame frame) {
+	public void logRawImage(Format frame) {
 		server.write(LoggerCommon.RAW_IMAGE, new SerializedDataImage(frame));
 	}
 

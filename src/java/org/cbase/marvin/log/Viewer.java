@@ -11,7 +11,6 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.List;
 
@@ -30,7 +29,7 @@ import javax.swing.event.ChangeListener;
 import org.cbase.marvin.conf.Configuration;
 import org.cbase.marvin.map.Position;
 import org.cbase.marvin.sample.Sample;
-import org.cbase.marvin.util.CalcUtil;
+import org.cbase.marvin.video.Format;
 
 
 
@@ -89,7 +88,7 @@ public class Viewer {
 
 		JButton btnCamSave = new JButton("CamSave");
 		toolBar.add(btnCamSave);
-		
+
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		frame.getContentPane().add(tabbedPane, BorderLayout.CENTER);
 
@@ -211,7 +210,7 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 	private Viewer viewer;
 
 	JPanel rawImagePanel;
-	BufferedImage rawImage;
+	Format rawImage;
 	JCheckBox rawRed;
 	JCheckBox rawIntensity;
 	List<Sample> rawRowNodes;
@@ -357,25 +356,26 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 	}
 
 	@Override
-	public void newRawImage(BufferedImage deserializedRawImage) {
+	public void newRawImage(Format format) {
 
-		if (deserializedRawImage != null) this.rawImage = deserializedRawImage;
+		if (format != null) this.rawImage = format;
 
 		if (!this.rawImagePanel.isVisible() || this.rawImage == null) return;
 
-		if (this.rawRed.isSelected()) {
-			Raster r = this.rawImage.getRaster();
+		BufferedImage frame = new BufferedImage(this.rawImage.getWidth(), this.rawImage.getHeight(), BufferedImage.TYPE_INT_RGB);
 
-			for (int x=0; x<r.getWidth(); x++) {
-				for (int y=0; y<r.getHeight(); y++) {
-					int[] pixel = r.getPixel(x, y, (int[])null);
-					this.rawImage.setRGB(x, y, CalcUtil.getRed(pixel[0], pixel[1], pixel[2]) << 16);
+		for (int x = 0; x < frame.getWidth(); x++) {
+			for (int y = 0; y < frame.getHeight(); y++) {
+				if (this.rawRed.isSelected()) {
+					frame.setRGB(x, y, this.rawImage.getPixelRed(x, y));
+				} else {
+					frame.setRGB(x, y, this.rawImage.getPixelClear(x, y));
 				}
 			}
 		}
 
 		if (this.sampleList != null) {
-			Graphics g = this.rawImage.getGraphics();
+			Graphics g = frame.getGraphics();
 			g.setColor(new Color(0, 255, 255));
 			for (Sample sample: this.sampleList) {
 				int intensity = (int) sample.getIntensity();
@@ -392,9 +392,9 @@ class DrawingLoggerCallback implements ClientLoggerCallback {
 		}
 
 		this.rawImagePanel.getGraphics().drawImage
-			( this.rawImage,
+			( frame,
 			  0, this.rawRed.getX() + this.rawRed.getHeight(), this.nodePanel.getWidth(), this.nodePanel.getHeight(),
-			  0, 0, this.rawImage.getWidth(null), this.rawImage.getHeight(null),
+			  0, 0, frame.getWidth(), frame.getHeight(),
 			  null);
 	}
 

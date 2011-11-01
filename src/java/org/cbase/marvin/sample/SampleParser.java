@@ -2,10 +2,10 @@ package org.cbase.marvin.sample;
 
 import java.util.List;
 
-import au.edu.jcu.v4l4j.VideoFrame;
+import org.cbase.marvin.video.Format;
 
 public interface SampleParser {
 
-	public abstract List<Sample> generateSamples(VideoFrame frame);
+	public abstract List<Sample> generateSamples(Format frame);
 
 }

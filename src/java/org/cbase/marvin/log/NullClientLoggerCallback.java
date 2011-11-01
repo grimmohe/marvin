@@ -1,9 +1,9 @@
 package org.cbase.marvin.log;
 
-import java.awt.image.BufferedImage;
 import java.util.List;
 
 import org.cbase.marvin.sample.Sample;
+import org.cbase.marvin.video.Format;
 
 
 public class NullClientLoggerCallback implements ClientLoggerCallback {
@@ -14,7 +14,7 @@ public class NullClientLoggerCallback implements ClientLoggerCallback {
 	}
 
 	@Override
-	public void newRawImage(BufferedImage deserializeRawImage) {
+	public void newRawImage(Format format) {
 		System.out.println("ClientLoggerCallback: newRawImage");
 	}
 

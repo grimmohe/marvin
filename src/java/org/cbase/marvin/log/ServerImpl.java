@@ -15,7 +15,7 @@ import org.cbase.marvin.conf.Configuration;
 
 
 public class ServerImpl extends Thread implements Server {
-	
+
 	private ServerSocket server;
 	private List<Client> clients = new ArrayList<Client>();
 	protected Marvin marvin;
@@ -88,7 +88,7 @@ public class ServerImpl extends Thread implements Server {
 	}
 
 	private void readCmdFromClient(Client client) {
-		
+
 		Socket clientSocket = client.getMySocket();
 
 		if ( clientSocket != null && clientSocket.isConnected() ) {
@@ -106,10 +106,10 @@ public class ServerImpl extends Thread implements Server {
 			 * n byte as announced above with user data
 			 */
 			try {
-				if(in.available()<=0) {
+				if (in.available() <= 0) {
 					return;
 				}
-				
+
 				int id = in.read();
 				int length = 0;
 
@@ -126,18 +126,19 @@ public class ServerImpl extends Thread implements Server {
 				if(id > Client.CMD_WISHES_OFFSET) {
 					client.switchWishes(id, data);
 				}
-				
+
 				if(id > Client.CMD_ACTION) {
 					marvin.getVideo().saveDeviceConfiguration();
 				}
-				
+			} catch ( SocketException se ) {
+				if (se.getMessage() != "Socket is closed") se.printStackTrace();
 			} catch ( Exception e ) {
 				e.printStackTrace();
 			}
 
 		}
-		
-		
+
+
 	}
 
 	private int read(InputStream in) throws IOException {
@@ -148,7 +149,7 @@ public class ServerImpl extends Thread implements Server {
 		return value;
 	}
 
-	private int read(InputStream in, byte[] data, int offset, int length) 
+	private int read(InputStream in, byte[] data, int offset, int length)
 			throws IOException {
 		int value = in.read(data, offset, length);
 
@@ -156,7 +157,7 @@ public class ServerImpl extends Thread implements Server {
 
 		return value;
 	}
-	
+
 	/*
 	 * send data to all connected clients
 	 */
