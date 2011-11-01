@@ -3,8 +3,10 @@
 DEST="root@192.168.0.100"
 if [ ! -z "$1" ] ; then DEST=$1; fi
 
+RSYNC_VAR="-r -t -p -o -g -x -v --progress --delete -l -H -z -s"
+
 pushd bin
-jar cvfm marvin.jar MANIFEST.MF org/
+jar cvf marvin.jar org/
 popd
 
 ssh $DEST 'if [ ! -d /usr/share/marvin ] ; then mkdir /usr/share/marvin; fi'
@@ -12,10 +14,10 @@ ssh $DEST 'if [ ! -d /usr/share/marvin/bin ] ; then mkdir /usr/share/marvin/bin;
 ssh $DEST 'if [ ! -d /usr/share/marvin/lib ] ; then mkdir /usr/share/marvin/lib; fi'
 
 #marvin
-scp -r bin/marvin.jar $DEST:/usr/share/marvin/bin/
+scp bin/marvin.jar $DEST:/usr/share/marvin/bin/
 
 #neo4j
-scp -r lib/* $DEST:/usr/share/marvin/lib
+rsync $RSYNC_VAR lib/* $DEST:/usr/share/marvin/lib
 
 ssh $DEST '/etc/init.d/marvin restart'
 
