@@ -27,6 +27,7 @@ import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.cbase.marvin.conf.Configuration;
 import org.cbase.marvin.map.Position;
 import org.cbase.marvin.sample.Sample;
 import org.cbase.marvin.util.CalcUtil;
@@ -76,7 +77,7 @@ public class Viewer {
 		frame.getContentPane().add(toolBar, BorderLayout.NORTH);
 
 		txtLocalhost = new JTextField();
-		txtLocalhost.setText("localhost:3001");
+		txtLocalhost.setText("");
 		toolBar.add(txtLocalhost);
 		txtLocalhost.setColumns(10);
 
@@ -126,7 +127,9 @@ public class Viewer {
 		this.logger = new LoggerClient(this.draw);
 		this.client = new Client(this.logger);
 
-		btnConnect.addActionListener(new Connector(this.client, this.draw));
+		txtLocalhost.setText(Configuration.getInstance().loggingServerAddress + ":" + Configuration.getInstance().logginPort);
+
+		btnConnect.addActionListener(new Connector(this.client, this.draw, txtLocalhost));
 		btnDisconnect.addActionListener(new Disconnector(this.client));
 		btnCamSave.addActionListener(new CamSaver(this.client));
 		tabbedPane.addChangeListener(new TabChange(this.draw));
@@ -142,17 +145,25 @@ class Connector implements ActionListener {
 
 	private Client client;
 	private DrawingLoggerCallback draw;
+	private JTextField txtLocalhost;
 
-	public Connector(Client client, DrawingLoggerCallback draw) {
+	public Connector(Client client, DrawingLoggerCallback draw, JTextField txtLocalhost) {
 		super();
 		this.client = client;
 		this.draw = draw;
+		this.txtLocalhost = txtLocalhost;
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		client.connect();
-		draw.redraw();
+		try {
+			String addr = txtLocalhost.getText().split(":")[0];
+			int port = Integer.parseInt(txtLocalhost.getText().split(":")[1]);
+			client.connect(addr, port);
+			draw.redraw();
+		} catch (Exception err) {
+			err.printStackTrace();
+		}
 	}
 
 }

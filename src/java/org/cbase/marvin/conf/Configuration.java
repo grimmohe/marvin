@@ -15,7 +15,7 @@ public class Configuration {
 	public boolean useTopLaser = true;
 	public boolean useBottomLaser = false;
 
-	public String loggingServerAddress = "localhost";
+	public String loggingServerAddress = "192.168.0.100";
 
 	private static Configuration configuration;
 

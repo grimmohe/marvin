@@ -17,7 +17,7 @@ public class Client extends Thread {
 	private boolean wichesRawImage=false;
 	private boolean wichesSampleList=false;
 	private boolean wichesNodeList=false;
-	
+
 	/* this id's must not overlay into logger id's */
 	static final int CMD_WISHES_OFFSET = 100;
 	private static final int CMD_WISHES_RAWIMAGE = CMD_WISHES_OFFSET + LoggerCommon.RAW_IMAGE;
@@ -26,7 +26,7 @@ public class Client extends Thread {
 
 	static final int CMD_ACTION = 200;
 	private static final int CMD_ACTION_SAVE_CAM_DATA = 201;
-	
+
 	public Client(LoggerClient logger) {
 		this.logger = logger;
 		this.start();
@@ -36,7 +36,7 @@ public class Client extends Thread {
 		this.mySocket = clientSocket;
 		this.start();
 	}
-	
+
 	@Override
 	public void run() {
 		this.serverSocket = null;
@@ -81,7 +81,7 @@ public class Client extends Thread {
 							logger.recreate(id, data);
 						}
 					}
-					
+
 				} catch ( Exception e ) {
 					e.printStackTrace();
 					this.disconnect();
@@ -94,7 +94,7 @@ public class Client extends Thread {
 	}
 
 	void switchWishes(int id, byte[] data) throws IOException, ClassNotFoundException {
-		
+
 		switch(id) {
 			case CMD_WISHES_RAWIMAGE: {
 				wichesRawImage = (Boolean) SerializationUtil.deserializeObject(data).readObject();
@@ -106,7 +106,7 @@ public class Client extends Thread {
 				wichesNodeList = (Boolean) SerializationUtil.deserializeObject(data).readObject();
 			}
 		}
-		
+
 	}
 
 	private int read(InputStream in) throws IOException {
@@ -117,7 +117,7 @@ public class Client extends Thread {
 		return value;
 	}
 
-	private int read(InputStream in, byte[] data, int offset, int length) 
+	private int read(InputStream in, byte[] data, int offset, int length)
 			throws IOException {
 		int value = in.read(data, offset, length);
 
@@ -127,11 +127,15 @@ public class Client extends Thread {
 	}
 
 	public void connect() {
-		for (int tryCount = 0; tryCount < 60 && (this.serverSocket == null || 
+		Configuration conf = Configuration.getInstance();
+		this.connect(conf.loggingServerAddress, conf.logginPort);
+	}
+
+	public void connect(String addr, int port) {
+		for (int tryCount = 0; tryCount < 60 && (this.serverSocket == null ||
 				!this.serverSocket.isConnected()); tryCount++) {
 			try {
-				this.serverSocket = new Socket(Configuration.getInstance().loggingServerAddress, 
-						Configuration.getInstance().logginPort);
+				this.serverSocket = new Socket(addr, port);
 				System.out.println("Connection established");
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
@@ -169,7 +173,7 @@ public class Client extends Thread {
 		}
 		return false;
 	}
-	
+
 	public void setWichesRawImage(boolean whichesRawImage) throws IOException {
 		this.wichesRawImage = whichesRawImage;
 		sendWhichesToServer(CMD_WISHES_RAWIMAGE, this.wichesRawImage);
@@ -188,14 +192,14 @@ public class Client extends Thread {
 	public void camSaveCommand() throws IOException {
 		sendWhichesToServer(CMD_ACTION_SAVE_CAM_DATA, false);
 	}
-	
+
 	private void sendWhichesToServer(int cmdId,
 			boolean flag) throws IOException {
-		
+
 		write(cmdId, SerializationUtil.serializeObject(flag));
-		
+
 	}
-	
+
 	/*
 	 * send data to all connected clients
 	 */
@@ -209,13 +213,13 @@ public class Client extends Thread {
 				for (int i = 3; i >= 0; i--) {
 					out.write((len >> (i*8)) & 0x000000FF);
 				}
-	
+
 				out.write(data);
 			} else {
 				disconnect();
 			}
 		}
-	}	
+	}
 
 	public Socket getMySocket() {
 		return mySocket;
@@ -228,5 +232,5 @@ public class Client extends Thread {
 				+ ", wichesRawImage=" + wichesRawImage + ", wichesSampleList="
 				+ wichesSampleList + "]";
 	}
-	
+
 }
